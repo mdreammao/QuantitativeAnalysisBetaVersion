@@ -5,6 +5,14 @@ VisualStudioVersion = 15.0.26430.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis", "QuantitativeAnalysis\QuantitativeAnalysis.csproj", "{F57C39E5-1458-412D-929C-37F5F16B6D6F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis.DataAccess", "QuantitativeAnalysis.DataAccess\QuantitativeAnalysis.DataAccess.csproj", "{A6F1AFC9-DEE9-4815-9E7C-FBC94EB12E90}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis.Model", "QuantitativeAnalysis.Model\QuantitativeAnalysis.Model.csproj", "{0011D010-5617-417A-BFCF-CFE03B19F0FE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis.Strategies", "QuantitativeAnalysis.Strategies\QuantitativeAnalysis.Strategies.csproj", "{5268E6FC-E4FA-4335-846E-6568B9287FFE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis.Trading", "QuantitativeAnalysis.Trading\QuantitativeAnalysis.Trading.csproj", "{E9B66B6B-CB25-4228-8DC7-97BD708A0290}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +23,22 @@ Global
 		{F57C39E5-1458-412D-929C-37F5F16B6D6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F57C39E5-1458-412D-929C-37F5F16B6D6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F57C39E5-1458-412D-929C-37F5F16B6D6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6F1AFC9-DEE9-4815-9E7C-FBC94EB12E90}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6F1AFC9-DEE9-4815-9E7C-FBC94EB12E90}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6F1AFC9-DEE9-4815-9E7C-FBC94EB12E90}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6F1AFC9-DEE9-4815-9E7C-FBC94EB12E90}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0011D010-5617-417A-BFCF-CFE03B19F0FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0011D010-5617-417A-BFCF-CFE03B19F0FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0011D010-5617-417A-BFCF-CFE03B19F0FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0011D010-5617-417A-BFCF-CFE03B19F0FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5268E6FC-E4FA-4335-846E-6568B9287FFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5268E6FC-E4FA-4335-846E-6568B9287FFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5268E6FC-E4FA-4335-846E-6568B9287FFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5268E6FC-E4FA-4335-846E-6568B9287FFE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9B66B6B-CB25-4228-8DC7-97BD708A0290}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9B66B6B-CB25-4228-8DC7-97BD708A0290}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9B66B6B-CB25-4228-8DC7-97BD708A0290}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9B66B6B-CB25-4228-8DC7-97BD708A0290}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
