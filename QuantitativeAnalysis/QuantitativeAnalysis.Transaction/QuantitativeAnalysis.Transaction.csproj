@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{E9B66B6B-CB25-4228-8DC7-97BD708A0290}</ProjectGuid>
+    <ProjectGuid>{DA10D5C2-692E-4CBF-91EB-A4C5AC92D7A0}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>QuantitativeAnalysis.Trading</RootNamespace>
-    <AssemblyName>QuantitativeAnalysis.Trading</AssemblyName>
+    <RootNamespace>QuantitativeAnalysis.Transaction</RootNamespace>
+    <AssemblyName>QuantitativeAnalysis.Transaction</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

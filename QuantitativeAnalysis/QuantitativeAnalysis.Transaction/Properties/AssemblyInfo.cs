@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // 有关程序集的一般信息由以下
 // 控制。更改这些特性值可修改
 // 与程序集关联的信息。
-[assembly: AssemblyTitle("QuantitativeAnalysis.Trading")]
+[assembly: AssemblyTitle("QuantitativeAnalysis.Transaction")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
-[assembly: AssemblyProduct("QuantitativeAnalysis.Trading")]
+[assembly: AssemblyProduct("QuantitativeAnalysis.Transaction")]
 [assembly: AssemblyCopyright("Copyright © Microsoft 2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // 如果此项目向 COM 公开，则下列 GUID 用于类型库的 ID
-[assembly: Guid("e9b66b6b-cb25-4228-8dc7-97bd708a0290")]
+[assembly: Guid("da10d5c2-692e-4cbf-91eb-a4c5ac92d7a0")]
 
 // 程序集的版本信息由下列四个值组成: 
 //
