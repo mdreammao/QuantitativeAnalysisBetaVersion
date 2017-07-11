@@ -40,6 +40,9 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="WAPIWrapperCSharp">
+      <HintPath>..\..\..\QuantitativeAnalysis\QuantitativeAnalysis\packages\WAPIWrapperCSharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
@@ -47,6 +50,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\QuantitativeAnalysis.DataAccess\QuantitativeAnalysis.DataAccess.csproj">
+      <Project>{a6f1afc9-dee9-4815-9e7c-fbc94eb12e90}</Project>
+      <Name>QuantitativeAnalysis.DataAccess</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\QuantitativeAnalysis.Utilities\QuantitativeAnalysis.Utilities.csproj">
+      <Project>{47d62782-e308-4103-82f5-5f0751def741}</Project>
+      <Name>QuantitativeAnalysis.Utilities</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
