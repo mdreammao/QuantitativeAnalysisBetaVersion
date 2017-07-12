@@ -9,18 +9,17 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
 {
     public class RedisReader
     {
-        ConnectionMultiplexer redisConn = null;
-        public RedisReader(ConfigurationOptions config)
+        public string HGet(string key,string field,int dbId=0)
         {
-            redisConn = ConnectionMultiplexer.Connect(config);
+            var db = RedisClientSingleton.Instance.GetDatabase(dbId);
+
+            return db.HashGet(key, field);
         }
 
-        public void HSet(string key,string field,string value)
+        public HashEntry[] HGetAll(string key,int dbId = 0)
         {
-            var db = redisConn.GetDatabase();
-
-            db.HashSet(key, field, value);
+            var db = RedisClientSingleton.Instance.GetDatabase(dbId);
+            return db.HashGetAll(key);
         }
-
     }
 }

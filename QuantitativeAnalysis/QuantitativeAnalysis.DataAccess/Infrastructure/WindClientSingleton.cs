@@ -7,7 +7,7 @@ using WAPIWrapperCSharp;
 
 namespace QuantitativeAnalysis.DataAccess.Infrastructure
 {
-    public class WindSingleton
+    public class WindClientSingleton
     {
         private static readonly WindAPI instance = new WindAPI();
 
@@ -24,7 +24,7 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
                 return instance;
             }
         }
-        ~WindSingleton()
+        ~WindClientSingleton()
         {
             if (instance.isconnected())
                 instance.stop();

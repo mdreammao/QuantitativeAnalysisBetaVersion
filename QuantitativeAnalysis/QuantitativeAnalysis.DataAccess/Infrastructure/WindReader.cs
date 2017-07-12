@@ -12,22 +12,22 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
     {
         public DataTable GetDailyDataTable(string code, string fields, DateTime startTime, DateTime endTime, string options = "")
         {
-             return WindSingleton.Instance.wsd(code, fields, startTime, endTime, options).ToDataTable();
+             return WindClientSingleton.Instance.wsd(code, fields, startTime, endTime, options).ToDataTable();
         }
 
         public DataTable GetMinuteDataTable(string code, string fields, DateTime startTime, DateTime endTime, string options = "")
         {
-            return WindSingleton.Instance.wsi(code, fields, startTime, endTime, options).ToDataTable();
+            return WindClientSingleton.Instance.wsi(code, fields, startTime, endTime, options).ToDataTable();
         }
 
         public WindData GetDailyData(string code,string fields,DateTime startTime, DateTime endTime,string options = "")
         {
-            return WindSingleton.Instance.wsd(code, fields, startTime, endTime, options);
+            return WindClientSingleton.Instance.wsd(code, fields, startTime, endTime, options);
         }
 
         public WindData GetMinuteData(string code,string fields,DateTime startTime,DateTime endTime,string options = "")
         {
-            return WindSingleton.Instance.wsi(code, fields, startTime, endTime, options);
+            return WindClientSingleton.Instance.wsi(code, fields, startTime, endTime, options);
         }
     }
 }

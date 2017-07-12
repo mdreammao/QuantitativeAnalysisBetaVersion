@@ -10,17 +10,16 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
 {
     public class SqlServerReader
     {
-        private readonly string connStr;
+        private readonly ConnectionType connType;
 
-        public SqlServerReader(string connStr)
+        public SqlServerReader(ConnectionType connType)
         {
-            this.connStr = connStr;
+            this.connType = connType;
         }
 
         public DataTable GetDataTable(string sqlStr,SqlParameter[] sqlPam=null)
         {
-            var conn = new SqlConnection(connStr);
-            SqlDataAdapter adapter = new SqlDataAdapter(sqlStr, conn);
+            SqlDataAdapter adapter = new SqlDataAdapter(sqlStr, SqlConnectionFactory.Create(connType));
             if(sqlPam!=null) adapter.SelectCommand.Parameters.AddRange(sqlPam);
             var dt = new DataTable();
             adapter.Fill(dt);

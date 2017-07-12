@@ -34,6 +34,7 @@
       <HintPath>..\packages\StackExchange.Redis.1.2.4\lib\net45\StackExchange.Redis.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Xml.Linq" />
@@ -48,11 +49,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions.cs" />
+    <Compile Include="Infrastructure\RedisClientSingleton.cs" />
     <Compile Include="Infrastructure\RedisReader.cs" />
+    <Compile Include="Infrastructure\RedisWriter.cs" />
+    <Compile Include="Infrastructure\SqlConnectionFactory.cs" />
     <Compile Include="Infrastructure\SqlServerReader.cs" />
     <Compile Include="Infrastructure\SqlServerWriter.cs" />
     <Compile Include="Infrastructure\WindReader.cs" />
-    <Compile Include="Infrastructure\WindSingleton.cs" />
+    <Compile Include="Infrastructure\WindClientSingleton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
