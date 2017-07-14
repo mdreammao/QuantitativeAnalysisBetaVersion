@@ -62,6 +62,10 @@
       <Project>{a6f1afc9-dee9-4815-9e7c-fbc94eb12e90}</Project>
       <Name>QuantitativeAnalysis.DataAccess</Name>
     </ProjectReference>
+    <ProjectReference Include="..\QuantitativeAnalysis.Model\QuantitativeAnalysis.Model.csproj">
+      <Project>{0011d010-5617-417a-bfcf-cfe03b19f0fe}</Project>
+      <Name>QuantitativeAnalysis.Model</Name>
+    </ProjectReference>
     <ProjectReference Include="..\QuantitativeAnalysis.Utilities\QuantitativeAnalysis.Utilities.csproj">
       <Project>{47d62782-e308-4103-82f5-5f0751def741}</Project>
       <Name>QuantitativeAnalysis.Utilities</Name>

@@ -28,13 +28,14 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
             }
             return rowsChanged;
         }
-        public void InsertBulk(DataTable source,List<SqlBulkCopyColumnMapping> mappings=null)
+
+        public void InsertBulk(DataTable source,string destinationTbName,List<SqlBulkCopyColumnMapping> mappings=null)
         {
             using (var conn = SqlConnectionFactory.Create(connType))
             {
                 using (var bulkCopy = new SqlBulkCopy(conn))
                 {
-                    bulkCopy.DestinationTableName = source.TableName;
+                    bulkCopy.DestinationTableName = destinationTbName;
                     if (mappings == null)
                         foreach (DataColumn col in source.Columns)
                             bulkCopy.ColumnMappings.Add(col.ColumnName, col.ColumnName);
