@@ -8,8 +8,6 @@ namespace QuantitativeAnalysis.DataAccess
 {
     public interface IStockRepository
     {
-        StockTransaction GetStockDailyTransaction(string code, DateTime date);
-        StockTransaction GetStockMinuteTransaction(string code, DateTime dateTime);
-
+        List<StockTransaction> GetStockTransaction(string code, DateTime start,DateTime end);
     }
 }

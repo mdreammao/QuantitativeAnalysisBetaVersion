@@ -76,6 +76,11 @@ namespace QuantitativeAnalysis.DataAccess
             var res =(entries.First(c => c.Name.ToString().Equals(fieldName)).Value);
             return (T)Convert.ChangeType(res, typeof(T));
         }
+
+        public static List<T> ConvertTo<T>(this RedisValue[] values)
+        {
+            return values.Select(c => (T)Convert.ChangeType(c.ToString(), typeof(T))).ToList();
+        }
     }
 
 }

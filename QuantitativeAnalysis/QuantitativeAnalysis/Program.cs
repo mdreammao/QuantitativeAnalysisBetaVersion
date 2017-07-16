@@ -15,7 +15,42 @@ namespace QuantitativeAnalysis
     {
         static void Main(string[] args)
         {
-
+            var list1 = new List<int>();//request
+            list1.Add(2);
+            list1.Add(3);
+            list1.Add(4);
+            list1.Add(5);
+            list1.Add(7);
+            list1.Add(8);
+            list1.Add(9);
+            list1.Add(10);
+            list1.Add(11);
+            var list2 = new List<int>();//sql
+            list2.Add(3);
+            list2.Add(4);
+            list2.Add(5);
+            list2.Add(7);
+            list2.Add(8);
+            var pairs = new Dictionary<int,KeyValuePair<int,int>>(); //index begin end 
+            var res = list1.Except(list2).ToList();//new begin end 比较Index
+            var interval = Computor.GetNoExistedInterval<int>(list1, list2);
+            foreach(var item in res)
+            {
+                var index = list1.IndexOf(item);
+                if(!pairs.ContainsKey(index-1))
+                    pairs.Add(index, new KeyValuePair<int, int>(item,item));
+                else
+                {
+                    pairs.Add(index, new KeyValuePair<int, int>(pairs[index - 1].Key, item));
+                    pairs.Remove(index-1);
+                }
+            }
+            foreach(var item in pairs)
+            {
+                var star = item.Value.Key;
+                var end = item.Value.Value;
+            }
+            return;
 
             RedisWriter writer = new RedisWriter();
             var code = "000001.SZ";
@@ -34,8 +69,8 @@ namespace QuantitativeAnalysis
                 new HashEntry(StockTransaction.CodeName,code)
             };
             writer.HSetBulk(code + "-" + date, enties);
-            var repo = new StockRepository();
-            var res = repo.GetStockDaily(code, DateTime.Now);
+            var repo = new StockDailyRepository();
+            //var res11 = repo.GetStockDaily(code, DateTime.Now);
             //writer.HDelete("Person1", "Name");
             //RedisReader reader = new RedisReader();
             //var name = reader.HGet("Person1", "Name");
