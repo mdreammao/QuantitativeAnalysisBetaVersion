@@ -12,5 +12,6 @@ namespace QuantitativeAnalysis.Utilities
         {
             return DateTime.Parse(dtStr);
         }
+
     }
 }

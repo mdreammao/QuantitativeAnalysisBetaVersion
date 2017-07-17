@@ -3,6 +3,6 @@
 
 1.采用Redis Hash来存储数据，格式如下：
     数据类型        key                 field                                   value
-    日数据          code       DateTime(2012-11-02 00:00:00)               json存储其他数据
+    日数据          code       DateTime(2012-11-02)               json存储其他数据
     分钟数据       code-年份   DateTime(2012-11-02 20:10:00)               json存储其他数据
 

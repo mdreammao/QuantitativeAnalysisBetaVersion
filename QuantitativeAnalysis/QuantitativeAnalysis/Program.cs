@@ -15,6 +15,11 @@ namespace QuantitativeAnalysis
     {
         static void Main(string[] args)
         {
+            var server = RedisClientSingleton.Instance.GetServer(RedisClientSingleton.Instance.GetEndPoints()[0]);
+            server.FlushDatabase(0);
+            StockDailyRepository repo1 = new StockDailyRepository();
+            var res6 = repo1.GetStockTransaction("000002.SZ", "2015-06-17".ToDateTime(), "2017-07-16".ToDateTime());
+            return;
             var list1 = new List<int>();//request
             list1.Add(2);
             list1.Add(3);

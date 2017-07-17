@@ -9,59 +9,82 @@ using StackExchange.Redis;
 using System.Data.SqlClient;
 using QuantitativeAnalysis.Utilities;
 using System.Data;
+using Newtonsoft.Json;
 
 namespace QuantitativeAnalysis.DataAccess
 {
     public class StockDailyRepository : IStockRepository
     {
-        private const string DailyKeyFormat = "{0}-{1}";
+        private const string RedisFieldFormat = "yyyy-MM-dd";
         private RedisReader redisReader = new RedisReader();
+        private RedisWriter redisWriter = new RedisWriter();
         private SqlServerReader sqlReader = new SqlServerReader(Infrastructure.ConnectionType.Local);
         private WindReader windReader = new WindReader();
         private SqlServerWriter sqlWriter = new SqlServerWriter(Infrastructure.ConnectionType.Local);
+
         public List<StockTransaction> GetStockTransaction(string code, DateTime begin,DateTime end)
         {
             var stocks = new List<StockTransaction>();
             var tradingDates = windReader.GetTransactionDate(begin, end);
             if (tradingDates != null && tradingDates.Count > 0)
             {
-                for (var start = tradingDates[0]; start.Date <= tradingDates[tradingDates.Count-1].Date; start = start.AddDays(1))
+                foreach (var date in tradingDates)
                 {
-                    var key = string.Format(DailyKeyFormat, code, start.ToString("yyyy-MM-dd"));
-                    var values = redisReader.HGetAll(key);
-                    var trans = ConvertToStockTransaction(code, start, values);
+                    StockTransaction trans = FetchStockFromRedis(code, date);
                     if (trans == null)//just run once 
                     {
-                        var existedDateInSql = GetExistedDateInSql(code, tradingDates.First(), tradingDates.Last());
-                        var nonExistedDateIntervalnInSql = Computor.GetNoExistedInterval<DateTime>(tradingDates, existedDateInSql);
-                        LoadStockTransactionToSqlFromWind(code, nonExistedDateIntervalnInSql);
-                        var existedDateInRedis = GetExistedDateInRedis(code, tradingDates.First(), tradingDates.Last());
-                        var nonExistedDateIntervalnInRedis = Computor.GetNoExistedInterval<DateTime>(tradingDates, existedDateInRedis);
-                        LoadStockTransactionToRedisFromSql(code, nonExistedDateIntervalnInRedis);
+                        LoadStockTransactionToSqlFromWind(code, tradingDates);
+                        LoadStockTransactionToRedisFromSql(code, tradingDates);
+                        trans = FetchStockFromRedis(code, date);
                     }
+                    stocks.Add(trans);
                 }
             }
             return stocks;
         }
 
-        private void LoadStockTransactionToRedisFromSql(string code, List<KeyValuePair<DateTime, DateTime>> nonExistedDateIntervalnInRedis)
+        #region internal method
+        private StockTransaction FetchStockFromRedis(string code, DateTime date)
         {
-            if(nonExistedDateIntervalnInRedis !=null && nonExistedDateIntervalnInRedis.Count > 0)
+            var jsonStr = redisReader.HGet(code,date.ToString(RedisFieldFormat));
+            if (string.IsNullOrEmpty(jsonStr))
+                return null;
+            var st = JsonConvert.DeserializeObject<StockTransaction>(jsonStr);
+            st.Code = code;
+            st.DateTime = date;
+            st.Level = StockTransactionLevel.Daily;
+            return st;
+        }
+
+        private void LoadStockTransactionToRedisFromSql(string code, List<DateTime> tradingDates)
+        {
+            var existedDateInRedis = GetExistedDateInRedis(code, tradingDates.First(), tradingDates.Last());
+            var nonExistedDateIntervalInRedis = Computor.GetNoExistedInterval<DateTime>(tradingDates, existedDateInRedis);
+            if (nonExistedDateIntervalInRedis !=null && nonExistedDateIntervalInRedis.Count > 0)
             {
-                string sqlStr = GenerateSqlString(code, nonExistedDateIntervalnInRedis);
+                string sqlStr = GenerateSqlString(code, nonExistedDateIntervalInRedis);
                 var dt = sqlReader.GetDataTable(sqlStr);
-                WriteToRedis(code,dt);
+                WriteToRedis(code, dt);
             }
         }
 
         private void WriteToRedis(string code, DataTable dt)
         {
-            throw new NotImplementedException();
+            HashEntry[] entries = new HashEntry[dt.Rows.Count];
+            for(int i=0;i<dt.Rows.Count;i++)
+            {
+                var field = dt.Rows[i]["DateTime"].ToString().ToDateTime().ToString(RedisFieldFormat);
+                DataRowConverter converter = new DataRowConverter();
+                converter.AddExceptFields("DateTime");
+                var value =JsonConvert.SerializeObject(dt.Rows[i], converter);
+                entries[i] = new HashEntry(field, value);
+            }
+            redisWriter.HSetBulk(code, entries);
         }
 
         private string GenerateSqlString(string code, List<KeyValuePair<DateTime, DateTime>> nonExistedDateIntervalnInRedis)
         {
-            var sqlStr = "select DATETIME,OPEN,HIGH,LOW,CLOSE,VOLUME,AMT,ADJFACTOR,TRADE_STATUS from [DailyTransaction].[dbo].[Stock] where Code={0} and {1};";
+            var sqlStr = "select DATETIME,[OPEN],HIGH,LOW,[CLOSE],VOLUME,AMT,ADJFACTOR,TRADE_STATUS from [DailyTransaction].[dbo].[Stock] where Code='{0}' and {1};";
             var dateConditions = new StringBuilder();
             foreach (var pair in nonExistedDateIntervalnInRedis)
             {
@@ -84,9 +107,11 @@ namespace QuantitativeAnalysis.DataAccess
             return allExistedInRedis.Where(c=>c>=begin && c<=end).ToList();
         }
 
-        private void LoadStockTransactionToSqlFromWind(string code, List<KeyValuePair<DateTime, DateTime>> intervals)
+        private void LoadStockTransactionToSqlFromWind(string code, List<DateTime> tradingDates)
         {
-            foreach(var item in intervals)
+            var existedDateInSql = GetExistedDateInSql(code, tradingDates.First(), tradingDates.Last());
+            var nonExistedDateIntervalInSql = Computor.GetNoExistedInterval<DateTime>(tradingDates, existedDateInSql);
+            foreach (var item in nonExistedDateIntervalInSql)
             {
                 var dt = windReader.GetDailyDataTable(code, "open,high,low,close,volume,amt,adjfactor,trade_status", item.Key, item.Value);
                 sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
@@ -95,35 +120,10 @@ namespace QuantitativeAnalysis.DataAccess
 
         private List<DateTime> GetExistedDateInSql(string code, DateTime start, DateTime end)
         {
-            var sqlStr = "select DateTime from [DailyTransaction].[dbo].[Stock] where Code='@code' and DateTime>=@start and DateTime<=@end";
-            var pars = new SqlParameter[]
-            {
-                new SqlParameter("@code",code),
-                new SqlParameter("@start",start.Date),
-                new SqlParameter("@end",end.Date)
-            };
-            return sqlReader.GetDataTable(sqlStr, pars).ToList<DateTime>();
+            var sqlStr = string.Format("select DateTime from [DailyTransaction].[dbo].[Stock] where Code='{0}' and DateTime>='{1}' and DateTime<='{2}'",code,start.ToShortDateString(),end.ToShortDateString());
+            return sqlReader.GetDataTable(sqlStr).ToList<DateTime>();
         }
 
-        private StockTransaction ConvertToStockTransaction(string code,DateTime date, HashEntry[] entries)
-        {
-            if (entries == null || entries.Length==0)
-                return null;
-            return new StockTransaction
-            {
-                Code = code,
-                DateTime = date.Date,
-                Open = entries.ConvertTo<double>(StockTransaction.OpenName),
-                High = entries.ConvertTo<double>(StockTransaction.HighName),
-                Low = entries.ConvertTo<double>(StockTransaction.LowName),
-                Close = entries.ConvertTo<double>(StockTransaction.CloseName),
-                Volume = entries.ConvertTo<double>(StockTransaction.VolumeName),
-                Amount = entries.ConvertTo<double>(StockTransaction.AmountName),
-                AdjFactor = entries.ConvertTo<double>(StockTransaction.AdjFactorName),
-                TradeStatus = entries.ConvertTo<string>( StockTransaction.TradeStatusName)
-            };
-        }
-        
         private void GetStockDailyTransactionFromSqlServer(string code,DateTime begin,DateTime end)
         {
             var sqlString = "select * from [DailyTransaction].[dbo].[Stock] where code='@code' and DateTime>=@begin and DateTime<=@end";
@@ -135,6 +135,6 @@ namespace QuantitativeAnalysis.DataAccess
             };
             var res=sqlReader.GetDataTable(sqlString,pars);
         }
-        
+        #endregion
     }
 }

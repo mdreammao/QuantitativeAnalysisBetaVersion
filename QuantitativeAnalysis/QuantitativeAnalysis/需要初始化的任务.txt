@@ -1,0 +1,6 @@
+﻿1.StockDaily数据库（DailyTransaction）和表（Stock）的建立
+2.StockMinute数据库（2017MinuteTransaction)和表（2017-01）：这个可能不行，因为数据库是动态建立的，没办法了。除非是一下子
+建立十年的数据库，但是可能是有问题的。
+
+
+

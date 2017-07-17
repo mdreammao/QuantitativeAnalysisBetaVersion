@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace QuantitativeAnalysis.Model
 {
@@ -26,10 +27,17 @@ namespace QuantitativeAnalysis.Model
         public double Low { get; set; }
         public double Close { get; set; }
         public double Volume { get; set; }
+        [JsonProperty("Amt")]
         public double Amount { get; set; }
         public double AdjFactor { get; set; }
+        [JsonProperty("Trade_Status")]
         public string TradeStatus { get; set; }
         public StockTransactionLevel Level { get; set; }
+
+        public static StockTransaction Default(string code,DateTime date,StockTransactionLevel level)
+        {
+            return new StockTransaction() { Code = code, DateTime = date, Level=level };
+        }
     }
 
     public enum StockTransactionLevel
