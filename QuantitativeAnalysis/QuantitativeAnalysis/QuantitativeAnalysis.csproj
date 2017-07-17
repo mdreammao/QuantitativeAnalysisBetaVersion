@@ -71,5 +71,8 @@
       <Name>QuantitativeAnalysis.Utilities</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="需要初始化的任务.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
