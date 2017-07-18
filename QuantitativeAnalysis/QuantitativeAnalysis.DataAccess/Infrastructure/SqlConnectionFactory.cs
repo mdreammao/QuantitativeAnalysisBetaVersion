@@ -10,7 +10,7 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
 {
     public class SqlConnectionFactory
     {
-        public static SqlConnection Create(ConnectionType connType)
+        public static SqlConnection Create(ConnectionType connType=ConnectionType.Default)
         {
             var connString =ConfigurationManager.ConnectionStrings[connType.ToString()].ConnectionString;
             return new SqlConnection(connString);
@@ -19,6 +19,7 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
 
     public enum ConnectionType
     {
+        Default,
         Local,
         Server170
     }

@@ -10,6 +10,8 @@ using System.Data.SqlClient;
 using QuantitativeAnalysis.Utilities;
 using System.Data;
 using Newtonsoft.Json;
+using System.Configuration;
+using System.IO;
 
 namespace QuantitativeAnalysis.DataAccess
 {
@@ -18,14 +20,14 @@ namespace QuantitativeAnalysis.DataAccess
         private const string RedisFieldFormat = "yyyy-MM-dd";
         private RedisReader redisReader = new RedisReader();
         private RedisWriter redisWriter = new RedisWriter();
-        private SqlServerReader sqlReader = new SqlServerReader(Infrastructure.ConnectionType.Local);
+        private SqlServerReader sqlReader = new SqlServerReader(Infrastructure.ConnectionType.Default);
         private WindReader windReader = new WindReader();
-        private SqlServerWriter sqlWriter = new SqlServerWriter(Infrastructure.ConnectionType.Local);
-
+        private SqlServerWriter sqlWriter = new SqlServerWriter(Infrastructure.ConnectionType.Default);
+        private TransactionDateTimeRepository dateRepo = new TransactionDateTimeRepository(Infrastructure.ConnectionType.Default);
         public List<StockTransaction> GetStockTransaction(string code, DateTime begin,DateTime end)
         {
             var stocks = new List<StockTransaction>();
-            var tradingDates = windReader.GetTransactionDate(begin, end);
+            var tradingDates = dateRepo.GetStockTransactionDate(begin, end);
             if (tradingDates != null && tradingDates.Count > 0)
             {
                 foreach (var date in tradingDates)
@@ -109,6 +111,7 @@ namespace QuantitativeAnalysis.DataAccess
 
         private void LoadStockTransactionToSqlFromWind(string code, List<DateTime> tradingDates)
         {
+            IdentifyOrCreateDBandDataTable();
             var existedDateInSql = GetExistedDateInSql(code, tradingDates.First(), tradingDates.Last());
             var nonExistedDateIntervalInSql = Computor.GetNoExistedInterval<DateTime>(tradingDates, existedDateInSql);
             foreach (var item in nonExistedDateIntervalInSql)
@@ -116,6 +119,51 @@ namespace QuantitativeAnalysis.DataAccess
                 var dt = windReader.GetDailyDataTable(code, "open,high,low,close,volume,amt,adjfactor,trade_status", item.Key, item.Value);
                 sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
             }
+        }
+
+        private void IdentifyOrCreateDBandDataTable()
+        {
+            var sqlLocation = ConfigurationManager.AppSettings["SqlServerLocation"];
+            if (!Directory.Exists(sqlLocation))
+                Directory.CreateDirectory(sqlLocation);
+            var sqlScript =string.Format(@"USE [master]
+if db_id('DailyTransaction') is null
+begin
+CREATE DATABASE [DailyTransaction]
+ CONTAINMENT = NONE
+ ON  PRIMARY 
+( NAME = N'DailyTransaction', FILENAME = N'{0}\DailyTransaction.mdf' , SIZE = 5120KB , MAXSIZE = UNLIMITED, FILEGROWTH = 10%)
+ LOG ON 
+( NAME = N'DailyTransaction_log', FILENAME = N'{0}\DailyTransaction_log.ldf' , SIZE = 2048KB , MAXSIZE = 2048GB , FILEGROWTH = 10%)
+ALTER DATABASE [DailyTransaction] SET COMPATIBILITY_LEVEL = 120
+IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
+begin
+EXEC [DailyTransaction].[dbo].[sp_fulltext_database] @action = 'enable'
+end
+end
+go
+if object_id('DailyTransaction.dbo.Stock') is null
+begin
+CREATE TABLE [DailyTransaction].[dbo].[Stock](
+	[Code] [varchar](20) NOT NULL,
+	[DateTime] [date] NOT NULL,
+	[OPEN] [decimal](12, 4) NULL,
+	[HIGH] [decimal](12, 4) NULL,
+	[LOW] [decimal](12, 4) NULL,
+	[CLOSE] [decimal](12, 4) NULL,
+	[VOLUME] [decimal](20, 0) NULL,
+	[AMT] [decimal](20, 3) NULL,
+	[ADJFACTOR] [decimal](20, 6) NULL,
+	[TRADE_STATUS] [nvarchar](50) NULL,
+	[UpdatedDateTime] [datetime] NULL CONSTRAINT [DF_Stock_UpdatedDateTime]  DEFAULT (getdate()),
+ CONSTRAINT [PK_Stock_1] PRIMARY KEY CLUSTERED 
+(
+	[Code] ASC,
+	[DateTime] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+end", sqlLocation);
+            sqlWriter.ExecuteSqlScript(sqlScript);
         }
 
         private List<DateTime> GetExistedDateInSql(string code, DateTime start, DateTime end)

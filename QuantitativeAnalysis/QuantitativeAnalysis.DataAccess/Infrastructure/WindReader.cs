@@ -38,9 +38,9 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
             return wData;
         }
 
-        public List<DateTime> GetTransactionDate(DateTime startDate,DateTime endDate,string options="")
+        public WindData GetTransactionDate(DateTime startDate,DateTime endDate,string options="")
         {
-            return WindClientSingleton.Instance.tdays(startDate, endDate, options).ToDateTimes();
+            return WindClientSingleton.Instance.tdays(startDate, endDate, options);
         }
     }
 }

@@ -15,6 +15,15 @@ namespace QuantitativeAnalysis.DataAccess
         private static readonly string CodeColumnName = "Code";
         private static readonly string DateTimeColumnName = "DateTime";
 
+        public static DataTable ToDataTableWithSingleColum(this WindData wData,string columnName)
+        {
+            var dt = new DataTable();
+            dt.Columns.Add(columnName);
+            var data = (object[])wData.data;
+            data.ToList().ForEach(c => dt.Rows.Add(c));
+            return dt;
+        }
+
         public static DataTable ToDataTable(this WindData wData)
         {
             var dt = new DataTable();

@@ -26,5 +26,11 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
             var db = RedisClientSingleton.Instance.GetDatabase(dbId);
             return db.HashDelete(key, field);
         }
+
+        public void Clear(int dbId=0)
+        {
+            var server = RedisClientSingleton.Instance.GetServer(RedisClientSingleton.Instance.GetEndPoints()[0]);
+            server.FlushDatabase(dbId);
+        }
     }
 }

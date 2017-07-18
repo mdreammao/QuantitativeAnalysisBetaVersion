@@ -5,7 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Data.SqlClient;
 using System.Data;
-
+using Microsoft.SqlServer.Management.Common;
+using Microsoft.SqlServer.Management.Smo;
 namespace QuantitativeAnalysis.DataAccess.Infrastructure
 {
     public class SqlServerWriter
@@ -46,5 +47,14 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
                 }
             }
         }
+        public void ExecuteSqlScript(string sqlScript)
+        {
+            using (var conn = SqlConnectionFactory.Create(connType))
+            {
+                Server server = new Server(new ServerConnection(conn));
+                server.ConnectionContext.ExecuteNonQuery(sqlScript);
+            }
+        }
+
     }
 }

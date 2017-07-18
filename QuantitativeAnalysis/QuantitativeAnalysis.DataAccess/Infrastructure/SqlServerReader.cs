@@ -26,5 +26,20 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
             return dt;
         }
 
+        public T ExecuteScalar<T>(string sqlStr, SqlParameter[] pams = null)
+        {
+            using (var conn = SqlConnectionFactory.Create(connType))
+            {
+                conn.Open();
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = sqlStr;
+                if (pams != null) cmd.Parameters.AddRange(pams);
+                object obj = cmd.ExecuteScalar();
+                if (obj == null)
+                    return default(T);
+                return (T)Convert.ChangeType(obj, typeof(T));
+            }
+        }
+
     }
 }
