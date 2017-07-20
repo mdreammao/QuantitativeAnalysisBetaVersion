@@ -11,7 +11,7 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
 {
     public class RedisClientSingleton
     {
-        public  static ConnectionMultiplexer conn = null;
+        public static ConnectionMultiplexer conn = null;
         public static ConnectionMultiplexer Instance
         {
             get
