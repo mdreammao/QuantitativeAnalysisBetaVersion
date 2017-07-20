@@ -35,7 +35,7 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
                 cmd.CommandText = sqlStr;
                 if (pams != null) cmd.Parameters.AddRange(pams);
                 object obj = cmd.ExecuteScalar();
-                if (obj == null)
+                if (obj == null||obj==DBNull.Value)
                     return default(T);
                 return (T)Convert.ChangeType(obj, typeof(T));
             }

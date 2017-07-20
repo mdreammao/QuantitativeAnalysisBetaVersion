@@ -41,22 +41,35 @@ namespace QuantitativeAnalysis.DataAccess
         {
             var colNames = wData.fieldList;
             var colLength = colNames.Length;
-            var res = (object[])wData.data;
+            dynamic arrayData = ConvertToArray(wData.data);
             var dc = new DataColumn[colLength+2];
             dc[0] = new DataColumn(CodeColumnName, typeof(string));
             dc[1] = new DataColumn(DateTimeColumnName, typeof(DateTime));
             for (int i = 0; i < colLength; ++i)
             {
-                var re = res[i];
+                var re = arrayData[i];
                 dc[i+2] = new DataColumn(colNames[i], re.GetType());
             }
             return dc;
         }
 
+        private static dynamic ConvertToArray(object data)
+        {
+            var type = data.GetType();
+            dynamic arrayData;
+            if (type == typeof(object[]))
+                arrayData = (object[])data;
+            else if (type == typeof(double[]))
+                arrayData = (double[])data;
+            else if (type == typeof(int[]))
+                arrayData = (int[])data;
+            else throw new Exception("未实现类型转换！");
+            return arrayData;
+        }
         public static List<object[]> GetRowData(this WindData wData)
         {
             var rows = new List<object[]>();
-            var source = (object[])wData.data;
+            dynamic source = ConvertToArray(wData.data);
             for(int i = 0; i < wData.GetTimeLength(); i++)
             {
                 var row = new object[wData.GetFieldLength()+2];

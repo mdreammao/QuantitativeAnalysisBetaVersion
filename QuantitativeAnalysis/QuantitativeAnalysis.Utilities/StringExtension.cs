@@ -12,6 +12,9 @@ namespace QuantitativeAnalysis.Utilities
         {
             return DateTime.Parse(dtStr);
         }
-
+        public static T ConvertTo<T>(this string val)
+        {
+            return (T)Convert.ChangeType(val, typeof(T));
+        }
     }
 }
