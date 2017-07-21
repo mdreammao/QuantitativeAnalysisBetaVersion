@@ -46,7 +46,7 @@ namespace QuantitativeAnalysis.DataAccess
             }
             return stocks;
         }
-
+        #region internal method
         private void BulkLoadStockMinuteToRedisFromSql(string code, DateTime currentTime)
         {
             DateTime latestTime = GetLatestTimeFromRedis(code, currentTime);
@@ -125,8 +125,8 @@ CREATE TABLE [StockMinuteTransaction{0}].[dbo].[Transaction{2}](
 	[high] [decimal](12, 4) NULL,
 	[low] [decimal](12, 4) NULL,
 	[close] [decimal](12, 4) NULL,
-	[volume] [decimal](12, 4) NULL,
-	[amount] [decimal](12, 4) NULL,
+	[volume] [decimal](20, 4) NULL,
+	[amount] [decimal](20, 4) NULL,
 	[UpdatedDateTime] [datetime] NULL,
  CONSTRAINT [PK_Transaction{2}] PRIMARY KEY CLUSTERED 
 (
@@ -166,5 +166,7 @@ end ",dateTime.Year,sqlLocation,dateTime.ToString("yyyy-MM"));
                 Level = StockTransactionLevel.Minute
             };
         }
+        #endregion
+
     }
 }

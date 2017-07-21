@@ -17,18 +17,22 @@ namespace QuantitativeAnalysis
         {
             var start = "2017-01-01 9:00:00".ToDateTime();
             var end = "2017-01-03 14:11:56".ToDateTime();
-            var minuteRepo = new StockMinuteRepository(DataAccess.Infrastructure.ConnectionType.Default);
-            var ress11 = minuteRepo.GetStockTransaction("000001.SZ", start, end);
-
-            return;
-            Console.WriteLine(DateTime.Now.TimeOfDay);
-            Console.WriteLine(DateTime.Now.TimeOfDay);
             var redisWriter = new RedisWriter();
             //redisWriter.Clear(0);
-            var repo = new StockDailyRepository();
-            var res = repo.GetStockTransaction("000002.SZ","2014-01-12".ToDateTime(), "2014-02-21".ToDateTime());
-            Console.WriteLine(res.Count);
             Console.WriteLine(DateTime.Now.TimeOfDay);
+            var minuteRepo = new StockMinuteRepository(DataAccess.Infrastructure.ConnectionType.Default);
+            var ress11 = minuteRepo.GetStockTransaction("000001.SZ", start, end);
+            Console.WriteLine(DateTime.Now.TimeOfDay);
+
+            //return;
+            //Console.WriteLine(DateTime.Now.TimeOfDay);
+            //Console.WriteLine(DateTime.Now.TimeOfDay);
+            //var redisWriter = new RedisWriter();
+            ////redisWriter.Clear(0);
+            //var repo = new StockDailyRepository();
+            //var res = repo.GetStockTransaction("000002.SZ","2014-01-12".ToDateTime(), "2014-02-21".ToDateTime());
+            //Console.WriteLine(res.Count);
+            //Console.WriteLine(DateTime.Now.TimeOfDay);
         }
     }
 }

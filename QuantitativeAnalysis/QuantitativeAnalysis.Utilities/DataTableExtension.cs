@@ -16,7 +16,7 @@ namespace QuantitativeAnalysis.Utilities
             {
                 foreach (DataRow r in dt.Rows)
                 {
-                    var val =(T) Convert.ChangeType(r[0], typeof(DateTime));
+                    var val =(T) Convert.ChangeType(r[0], typeof(T));
                     res.Add(val);
                 }
             }
