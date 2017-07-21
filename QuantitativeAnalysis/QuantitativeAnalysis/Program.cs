@@ -18,7 +18,7 @@ namespace QuantitativeAnalysis
             var start = "2017-01-01 9:00:00".ToDateTime();
             var end = "2017-01-03 14:11:56".ToDateTime();
             var minuteRepo = new StockMinuteRepository(DataAccess.Infrastructure.ConnectionType.Default);
-            var ress11 = minuteRepo.GetStockTransaction("000001.SZ", start, end);
+            var ress11 = minuteRepo.GetStockTransaction("000002.SZ", start, end);
 
             return;
             Console.WriteLine(DateTime.Now.TimeOfDay);
