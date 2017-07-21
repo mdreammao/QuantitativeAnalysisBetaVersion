@@ -51,12 +51,30 @@ namespace QuantitativeAnalysis.DataAccess
         {
             DateTime latestTime = GetLatestTimeFromRedis(code, currentTime);
             var start = latestTime == default(DateTime) ? new DateTime(currentTime.Year, 1, 1) : latestTime;
-            var end = new DateTime(currentTime.Year, 12, 31, 15, 0, 0);
-            var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction{0}].[dbo].[Transaction{1}] 
+            var end = GetEndTime(currentTime);
+            Dictionary<DateTime, DateTime> dateSpan = SplitDateTimeMonthly(start, end);
+            foreach(var item in dateSpan)
+            {
+                var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction{0}].[dbo].[Transaction{1}] 
 where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
-                currentTime.Year, currentTime.ToString("yyyy-MM"),code,start,end);
-            var dt = sqlReader.GetDataTable(sqlStr);
-            WriteToRedis(dt);
+    item.Key.Year, item.Key.ToString("yyyy-MM"), code, item.Key, item.Value);
+                var dt = sqlReader.GetDataTable(sqlStr);
+                WriteToRedis(dt);
+            }
+        }
+
+        private Dictionary<DateTime, DateTime> SplitDateTimeMonthly(DateTime start, DateTime end)
+        {
+            var dic = new Dictionary<DateTime, DateTime>();
+            var begin = start;
+            for(int i = start.Month; i <= end.Month; i++)
+            {
+                var currentLast = new DateTime(start.Year, i + 1, 1).AddHours(-1);
+                currentLast = currentLast > end ? end : currentLast;
+                dic.Add(begin, currentLast);
+                begin = currentLast.AddHours(9);
+            }
+            return dic;
         }
 
         private void WriteToRedis(DataTable dt)
@@ -84,17 +102,66 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
         {
             IdentifyOrCreateDBAndTable(currentTime);
             var latestTime = GetLatestTimeFromSql(code, currentTime);
-            latestTime = latestTime == default(DateTime) ? new DateTime(currentTime.Year,1,1):latestTime;
-            var endTime = new DateTime(currentTime.Year, 12, 31, 15, 0, 0);
-            var dataTable = windReader.GetMinuteDataTable(code, "open,high,low,close,volume,amt", latestTime, endTime,"Fill=Previous");
-            sqlWriter.InsertBulk(dataTable, string.Format("[StockMinuteTransaction{0}].dbo.[Transaction{1}]", currentTime.Year, currentTime.ToString("yyyy-MM")));
+            latestTime = latestTime == default(DateTime) ? new DateTime(currentTime.Year,1,1):latestTime.AddMinutes(1);
+            var endTime = GetEndTime(currentTime);
+            if(latestTime<endTime)
+            {
+                var dataTable = windReader.GetMinuteDataTable(code, "open,high,low,close,volume,amt", latestTime, endTime, "Fill=Previous");
+                WriteToSql(dataTable);
+            }
+        }
+
+        private void WriteToSql(DataTable dataTable)
+        {
+            Dictionary<DateTime, DataTable> monthData = SplitDataTableMonthly(dataTable);
+            foreach(var item in monthData)
+            {
+                IdentifyOrCreateDBAndTable(item.Key);
+                sqlWriter.InsertBulk(item.Value, string.Format("[StockMinuteTransaction{0}].dbo.[Transaction{1}]", item.Key.Year, item.Key.ToString("yyyy-MM")));
+            }
+        }
+
+        private Dictionary<DateTime, DataTable> SplitDataTableMonthly(DataTable dataTable)
+        {
+            var monthData = new Dictionary<DateTime, DataTable>();
+            foreach(DataRow r in dataTable.Rows)
+            {
+                var date = r["DateTime"].ToString().ConvertTo<DateTime>();
+                var key = new DateTime(date.Year, date.Month, 1);
+                if (!monthData.ContainsKey(key))
+                {
+                    var dt = dataTable.Clone();
+                    dt.ImportRow(r);
+                    monthData.Add(key, dt);
+                }
+                else
+                    monthData[key].ImportRow(r);
+            }
+            return monthData;
+        }
+
+        private DateTime GetEndTime(DateTime currentTime)
+        {
+            if(currentTime.Year<DateTime.Now.Year)
+                return new DateTime(currentTime.Year, 12, 31, 15, 1, 0);
+            return new DateTime(currentTime.Year, DateTime.Now.Month, DateTime.Now.Day - 1, 15, 1, 0);
         }
 
         private DateTime GetLatestTimeFromSql(string code, DateTime currentTime)
         {
-            var sqlStr = string.Format(@"select max(DateTime) from StockMinuteTransaction{0}.dbo.[Transaction{1}]
-            where DateTime>='{0}-01-01 00:00:00' and DateTime<='{0}-12-31 15:00:00'", currentTime.Year, currentTime.ToString("yyyy-MM"));
-            return sqlReader.ExecuteScalar<DateTime>(sqlStr);
+            DateTime latest=default(DateTime);
+            var sqlStr = string.Format(@"select top 1 name from [StockMinuteTransaction{0}].dbo.sysobjects 
+  where xtype = 'U' order by crdate desc",currentTime.Year);
+            var res = sqlReader.ExecuteScalar<string>(sqlStr);
+            if (string.IsNullOrEmpty(res))
+                latest = default(DateTime);
+            else
+            {
+                var dateSqlStr = string.Format(@"select max(DateTime) from [StockMinuteTransaction{0}].[dbo].[{1}]",
+                    currentTime.Year,res);
+                latest = sqlReader.ExecuteScalar<DateTime>(dateSqlStr);
+            }
+            return latest;
         }
 
         private void IdentifyOrCreateDBAndTable(DateTime dateTime)

@@ -22,6 +22,7 @@ namespace QuantitativeAnalysis
             Console.WriteLine(DateTime.Now.TimeOfDay);
             var minuteRepo = new StockMinuteRepository(DataAccess.Infrastructure.ConnectionType.Default);
             var ress11 = minuteRepo.GetStockTransaction("000001.SZ", start, end);
+            Console.WriteLine(ress11.Count);
             Console.WriteLine(DateTime.Now.TimeOfDay);
 
             //return;
