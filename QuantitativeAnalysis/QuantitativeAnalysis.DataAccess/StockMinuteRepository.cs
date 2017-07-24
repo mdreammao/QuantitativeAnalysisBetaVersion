@@ -16,29 +16,29 @@ namespace QuantitativeAnalysis.DataAccess
         private RedisReader redisReader;
         private SqlServerWriter sqlWriter;
         private SqlServerReader sqlReader;
-        private WindReader windReader;
         private RedisWriter redisWriter;
-        public StockMinuteRepository(ConnectionType type)
+        private IDataSource dataSource;
+        public StockMinuteRepository(ConnectionType type,IDataSource ds)
         {
             dateTimeRepo = new TransactionDateTimeRepository(type);
             sqlWriter = new SqlServerWriter(type);
             sqlReader = new SqlServerReader(type);
             redisReader = new RedisReader();
             redisWriter = new RedisWriter();
-            windReader = new WindReader();
+            dataSource = ds;
         }
         public List<StockTransaction> GetStockTransaction(string code, DateTime start, DateTime end)
         {
             var stocks = new List<StockTransaction>();
-            var tradingDates = dateTimeRepo.GetStockTransactionDate(start.Date, end.Date);
+            var tradingDates = dateTimeRepo.GetStockTransactionDate(start.Date, end.Date==DateTime.Now.Date?end.Date.AddDays(-1):end.Date);
             var timeInterval = new StockMinuteInterval(start, end, tradingDates);
             while (timeInterval.MoveNext())
             {
                 var currentTime = timeInterval.Current;
                 StockTransaction stock = FetchStockMinuteTransFromRedis(code, currentTime);
-                if(stock == null)
+                if (stock == null)
                 {
-                    BulkLoadStockMinuteToSqlFromWind(code, currentTime);
+                    BulkLoadStockMinuteToSqlFromSource(code, currentTime);
                     BulkLoadStockMinuteToRedisFromSql(code, currentTime);
                     stock = FetchStockMinuteTransFromRedis(code, currentTime);
                 }
@@ -50,16 +50,19 @@ namespace QuantitativeAnalysis.DataAccess
         private void BulkLoadStockMinuteToRedisFromSql(string code, DateTime currentTime)
         {
             DateTime latestTime = GetLatestTimeFromRedis(code, currentTime);
-            var start = latestTime == default(DateTime) ? new DateTime(currentTime.Year, 1, 1) : latestTime;
+            var start = latestTime == default(DateTime) ? new DateTime(currentTime.Year, 1, 1) : latestTime.AddMinutes(1);
             var end = GetEndTime(currentTime);
-            Dictionary<DateTime, DateTime> dateSpan = SplitDateTimeMonthly(start, end);
-            foreach(var item in dateSpan)
+            if (start < end)
             {
-                var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction{0}].[dbo].[Transaction{1}] 
+                Dictionary<DateTime, DateTime> dateSpan = SplitDateTimeMonthly(start, end);
+                foreach (var item in dateSpan)
+                {
+                    var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction{0}].[dbo].[Transaction{1}] 
 where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
-    item.Key.Year, item.Key.ToString("yyyy-MM"), code, item.Key, item.Value);
-                var dt = sqlReader.GetDataTable(sqlStr);
-                WriteToRedis(dt);
+        item.Key.Year, item.Key.ToString("yyyy-MM"), code, item.Key, item.Value);
+                    var dt = sqlReader.GetDataTable(sqlStr);
+                    WriteToRedis(dt);
+                }
             }
         }
 
@@ -67,7 +70,7 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
         {
             var dic = new Dictionary<DateTime, DateTime>();
             var begin = start;
-            for(int i = start.Month; i <= end.Month; i++)
+            for (int i = start.Month; i <= end.Month; i++)
             {
                 var currentLast = new DateTime(start.Year, i + 1, 1).AddHours(-1);
                 currentLast = currentLast > end ? end : currentLast;
@@ -79,13 +82,13 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
 
         private void WriteToRedis(DataTable dt)
         {
-            foreach(DataRow row in dt.Rows)
+            foreach (DataRow row in dt.Rows)
             {
                 var array = row.ItemArray;
                 var date = array[1].ToString().ToDateTime();
-                var key = string.Format("{0}-{1}",array[0],date.Year);
+                var key = string.Format("{0}-{1}", array[0], date.Year);
                 string val = string.Join(",", array.Skip(2));
-                redisWriter.HSet(key, date.ToString("yyyy-MM-dd HH:mm:ss"),string.Join(",",array.Skip(2)));
+                redisWriter.HSet(key, date.ToString("yyyy-MM-dd HH:mm:ss"), string.Join(",", array.Skip(2)));
             }
         }
 
@@ -98,15 +101,15 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
             return res.Max();
         }
 
-        private void BulkLoadStockMinuteToSqlFromWind(string code, DateTime currentTime)
+        private void BulkLoadStockMinuteToSqlFromSource(string code, DateTime currentTime)
         {
             IdentifyOrCreateDBAndTable(currentTime);
             var latestTime = GetLatestTimeFromSql(code, currentTime);
-            latestTime = latestTime == default(DateTime) ? new DateTime(currentTime.Year,1,1):latestTime.AddMinutes(1);
+            latestTime = latestTime == default(DateTime) ? new DateTime(currentTime.Year, 1, 1) : latestTime.AddMinutes(1);
             var endTime = GetEndTime(currentTime);
-            if(latestTime<endTime)
+            if (latestTime < endTime)
             {
-                var dataTable = windReader.GetMinuteDataTable(code, "open,high,low,close,volume,amt", latestTime, endTime, "Fill=Previous");
+                var dataTable = dataSource.Get(code, latestTime, endTime);
                 WriteToSql(dataTable);
             }
         }
@@ -114,7 +117,7 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
         private void WriteToSql(DataTable dataTable)
         {
             Dictionary<DateTime, DataTable> monthData = SplitDataTableMonthly(dataTable);
-            foreach(var item in monthData)
+            foreach (var item in monthData)
             {
                 IdentifyOrCreateDBAndTable(item.Key);
                 sqlWriter.InsertBulk(item.Value, string.Format("[StockMinuteTransaction{0}].dbo.[Transaction{1}]", item.Key.Year, item.Key.ToString("yyyy-MM")));
@@ -124,7 +127,7 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
         private Dictionary<DateTime, DataTable> SplitDataTableMonthly(DataTable dataTable)
         {
             var monthData = new Dictionary<DateTime, DataTable>();
-            foreach(DataRow r in dataTable.Rows)
+            foreach (DataRow r in dataTable.Rows)
             {
                 var date = r["DateTime"].ToString().ConvertTo<DateTime>();
                 var key = new DateTime(date.Year, date.Month, 1);
@@ -142,23 +145,23 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
 
         private DateTime GetEndTime(DateTime currentTime)
         {
-            if(currentTime.Year<DateTime.Now.Year)
+            if (currentTime.Year < DateTime.Now.Year)
                 return new DateTime(currentTime.Year, 12, 31, 15, 1, 0);
             return new DateTime(currentTime.Year, DateTime.Now.Month, DateTime.Now.Day - 1, 15, 1, 0);
         }
 
         private DateTime GetLatestTimeFromSql(string code, DateTime currentTime)
         {
-            DateTime latest=default(DateTime);
+            DateTime latest = default(DateTime);
             var sqlStr = string.Format(@"select top 1 name from [StockMinuteTransaction{0}].dbo.sysobjects 
-  where xtype = 'U' order by crdate desc",currentTime.Year);
+  where xtype = 'U' order by crdate desc", currentTime.Year);
             var res = sqlReader.ExecuteScalar<string>(sqlStr);
             if (string.IsNullOrEmpty(res))
                 latest = default(DateTime);
             else
             {
                 var dateSqlStr = string.Format(@"select max(DateTime) from [StockMinuteTransaction{0}].[dbo].[{1}]",
-                    currentTime.Year,res);
+                    currentTime.Year, res);
                 latest = sqlReader.ExecuteScalar<DateTime>(dateSqlStr);
             }
             return latest;
@@ -167,7 +170,7 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
         private void IdentifyOrCreateDBAndTable(DateTime dateTime)
         {
             var sqlLocation = ConfigurationManager.AppSettings["SqlServerLocation"];
-            var sqlScript =string.Format( @"USE [master]
+            var sqlScript = string.Format(@"USE [master]
 if db_id('StockMinuteTransaction{0}') is null
 begin
 CREATE DATABASE [StockMinuteTransaction{0}]
@@ -203,7 +206,7 @@ CREATE TABLE [StockMinuteTransaction{0}].[dbo].[Transaction{2}](
 ) ON [PRIMARY]
 SET ANSI_PADDING OFF
 ALTER TABLE [StockMinuteTransaction{0}].[dbo].[Transaction{2}] ADD  CONSTRAINT [DF_Transaction{2}_UpdatedDateTime]  DEFAULT (getdate()) FOR [UpdatedDateTime]
-end ",dateTime.Year,sqlLocation,dateTime.ToString("yyyy-MM"));
+end ", dateTime.Year, sqlLocation, dateTime.ToString("yyyy-MM"));
             sqlWriter.ExecuteSqlScript(sqlScript);
         }
 
@@ -212,10 +215,10 @@ end ",dateTime.Year,sqlLocation,dateTime.ToString("yyyy-MM"));
             var key = string.Format("{0}-{1}", code, currentTime.Year);
             var field = currentTime.ToString("yyyy-MM-dd HH:mm:ss");
             var stockStr = redisReader.HGet(key, field);
-            return ConvertToStockTransaction(code,currentTime,stockStr);
+            return ConvertToStockTransaction(code, currentTime, stockStr);
         }
 
-        private StockTransaction ConvertToStockTransaction(string code,DateTime time,string stockStr)
+        private StockTransaction ConvertToStockTransaction(string code, DateTime time, string stockStr)
         {
             if (string.IsNullOrEmpty(stockStr))
                 return null;

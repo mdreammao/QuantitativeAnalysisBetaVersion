@@ -20,10 +20,18 @@ namespace QuantitativeAnalysis.DataAccess
         private const string RedisFieldFormat = "yyyy-MM-dd";
         private RedisReader redisReader = new RedisReader();
         private RedisWriter redisWriter = new RedisWriter();
-        private SqlServerReader sqlReader = new SqlServerReader(Infrastructure.ConnectionType.Default);
-        private WindReader windReader = new WindReader();
-        private SqlServerWriter sqlWriter = new SqlServerWriter(Infrastructure.ConnectionType.Default);
-        private TransactionDateTimeRepository dateRepo = new TransactionDateTimeRepository(Infrastructure.ConnectionType.Default);
+        private SqlServerReader sqlReader;
+        private SqlServerWriter sqlWriter;
+        private TransactionDateTimeRepository dateRepo;
+        private IDataSource dataSource;
+        public StockDailyRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type,IDataSource dataSource)
+        {
+            sqlReader = new SqlServerReader(type);
+            sqlWriter = new SqlServerWriter(type);
+            dateRepo = new TransactionDateTimeRepository(type);
+            this.dataSource = dataSource;
+        }
+
         public List<StockTransaction> GetStockTransaction(string code, DateTime begin,DateTime end)
         {
             var stocks = new List<StockTransaction>();
@@ -35,7 +43,7 @@ namespace QuantitativeAnalysis.DataAccess
                     StockTransaction trans = FetchStockFromRedis(code, date);
                     if (trans == null)//just run once 
                     {
-                        LoadStockTransactionToSqlFromWind(code, tradingDates);
+                        LoadStockTransactionToSqlFromSource(code, tradingDates);
                         LoadStockTransactionToRedisFromSql(code, tradingDates);
                         trans = FetchStockFromRedis(code, date);
                     }
@@ -109,14 +117,14 @@ namespace QuantitativeAnalysis.DataAccess
             return allExistedInRedis.Where(c=>c>=begin && c<=end).ToList();
         }
 
-        private void LoadStockTransactionToSqlFromWind(string code, List<DateTime> tradingDates)
+        private void LoadStockTransactionToSqlFromSource(string code, List<DateTime> tradingDates)
         {
             IdentifyOrCreateDBandDataTable();
             var existedDateInSql = GetExistedDateInSql(code, tradingDates.First(), tradingDates.Last());
             var nonExistedDateIntervalInSql = Computor.GetNoExistedInterval<DateTime>(tradingDates, existedDateInSql);
             foreach (var item in nonExistedDateIntervalInSql)
             {
-                var dt = windReader.GetDailyDataTable(code, "open,high,low,close,volume,amt,adjfactor,trade_status", item.Key, item.Value);
+                var dt = dataSource.Get(code, item.Key, item.Value);
                 sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
             }
         }

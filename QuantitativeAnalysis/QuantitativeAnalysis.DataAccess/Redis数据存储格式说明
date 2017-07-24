@@ -4,5 +4,11 @@
 1.采用Redis Hash来存储数据，格式如下：
     数据类型        key                 field                                   value
     日数据          code       DateTime(2012-11-02)               json存储其他数据
-    分钟数据       code-年份   DateTime(2012-11-02 20:10:00)               json存储其他数据
+    分钟数据       code-年份   DateTime(2012-11-02 20:10:00)               csv
+	Tick			code-day	DateTime(2012-11-02 20:10:15.500)			csv
+2.存储数据的原则：
+	只要key存在，key对应的value即为完整
+3.获取数据的方式：
+	按key来获取数据，Tick级别的股票交易数据每天最多28800条，一次性取出，再根据条件过滤
+
 

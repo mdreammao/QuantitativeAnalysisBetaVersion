@@ -15,12 +15,12 @@ namespace QuantitativeAnalysis
     {
         static void Main(string[] args)
         {
-            var start = "2017-01-01 9:00:00".ToDateTime();
-            var end = "2017-01-03 14:11:56".ToDateTime();
-            var redisWriter = new RedisWriter();
+            var start = "2017-01-01 9:00:00".ToDateTime(); var redisWriter = new RedisWriter();
             //redisWriter.Clear(0);
+            var end = "2017-07-21 14:11:56".ToDateTime();
             Console.WriteLine(DateTime.Now.TimeOfDay);
-            var minuteRepo = new StockMinuteRepository(DataAccess.Infrastructure.ConnectionType.Default);
+            IDataSource ds = new DefaultStockMinuteDataSource();
+            var minuteRepo = new StockMinuteRepository(DataAccess.Infrastructure.ConnectionType.Default,ds);
             var ress11 = minuteRepo.GetStockTransaction("000001.SZ", start, end);
             Console.WriteLine(ress11.Count);
             Console.WriteLine(DateTime.Now.TimeOfDay);

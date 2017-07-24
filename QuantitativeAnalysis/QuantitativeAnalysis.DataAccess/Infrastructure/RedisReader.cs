@@ -27,5 +27,17 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
             var db = RedisClientSingleton.Instance.GetDatabase(0);
             return db.HashKeys(key);
         }
+
+        public RedisValue SGet(string key,int dbId = 0)
+        {
+            var db = RedisClientSingleton.Instance.GetDatabase(dbId);
+            return db.StringGet(key);
+        }
+
+        public bool ContainsKey(string key,int dbId=0)
+        {
+            var db = RedisClientSingleton.Instance.GetDatabase(dbId);
+            return db.KeyExists(key);
+        }
     }
 }

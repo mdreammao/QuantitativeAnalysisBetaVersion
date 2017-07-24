@@ -42,5 +42,12 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
         {
             return WindClientSingleton.Instance.tdays(startDate, endDate, options);
         }
+        public WindData GetDataSet(string reportName, string options)
+        {
+            var wData = WindClientSingleton.Instance.wset(reportName, options);
+            if (wData.errorCode < 0)
+                throw new Exception(string.Format("不能从Wind获取数据，ErrorCode:{0},ErrorMsg:{1}", wData.errorCode, WindClientSingleton.Instance.getErrorMsg(wData.errorCode)));
+            return wData;
+        }
     }
 }
