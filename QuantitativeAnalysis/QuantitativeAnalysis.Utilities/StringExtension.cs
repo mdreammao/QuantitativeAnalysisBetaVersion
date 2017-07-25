@@ -14,6 +14,8 @@ namespace QuantitativeAnalysis.Utilities
         }
         public static T ConvertTo<T>(this string val)
         {
+            if (string.IsNullOrEmpty(val))
+                return default(T);
             return (T)Convert.ChangeType(val, typeof(T));
         }
     }

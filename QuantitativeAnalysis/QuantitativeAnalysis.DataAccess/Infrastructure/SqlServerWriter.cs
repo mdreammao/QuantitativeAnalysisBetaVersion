@@ -7,6 +7,8 @@ using System.Data.SqlClient;
 using System.Data;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Smo;
+using System.IO;
+
 namespace QuantitativeAnalysis.DataAccess.Infrastructure
 {
     public class SqlServerWriter

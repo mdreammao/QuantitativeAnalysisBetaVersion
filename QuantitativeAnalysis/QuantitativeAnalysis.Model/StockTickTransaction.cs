@@ -10,12 +10,8 @@ namespace QuantitativeAnalysis.Model
     public class StockTickTransaction
     {
         public string Code { get; set; }
-        public DateTime TransactionDateTime {
-            get {
-                return DateTime.ParseExact(TransactionDateStr + TransactionTimeStr, "yyyyMMddHHmmssfff", CultureInfo.CurrentCulture);
-            } }
-        public string TransactionDateStr { get; set; }
-        public string TransactionTimeStr { get; set; }
+        public DateTime TransactionDateTime { get; set; }
+        public double LastPrice { get; set; }
         public double Ask1 { get; set; }
         public double AskV1 { get; set; }
         public double Ask2 { get; set; }
