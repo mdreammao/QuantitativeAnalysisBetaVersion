@@ -70,6 +70,7 @@
     <Compile Include="DefaultStockDailyDataSource.cs" />
     <Compile Include="DefaultStockMinuteDataSource.cs" />
     <Compile Include="StockMinuteRepository.cs" />
+    <Compile Include="StockTickFiller.cs" />
     <Compile Include="StockTickRepository.cs" />
     <Compile Include="TransactionDateTimeRepository.cs" />
     <None Include="Redis数据存储格式说明" />

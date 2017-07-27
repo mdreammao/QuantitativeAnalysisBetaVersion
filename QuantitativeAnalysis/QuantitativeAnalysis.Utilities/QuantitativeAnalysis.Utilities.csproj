@@ -46,6 +46,7 @@
     <Compile Include="Computor.cs" />
     <Compile Include="DataRowConverter.cs" />
     <Compile Include="DataTableExtension.cs" />
+    <Compile Include="DateTimeExtension.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StringExtension.cs" />
   </ItemGroup>

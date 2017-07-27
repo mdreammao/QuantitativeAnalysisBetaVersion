@@ -48,6 +48,7 @@
     <Compile Include="StockMinuteInterval.cs" />
     <Compile Include="StockTickTransaction.cs" />
     <Compile Include="StockTransaction.cs" />
+    <Compile Include="Interval.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

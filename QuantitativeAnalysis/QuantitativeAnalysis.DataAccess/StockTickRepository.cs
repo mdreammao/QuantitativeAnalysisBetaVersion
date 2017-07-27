@@ -140,7 +140,7 @@ namespace QuantitativeAnalysis.DataAccess
             if (!ExistInSqlServer(code,date))
             {
                 CreateDBOrTableIfNecessary(date);
-                var dt = dataSource.Get(code, date, date.AddHours(23));
+                var dt = dataSource.Get(code, new DateTime(date.Year,date.Month,date.Day,9,30,0,0), new DateTime(date.Year,date.Month,date.Day,15,0,0,0));
                 sqlWriter.InsertBulk(dt, string.Format("[StockTickTransaction{0}].[dbo].[{1}]",date.Year,date.ToString("yyyy-MM-dd")));
             }
         }
