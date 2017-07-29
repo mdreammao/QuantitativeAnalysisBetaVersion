@@ -57,11 +57,15 @@ namespace QuantitativeAnalysis.DataAccess
                 Dictionary<DateTime, DateTime> dateSpan = SplitDateTimeMonthly(start, end);
                 foreach (var item in dateSpan)
                 {
-                    var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction{0}].[dbo].[Transaction{1}] 
+                    var exist = ExistInSqlServer(code, item.Value);
+                    if (exist!=false)
+                    {
+                        var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction{0}].[dbo].[Transaction{1}] 
 where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
         item.Key.Year, item.Key.ToString("yyyy-MM"), code, item.Key, item.Value);
-                    var dt = sqlReader.GetDataTable(sqlStr);
-                    WriteToRedis(dt);
+                        var dt = sqlReader.GetDataTable(sqlStr);
+                        WriteToRedis(dt);
+                    }
                 }
             }
         }
@@ -72,7 +76,7 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
             var begin = start;
             for (int i = start.Month; i <= end.Month; i++)
             {
-                var currentLast = new DateTime(start.Year, i + 1, 1).AddHours(-1);
+                var currentLast = (i < 12 ? new DateTime(start.Year, i + 1, 1).AddHours(-1) : new DateTime(start.Year + 1, 1, 1).AddHours(-1));
                 currentLast = currentLast > end ? end : currentLast;
                 dic.Add(begin, currentLast);
                 begin = currentLast.AddHours(9);
@@ -153,7 +157,7 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
         private DateTime GetLatestTimeFromSql(string code, DateTime currentTime)
         {
             DateTime latest = default(DateTime);
-            var sqlStr = string.Format(@"select top 1 name from [StockMinuteTransaction{0}].dbo.sysobjects 
+            var sqlStr = string.Format(@"select name from [StockMinuteTransaction{0}].dbo.sysobjects 
   where xtype = 'U' order by crdate desc", currentTime.Year);
             var res = sqlReader.ExecuteScalar<string>(sqlStr);
             if (string.IsNullOrEmpty(res))
@@ -235,6 +239,24 @@ end ", dateTime.Year, sqlLocation, dateTime.ToString("yyyy-MM"));
                 Amount = res[5].ConvertTo<double>(),
                 Level = StockTransactionLevel.Minute
             };
+        }
+
+        private bool ExistInSqlServer(string code, DateTime date)
+        {
+            var sqlScript = string.Format(@"use master
+if db_id('StockMinuteTransaction{0}') is not null
+begin
+	if object_id('[StockMinuteTransaction{0}].dbo.[Transaction{0}-{1}]') is not null
+	begin
+		select 1 from [StockMinuteTransaction{0}].dbo.[Transaction{0}-{1}] where rtrim(Code)='{2}'
+	end
+end
+else
+begin
+select 0
+end ", date.Year, date.ToString("MM"), code);
+            var res = sqlReader.ExecuteScriptScalar<int>(sqlScript);
+            return res > default(int);
         }
         #endregion
 
