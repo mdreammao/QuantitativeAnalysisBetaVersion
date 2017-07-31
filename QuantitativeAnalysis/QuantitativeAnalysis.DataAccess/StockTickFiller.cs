@@ -64,6 +64,7 @@ namespace QuantitativeAnalysis.DataAccess
                     {
                         dest.Add(new StockTickTransaction() { Code = dest.Last().Code, TransactionDateTime = new DateTime(previous.Year, previous.Month, previous.Day, nextTime.Hours, nextTime.Minutes, nextTime.Seconds, nextTime.Milliseconds) });
                         nextTime = GetNextTime(nextTime);
+
                     }
                 }
                 if (previous.Date < current.Date)

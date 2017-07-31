@@ -21,6 +21,7 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
     {
         Default,
         Local,
-        Server170
+        Server170,
+        Server217
     }
 }
