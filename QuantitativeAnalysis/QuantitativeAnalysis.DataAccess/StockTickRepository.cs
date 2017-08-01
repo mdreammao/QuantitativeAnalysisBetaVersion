@@ -101,7 +101,7 @@ namespace QuantitativeAnalysis.DataAccess
             {
                 var sqlStr = string.Format(@"SELECT convert(varchar(30),[tdatetime],121) as tdatetime ,[cp] ,[S1] ,[S2]  ,[S3] ,[S4] ,[S5]
       ,[B1] ,[B2] ,[B3],[B4]  ,[B5] ,[SV1] ,[SV2] ,[SV3]  ,[SV4]  ,[SV5] ,[BV1] ,[BV2] ,[BV3],[BV4],[BV5],[ts]  ,[tt]
-    FROM [StockTickTransaction{0}].[dbo].[{1}] where rtrim(stkcd)='{2}'", date.Year, date.ToString("yyyy-MM-dd"),code.Substring(0,code.IndexOf('.')));
+    FROM [StockTickTransaction{0}].[dbo].[{1}] where rtrim(stkcd)='{2}'", date.Year, date.ToString("yyyy-MM-dd"),code);
                 var dt = sqlReader.GetDataTable(sqlStr);
                 var key = string.Format(RedisKeyFormat, code.ToUpper(), date.ToString("yyyy-MM-dd"));
                 BulkWriteToRedis(key, dt);
@@ -221,7 +221,7 @@ end
 else
 begin
 select 0
-end ",date.Year,date.ToString("yyyy-MM-dd"),code.Split('.')[0]);
+end ",date.Year,date.ToString("yyyy-MM-dd"),code.ToUpper());
             var res = sqlReader.ExecuteScriptScalar<int>(sqlScript);
             return res > default(int);
         }
