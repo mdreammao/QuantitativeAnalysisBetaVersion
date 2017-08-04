@@ -13,13 +13,31 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
         public DataTable GetDailyDataTable(string code, string fields, DateTime startTime, DateTime endTime, string options = "")
         {
             if (startTime > endTime) throw new Exception("开始时间不能大于结束时间。");
-            return GetDailyData(code,fields,startTime,endTime,options).ToDataTable();
+            var rawData = GetDailyData(code, fields, startTime, endTime, options);
+            var dt = rawData.ToDataTable();
+            AppendTitle(dt, rawData);
+            return dt;
+        }
+
+        private void AppendTitle(DataTable dt, WindData rawData)
+        {
+            dt.Columns.Add("Code", typeof(string)).SetOrdinal(0);
+            dt.Columns.Add("DateTime", typeof(DateTime)).SetOrdinal(1);
+            for (int i = 0; i < dt.Rows.Count; i++)
+            {
+                var row = dt.Rows[i];
+                row[0] = rawData.codeList[0];
+                row[1] = rawData.timeList[i];
+            }
         }
 
         public DataTable GetMinuteDataTable(string code, string fields, DateTime startTime, DateTime endTime, string options = "")
         {
             if (startTime > endTime) throw new Exception("开始时间不能大于结束时间。");
-            return GetMinuteData(code, fields, startTime, endTime, options).ToDataTable();
+            var rawData = GetMinuteData(code, fields, startTime, endTime, options);
+            var dt =rawData.ToDataTable();
+            AppendTitle(dt, rawData);
+            return dt;
         }
 
         public WindData GetDailyData(string code,string fields,DateTime startTime, DateTime endTime,string options = "")
@@ -48,6 +66,11 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
             if (wData.errorCode < 0)
                 throw new Exception(string.Format("不能从Wind获取数据，ErrorCode:{0},ErrorMsg:{1}", wData.errorCode, WindClientSingleton.Instance.getErrorMsg(wData.errorCode)));
             return wData;
+        }
+
+        public DataTable GetDataSetTable(string reportName,string options)
+        {
+            return GetDataSet(reportName, options).ToDataTable();
         }
     }
 }

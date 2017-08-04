@@ -8,7 +8,7 @@ using QuantitativeAnalysis.DataAccess.Infrastructure;
 using System.Configuration;
 using System.Data;
 using QuantitativeAnalysis.Utilities;
-namespace QuantitativeAnalysis.DataAccess
+namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public class StockMinuteRepository : IStockRepository
     {
@@ -150,7 +150,7 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
         private DateTime GetEndTime(DateTime currentTime)
         {
             if (currentTime.Year < DateTime.Now.Year)
-                return new DateTime(currentTime.Year, 12, 31, 15, 1, 0);
+                return dateTimeRepo.GetLastTransactionDate(currentTime, DateLevel.Year).AddHours(15).AddMinutes(1);
             return new DateTime(currentTime.Year, DateTime.Now.Month, DateTime.Now.Day - 1, 15, 1, 0);
         }
 

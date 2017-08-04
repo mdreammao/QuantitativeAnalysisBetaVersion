@@ -8,7 +8,7 @@ using System.Configuration;
 using QuantitativeAnalysis.Utilities;
 using System.IO;
 
-namespace QuantitativeAnalysis.DataAccess
+namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public class TransactionDateTimeRepository
     {
@@ -35,7 +35,47 @@ namespace QuantitativeAnalysis.DataAccess
             }
             return FetchTransactionDateFromSql(start, end);
         }
+        public DateTime GetLastTransactionDate(DateTime current,DateLevel level)
+        {
+            switch (level)
+            {
+                case DateLevel.Month:
+                    var lastDayOfMonth = new DateTime(current.Year, current.Month + 1, 1).AddDays(-1);
+                    return GetStockTransactionDate(lastDayOfMonth.AddDays(-10), lastDayOfMonth).Max();
+                case DateLevel.Year:
+                    var lastDayOfYear = new DateTime(current.Year + 1, 1, 1).AddDays(-1);
+                    return GetStockTransactionDate(lastDayOfYear.AddDays(-10), lastDayOfYear).Max();
+                default:
+                    throw new Exception("参数错误！");
+            }
+        }
 
+        public DateTime GetFirstTransactionDate(DateTime current,DateLevel level)
+        {
+            switch (level)
+            {
+                case DateLevel.Month:
+                    var startOfMonth = new DateTime(current.Year, current.Month, 1);
+                    return GetStockTransactionDate(startOfMonth, startOfMonth.AddDays(10)).Min();
+                case DateLevel.Year:
+                    var startOfYear = new DateTime(current.Year, 1, 1);
+                    return GetStockTransactionDate(startOfYear, startOfYear.AddDays(10)).Min();
+                default:
+                    throw new Exception("参数错误！");
+            }
+        }
+
+        public DateTime GetNextTransactionDate(DateTime current)
+        {
+            var start = current.AddDays(1);
+            return GetStockTransactionDate(start, start.AddDays(10)).Min();
+        }
+
+        public DateTime GetPreviousTransactionDate(DateTime current)
+        {
+            var end = current.AddDays(-1);
+            return GetStockTransactionDate(end.AddDays(-10), end).Max();
+        }
         #region internal method
         private List<DateTime> FetchTransactionDateFromSql(DateTime start, DateTime end)
         {
@@ -77,5 +117,11 @@ end",sqlLocation);
         }
         #endregion
 
+    }
+
+    public enum DateLevel
+    {
+        Month,
+        Year
     }
 }

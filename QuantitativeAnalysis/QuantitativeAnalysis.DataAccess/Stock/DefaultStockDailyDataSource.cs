@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace QuantitativeAnalysis.DataAccess
+namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public class DefaultStockDailyDataSource : IDataSource
     {

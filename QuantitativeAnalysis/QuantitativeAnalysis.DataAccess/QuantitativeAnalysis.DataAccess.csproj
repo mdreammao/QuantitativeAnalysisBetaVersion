@@ -54,9 +54,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DefaultStockOptionDailyDataSource.cs" />
-    <Compile Include="DefaultStockOptionTickDataSource.cs" />
-    <Compile Include="DefaultStockTickDataSource.cs" />
+    <Compile Include="Option\DefaultStockOptionDailyDataSource.cs" />
+    <Compile Include="Option\DefaultStockOptionTickDataSource.cs" />
+    <Compile Include="Option\OptionInfoRepository.cs" />
+    <Compile Include="Stock\DefaultStockTickDataSource.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="IDataSource.cs" />
     <Compile Include="Infrastructure\RedisClientSingleton.cs" />
@@ -67,20 +68,20 @@
     <Compile Include="Infrastructure\SqlServerWriter.cs" />
     <Compile Include="Infrastructure\WindReader.cs" />
     <Compile Include="Infrastructure\WindClientSingleton.cs" />
-    <Compile Include="IStockOptionRepository.cs" />
-    <Compile Include="IStockRepository.cs" />
+    <Compile Include="Option\IStockOptionRepository.cs" />
+    <Compile Include="Stock\IStockRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="DefaultStockDailyDataSource.cs" />
-    <Compile Include="DefaultStockMinuteDataSource.cs" />
-    <Compile Include="StockMinuteRepository.cs" />
-    <Compile Include="StockOptionDailyRepository.cs" />
-    <Compile Include="StockOptionInformationRepository.cs" />
-    <Compile Include="StockTickFiller.cs" />
-    <Compile Include="StockOptionTickRepository.cs" />
-    <Compile Include="StockTickRepository.cs" />
-    <Compile Include="TransactionDateTimeRepository.cs" />
+    <Compile Include="Stock\DefaultStockDailyDataSource.cs" />
+    <Compile Include="Stock\DefaultStockMinuteDataSource.cs" />
+    <Compile Include="Stock\StockInfoRepository.cs" />
+    <Compile Include="Stock\StockMinuteRepository.cs" />
+    <Compile Include="Option\StockOptionDailyRepository.cs" />
+    <Compile Include="Stock\StockTickFiller.cs" />
+    <Compile Include="Option\StockOptionTickRepository.cs" />
+    <Compile Include="Stock\StockTickRepository.cs" />
+    <Compile Include="Stock\TransactionDateTimeRepository.cs" />
     <None Include="Redis数据存储格式说明" />
-    <Compile Include="StockDailyRepository.cs" />
+    <Compile Include="Stock\StockDailyRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using QuantitativeAnalysis.Model;
 using QuantitativeAnalysis.Utilities;
-namespace QuantitativeAnalysis.DataAccess
+namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public class StockTickFiller
     {
