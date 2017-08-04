@@ -12,10 +12,10 @@ using System.Data;
 using Newtonsoft.Json;
 using System.Configuration;
 using System.IO;
-
-namespace QuantitativeAnalysis.DataAccess
+using QuantitativeAnalysis.DataAccess.Stock;
+namespace QuantitativeAnalysis.DataAccess.Option
 {
-    public class StockDailyRepository : IStockRepository
+    public class StockOptionDailyRepository : IStockOptionRepository
     {
         private const string RedisFieldFormat = "yyyy-MM-dd";
         private RedisReader redisReader = new RedisReader();
@@ -24,7 +24,7 @@ namespace QuantitativeAnalysis.DataAccess
         private SqlServerWriter sqlWriter;
         private TransactionDateTimeRepository dateRepo;
         private IDataSource dataSource;
-        public StockDailyRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type,IDataSource dataSource)
+        public StockOptionDailyRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type, IDataSource dataSource)
         {
             sqlReader = new SqlServerReader(type);
             sqlWriter = new SqlServerWriter(type);
@@ -32,15 +32,15 @@ namespace QuantitativeAnalysis.DataAccess
             this.dataSource = dataSource;
         }
 
-        public List<StockTransaction> GetStockTransaction(string code, DateTime begin,DateTime end)
+        public List<StockOptionTransaction> GetStockOptionTransaction(string code, DateTime begin, DateTime end)
         {
-            var stocks = new List<StockTransaction>();
+            var stocks = new List<StockOptionTransaction>();
             var tradingDates = dateRepo.GetStockTransactionDate(begin, end);
             if (tradingDates != null && tradingDates.Count > 0)
             {
                 foreach (var date in tradingDates)
                 {
-                    StockTransaction trans = FetchStockFromRedis(code, date);
+                    StockOptionTransaction trans = FetchStockFromRedis(code, date);
                     if (trans == null)//just run once 
                     {
                         LoadStockTransactionToSqlFromSource(code, tradingDates);
@@ -54,15 +54,15 @@ namespace QuantitativeAnalysis.DataAccess
         }
 
         #region internal method
-        private StockTransaction FetchStockFromRedis(string code, DateTime date)
+        private StockOptionTransaction FetchStockFromRedis(string code, DateTime date)
         {
-            var jsonStr = redisReader.HGet(code,date.ToString(RedisFieldFormat));
+            var jsonStr = redisReader.HGet(code, date.ToString(RedisFieldFormat));
             if (string.IsNullOrEmpty(jsonStr))
                 return null;
-            var st = JsonConvert.DeserializeObject<StockTransaction>(jsonStr);
+            var st = JsonConvert.DeserializeObject<StockOptionTransaction>(jsonStr);
             st.Code = code;
             st.DateTime = date;
-            st.Level = StockTransactionLevel.Daily;
+            st.Level = StockOptionTransactionLevel.Daily;
             return st;
         }
 
@@ -70,7 +70,7 @@ namespace QuantitativeAnalysis.DataAccess
         {
             var existedDateInRedis = GetExistedDateInRedis(code, tradingDates.First(), tradingDates.Last());
             var nonExistedDateIntervalInRedis = Computor.GetNoExistedInterval<DateTime>(tradingDates, existedDateInRedis);
-            if (nonExistedDateIntervalInRedis !=null && nonExistedDateIntervalInRedis.Count > 0)
+            if (nonExistedDateIntervalInRedis != null && nonExistedDateIntervalInRedis.Count > 0)
             {
                 string sqlStr = GenerateSqlString(code, nonExistedDateIntervalInRedis);
                 var dt = sqlReader.GetDataTable(sqlStr);
@@ -81,12 +81,12 @@ namespace QuantitativeAnalysis.DataAccess
         private void WriteToRedis(string code, DataTable dt)
         {
             HashEntry[] entries = new HashEntry[dt.Rows.Count];
-            for(int i=0;i<dt.Rows.Count;i++)
+            for (int i = 0; i < dt.Rows.Count; i++)
             {
                 var field = dt.Rows[i]["DateTime"].ToString().ToDateTime().ToString(RedisFieldFormat);
                 DataRowConverter converter = new DataRowConverter();
                 converter.AddExceptFields("DateTime");
-                var value =JsonConvert.SerializeObject(dt.Rows[i], converter);
+                var value = JsonConvert.SerializeObject(dt.Rows[i], converter);
                 entries[i] = new HashEntry(field, value);
             }
             redisWriter.HSetBulk(code, entries);
@@ -94,12 +94,12 @@ namespace QuantitativeAnalysis.DataAccess
 
         private string GenerateSqlString(string code, List<KeyValuePair<DateTime, DateTime>> nonExistedDateIntervalnInRedis)
         {
-            var sqlStr = "select DATETIME,[OPEN],HIGH,LOW,[CLOSE],VOLUME,AMT,ADJFACTOR,TRADE_STATUS from [DailyTransaction].[dbo].[Stock] where Code='{0}' and {1};";
+            var sqlStr = "select DATETIME,[OPEN],HIGH,LOW,[CLOSE],VOLUME,AMT,SETTLE,OI from [DailyTransaction].[dbo].[StockOption] where Code='{0}' and {1};";
             var dateConditions = new StringBuilder();
             foreach (var pair in nonExistedDateIntervalnInRedis)
             {
                 string dateCondition;
-                if(pair.Key==pair.Value)
+                if (pair.Key == pair.Value)
                     dateCondition = string.Format("datetime='{0}'", pair.Value);
                 else
                     dateCondition = string.Format("datetime>='{0}' and datetime<='{1}'", pair.Key, pair.Value);
@@ -108,13 +108,13 @@ namespace QuantitativeAnalysis.DataAccess
                 else
                     dateConditions.Append(dateCondition);
             }
-            return string.Format(sqlStr,code,dateConditions.ToString());
+            return string.Format(sqlStr, code, dateConditions.ToString());
         }
 
         private List<DateTime> GetExistedDateInRedis(string code, DateTime begin, DateTime end)
         {
             var allExistedInRedis = redisReader.HGetAllFields(code).ConvertTo<DateTime>();
-            return allExistedInRedis.Where(c=>c>=begin && c<=end).ToList();
+            return allExistedInRedis.Where(c => c >= begin && c <= end).ToList();
         }
 
         private void LoadStockTransactionToSqlFromSource(string code, List<DateTime> tradingDates)
@@ -125,7 +125,7 @@ namespace QuantitativeAnalysis.DataAccess
             foreach (var item in nonExistedDateIntervalInSql)
             {
                 var dt = dataSource.Get(code, item.Key, item.Value);
-                sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
+                sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[StockOption]");
             }
         }
 
@@ -134,7 +134,7 @@ namespace QuantitativeAnalysis.DataAccess
             var sqlLocation = ConfigurationManager.AppSettings["SqlServerLocation"];
             if (!Directory.Exists(sqlLocation))
                 Directory.CreateDirectory(sqlLocation);
-            var sqlScript =string.Format(@"USE [master]
+            var sqlScript = string.Format(@"USE [master]
 if db_id('DailyTransaction') is null
 begin
 CREATE DATABASE [DailyTransaction]
@@ -150,9 +150,9 @@ EXEC [DailyTransaction].[dbo].[sp_fulltext_database] @action = 'enable'
 end
 end
 go
-if object_id('DailyTransaction.dbo.Stock') is null
+if object_id('DailyTransaction.dbo.StockOption') is null
 begin
-CREATE TABLE [DailyTransaction].[dbo].[Stock](
+CREATE TABLE [DailyTransaction].[dbo].[StockOption](
 	[Code] [varchar](20) NOT NULL,
 	[DateTime] [date] NOT NULL,
 	[OPEN] [decimal](12, 4) NULL,
@@ -161,10 +161,10 @@ CREATE TABLE [DailyTransaction].[dbo].[Stock](
 	[CLOSE] [decimal](12, 4) NULL,
 	[VOLUME] [decimal](20, 0) NULL,
 	[AMT] [decimal](20, 3) NULL,
-	[ADJFACTOR] [decimal](20, 6) NULL,
-	[TRADE_STATUS] [nvarchar](50) NULL,
-	[UpdatedDateTime] [datetime] NULL CONSTRAINT [DF_Stock_UpdatedDateTime]  DEFAULT (getdate()),
- CONSTRAINT [PK_Stock_1] PRIMARY KEY CLUSTERED 
+	[SETTLE] [decimal](20, 4) NULL,
+	[OI] [decimal](20, 0) NULL,
+	[UpdatedDateTime] [datetime] NULL CONSTRAINT [DF_StockOption_UpdatedDateTime]  DEFAULT (getdate()),
+ CONSTRAINT [PK_StockOption_1] PRIMARY KEY CLUSTERED 
 (
 	[Code] ASC,
 	[DateTime] ASC
@@ -176,21 +176,22 @@ end", sqlLocation);
 
         private List<DateTime> GetExistedDateInSql(string code, DateTime start, DateTime end)
         {
-            var sqlStr = string.Format("select DateTime from [DailyTransaction].[dbo].[Stock] where Code='{0}' and DateTime>='{1}' and DateTime<='{2}'",code,start.ToShortDateString(),end.ToShortDateString());
+            var sqlStr = string.Format("select DateTime from [DailyTransaction].[dbo].[StockOption] where Code='{0}' and DateTime>='{1}' and DateTime<='{2}'", code, start.ToShortDateString(), end.ToShortDateString());
             return sqlReader.GetDataTable(sqlStr).ToList<DateTime>();
         }
 
-        private void GetStockDailyTransactionFromSqlServer(string code,DateTime begin,DateTime end)
+        private void GetStockDailyTransactionFromSqlServer(string code, DateTime begin, DateTime end)
         {
-            var sqlString = "select * from [DailyTransaction].[dbo].[Stock] where code='@code' and DateTime>=@begin and DateTime<=@end";
+            var sqlString = "select * from [DailyTransaction].[dbo].[StockOption] where code='@code' and DateTime>=@begin and DateTime<=@end";
             var pars = new SqlParameter[]
             {
                 new SqlParameter("@code",code),
                 new SqlParameter("@begin",begin.Date),
                 new SqlParameter("@end",end.Date)
             };
-            var res=sqlReader.GetDataTable(sqlString,pars);
+            var res = sqlReader.GetDataTable(sqlString, pars);
         }
         #endregion
     }
 }
+

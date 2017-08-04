@@ -12,9 +12,6 @@ namespace QuantitativeAnalysis.DataAccess
 {
     public static class Extensions
     {
-        private static readonly string CodeColumnName = "Code";
-        private static readonly string DateTimeColumnName = "DateTime";
-
         public static DataTable ToDataTableWithSingleColum(this WindData wData,string columnName)
         {
             var dt = new DataTable();
@@ -42,13 +39,13 @@ namespace QuantitativeAnalysis.DataAccess
             var colNames = wData.fieldList;
             var colLength = colNames.Length;
             dynamic arrayData = ConvertToArray(wData.data);
-            var dc = new DataColumn[colLength+2];
-            dc[0] = new DataColumn(CodeColumnName, typeof(string));
-            dc[1] = new DataColumn(DateTimeColumnName, typeof(DateTime));
+            //dc[0] = new DataColumn(CodeColumnName, typeof(string));
+            //dc[1] = new DataColumn(DateTimeColumnName, typeof(DateTime));
+            var dc = new DataColumn[colLength];
             for (int i = 0; i < colLength; ++i)
             {
                 var re = arrayData[i];
-                dc[i+2] = new DataColumn(colNames[i], re.GetType());
+                dc[i] = new DataColumn(colNames[i], re.GetType());
             }
             return dc;
         }
@@ -70,14 +67,13 @@ namespace QuantitativeAnalysis.DataAccess
         {
             var rows = new List<object[]>();
             dynamic source = ConvertToArray(wData.data);
-            for(int i = 0; i < wData.GetTimeLength(); i++)
+            var rowCount = wData.GetDataLength() / wData.GetFieldLength();
+            for (int i = 0; i < rowCount; i++)
             {
-                var row = new object[wData.GetFieldLength()+2];
-                row[0] = wData.codeList[0];//需优化
-                row[1] = wData.timeList[i];
+                var row = new object[wData.GetFieldLength()];
                 for(int j = 0; j < wData.GetFieldLength(); ++j)
                 {
-                    row[j+2] = source[j + i * wData.GetFieldLength()];
+                    row[j] = source[j + i * wData.GetFieldLength()];
                 }
                 rows.Add(row);
             }

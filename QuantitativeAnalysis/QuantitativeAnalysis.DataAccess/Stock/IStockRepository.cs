@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using QuantitativeAnalysis.Model;
-namespace QuantitativeAnalysis.DataAccess
+namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public interface IStockRepository
     {
