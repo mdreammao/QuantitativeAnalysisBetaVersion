@@ -21,6 +21,14 @@ namespace QuantitativeAnalysis.DataAccess
             return dt;
         }
 
+        public static List<T> ToList<T>(this WindData wData)
+        {
+            var result = new List<T>();
+            var data = (object[])wData.data;
+            foreach(var item in data)
+                result.Add((T)Convert.ChangeType(item, typeof(T)));
+            return result;
+        }
         public static DataTable ToDataTable(this WindData wData)
         {
             var dt = new DataTable();
