@@ -41,6 +41,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StockDailyTransactionSimulator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\QuantitativeAnalysis.DataAccess\QuantitativeAnalysis.DataAccess.csproj">
+      <Project>{a6f1afc9-dee9-4815-9e7c-fbc94eb12e90}</Project>
+      <Name>QuantitativeAnalysis.DataAccess</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\QuantitativeAnalysis.Model\QuantitativeAnalysis.Model.csproj">
+      <Project>{0011d010-5617-417a-bfcf-cfe03b19f0fe}</Project>
+      <Name>QuantitativeAnalysis.Model</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

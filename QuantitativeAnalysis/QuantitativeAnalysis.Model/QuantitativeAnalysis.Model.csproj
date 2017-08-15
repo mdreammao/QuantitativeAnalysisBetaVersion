@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="IDateTimeInterval.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Signal.cs" />
     <Compile Include="StockMinuteInterval.cs" />
     <Compile Include="StockOptionInformation.cs" />
     <Compile Include="StockOptionTickTransaction.cs" />
@@ -52,6 +53,7 @@
     <Compile Include="StockTickTransaction.cs" />
     <Compile Include="StockTransaction.cs" />
     <Compile Include="Interval.cs" />
+    <Compile Include="TransactionResult.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
