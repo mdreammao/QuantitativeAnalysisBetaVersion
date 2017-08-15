@@ -12,6 +12,7 @@ using System.Data;
 using Newtonsoft.Json;
 using System.Configuration;
 using System.IO;
+using NLog;
 
 namespace QuantitativeAnalysis.DataAccess.Stock
 {
@@ -24,6 +25,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         private SqlServerWriter sqlWriter;
         private TransactionDateTimeRepository dateRepo;
         private IDataSource dataSource;
+        private Logger logger = NLog.LogManager.GetCurrentClassLogger();
         public StockDailyRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type,IDataSource dataSource)
         {
             sqlReader = new SqlServerReader(type);
@@ -34,6 +36,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
 
         public List<StockTransaction> GetStockTransaction(string code, DateTime begin,DateTime end)
         {
+            logger.Info(string.Format("begin to fetch stock{0} daily data from {1} to {2}...",code,begin,end));
             var stocks = new List<StockTransaction>();
             var tradingDates = dateRepo.GetStockTransactionDate(begin, end);
             if (tradingDates != null && tradingDates.Count > 0)
@@ -47,9 +50,10 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                         LoadStockTransactionToRedisFromSql(code, tradingDates);
                         trans = FetchStockFromRedis(code, date);
                     }
-                    stocks.Add(trans);
+                   stocks.Add(trans);
                 }
             }
+            logger.Info(string.Format("completed fetching stock{0} daily data from {1} to {2}...", code, begin, end));
             return stocks;
         }
 

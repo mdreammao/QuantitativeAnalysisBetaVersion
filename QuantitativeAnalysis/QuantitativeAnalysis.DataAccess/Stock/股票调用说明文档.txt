@@ -1,0 +1,21 @@
+﻿程序开始：
+需要先调用Initializer.CreateDBAndTableIfNecessary方法进行初始化
+
+
+
+
+
+股票日数据 StockDailyRepository 对外只有一个函数GetStockTransaction(股票代码，起始日期，结束日期)，
+返回一个List对象。其构造函数有两个参数：ConnectionType和IDataSource，ConnectionType设定连接的类型，默认
+为本地连接；IDataSource设定了日数据的原始来源，目前我们为每个StockDailyRepository设置了一个DataSource，
+为DefaultStockDailyDataSource
+
+
+
+股票分钟数据 StockMinuteRepository 的用法和股票日数据一样
+
+股票Tick数据StockTickRepository的用法和前面的类似，返回的数据默认是标准化为一秒钟两条股票数据的分别为
+毫秒为000 和 毫秒为500
+
+
+

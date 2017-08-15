@@ -11,7 +11,12 @@ namespace QuantitativeAnalysis
 {
     public class Initializer
     {
-        public static void CreateDBAndTableIfNecessary(ConnectionType type)
+        public static void Initialize(ConnectionType type)
+        {
+            CreateDBAndTableIfNecessary(type);            
+        }
+
+        private static void CreateDBAndTableIfNecessary(ConnectionType type)
         {
             var sqlWriter = new SqlServerWriter(type);
             var sqlLocation = ConfigurationManager.AppSettings["SqlServerLocation"];

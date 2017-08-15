@@ -34,6 +34,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             InsertToSql(dt);
         }
 
+
         private void InsertToSql(DataTable dt)
         {
             ClearStockInfoInDB();

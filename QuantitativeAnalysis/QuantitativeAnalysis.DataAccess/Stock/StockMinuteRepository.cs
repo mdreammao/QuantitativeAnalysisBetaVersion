@@ -8,6 +8,7 @@ using QuantitativeAnalysis.DataAccess.Infrastructure;
 using System.Configuration;
 using System.Data;
 using QuantitativeAnalysis.Utilities;
+using NLog;
 namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public class StockMinuteRepository : IStockRepository
@@ -18,6 +19,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         private SqlServerReader sqlReader;
         private RedisWriter redisWriter;
         private IDataSource dataSource;
+        private Logger logger = NLog.LogManager.GetCurrentClassLogger();
         public StockMinuteRepository(ConnectionType type,IDataSource ds)
         {
             dateTimeRepo = new TransactionDateTimeRepository(type);
@@ -29,6 +31,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         }
         public List<StockTransaction> GetStockTransaction(string code, DateTime start, DateTime end)
         {
+            logger.Info(string.Format("begin to fetch stock{0} minute data from {1} to {2}...", code, start, end));
             var stocks = new List<StockTransaction>();
             var tradingDates = dateTimeRepo.GetStockTransactionDate(start.Date, end.Date==DateTime.Now.Date?end.Date.AddDays(-1):end.Date);
             var timeInterval = new StockMinuteInterval(start, end, tradingDates);
@@ -44,6 +47,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                 }
                 stocks.Add(stock);
             }
+            logger.Info(string.Format("completed fetching stock{0} minute data from {1} to {2}...", code, start, end));
             return stocks;
         }
         #region internal method

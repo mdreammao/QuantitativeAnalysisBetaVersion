@@ -10,17 +10,19 @@ using QuantitativeAnalysis.Model;
 using QuantitativeAnalysis.DataAccess;
 using QuantitativeAnalysis.DataAccess.Stock;
 using QuantitativeAnalysis.DataAccess.Option;
-
+using NLog;
 namespace QuantitativeAnalysis
 {
     class Program
     {
         static void Main(string[] args)
         {
-            Initializer.CreateDBAndTableIfNecessary(DataAccess.Infrastructure.ConnectionType.Default);
+            var logger = LogManager.GetCurrentClassLogger();
+            logger.Info("main method start...");
+            Initializer.Initialize(DataAccess.Infrastructure.ConnectionType.Default);
             var stockRepo = new StockInfoRepository(DataAccess.Infrastructure.ConnectionType.Default);
-            stockRepo.UpdateStockInfoToNow();
-            
+            //stockRepo.UpdateStockInfoToNow();
+            logger.Info("main method end...");
         }
     }
 }

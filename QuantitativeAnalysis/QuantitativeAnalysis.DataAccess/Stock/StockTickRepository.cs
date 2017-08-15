@@ -9,6 +9,8 @@ using System.Configuration;
 using System.Data;
 using StackExchange.Redis;
 using QuantitativeAnalysis.Utilities;
+using NLog;
+
 namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public class StockTickRepository
@@ -20,6 +22,8 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         private IDataSource dataSource;
         private RedisWriter redisWriter;
         private RedisReader redisReader;
+        private Logger logger = LogManager.GetCurrentClassLogger();
+
         public StockTickRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type,IDataSource ds)
         {
             transDateRepo = new TransactionDateTimeRepository(type);
@@ -31,6 +35,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         }
         public List<StockTickTransaction> GetStockTransaction(string code, DateTime start, DateTime end)
         {
+            logger.Info(string.Format("begin to fetch stock{0} tick data from {1} to {2}...", code, start, end));
             code = code.ToUpper();
             if (end.Date >= DateTime.Now.Date)
                 throw new ArgumentException("结束时间只能小于当天时间");
@@ -40,7 +45,9 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                 LoadDataToSqlServerFromSourceIfNecessary(code, date);
                 LoadDataToRedisFromSqlServerIfNecessary(code, date);
             }
-            return FetchDataFromRedis(code, transDates).Where(c=>c.TransactionDateTime>=start&&c.TransactionDateTime<=end).OrderBy(c=>c.TransactionDateTime).ToList();
+            logger.Info(string.Format("completed fetching stock{0} tick data from {1} to {2}...", code, start, end));
+            var ticks = FetchDataFromRedis(code, transDates).Where(c=>c.TransactionDateTime>=start&&c.TransactionDateTime<=end).OrderBy(c=>c.TransactionDateTime).ToList();
+            return StockTickFiller.Fill(ticks);    
         }
 
         private List<StockTickTransaction> FetchDataFromRedis(string code, List<DateTime> transDates)
