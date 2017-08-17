@@ -1,5 +1,5 @@
 ﻿程序开始：
-需要先调用Initializer.CreateDBAndTableIfNecessary方法进行初始化
+需要先调用Initializer.Initialize方法进行初始化
 
 
 

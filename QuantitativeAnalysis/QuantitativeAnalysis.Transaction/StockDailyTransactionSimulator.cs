@@ -12,29 +12,45 @@ namespace QuantitativeAnalysis.Transaction
     public class StockDailyTransactionSimulator
     {
         IStockRepository daily_repo;
-        public StockDailyTransactionSimulator(IStockRepository daily_repo)
+        private double slippage;
+        private double ratio_of_market_volume;
+        public StockDailyTransactionSimulator(IStockRepository daily_repo,double slippage, double ratio)
         {
             this.daily_repo = daily_repo;
+            this.slippage = slippage;
+            ratio_of_market_volume = ratio;
         }
-        public TransactionResult Trade(Signal s)
+        public TransactionResult TradeByAverage(Signal s)
         {
+            var result = new TransactionResult() { Signal = s };
             var daily_trans = daily_repo.GetStockTransaction(s.Code, s.StartTradingTime.Date, s.StartTradingTime.Date);
-            if(daily_trans != null && daily_trans.Count > 0)
+            if (daily_trans != null && daily_trans.Count > 0)
             {
                 var daily_item = daily_trans.First();
-                switch(s.Type)
+                var average = daily_item.Amount / daily_item.Volume / 100;
+                switch (s.Type)
                 {
                     case TradingType.Ask:
-
+                        if (average <= s.Price)
+                        {
+                            result.TradedVolume = daily_item.Volume * ratio_of_market_volume < s.Volume ? daily_item.Volume * ratio_of_market_volume : s.Volume;
+                            result.TradedAmount = result.TradedVolume * (1 + slippage) * average;
+                        }
                         break;
                     case TradingType.Bid:
-
+                        if (average >= s.Price)
+                        {
+                            result.TradedVolume = daily_item.Volume * ratio_of_market_volume < s.Volume ? daily_item.Volume * ratio_of_market_volume : s.Volume;
+                            result.TradedAmount = result.TradedVolume * (1 + slippage) * average;
+                        }
                         break;
                     default:
                         break;
                 }
             }
-            return null;
+            else
+                throw new Exception("没有获取到数据！");
+            return result;
         }
     }
 }

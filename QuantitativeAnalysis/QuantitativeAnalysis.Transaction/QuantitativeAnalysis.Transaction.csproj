@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StockDailyTransactionSimulator.cs" />
+    <Compile Include="StockMinuteTransactionSimulator.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\QuantitativeAnalysis.DataAccess\QuantitativeAnalysis.DataAccess.csproj">

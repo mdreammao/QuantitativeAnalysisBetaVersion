@@ -1,0 +1,11 @@
+﻿
+1.主程序应该首先运行Initializer的Initialize方法初始化，其他初始化的任务都可以加到这里面
+
+2.获取对象的实例用InstanceFacotry的Get方法，使用这个方法之前应该先调用InstanceFactory.Initialize
+进行初始化任务，其他的需要注册的类型应该加到这里
+
+Get方法的参数是T类型的构造函数的参数
+
+
+
+

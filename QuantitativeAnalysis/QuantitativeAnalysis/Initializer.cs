@@ -6,14 +6,15 @@ using System.Threading.Tasks;
 using QuantitativeAnalysis.DataAccess.Infrastructure;
 using System.IO;
 using System.Configuration;
-
+using Autofac;
 namespace QuantitativeAnalysis
 {
     public class Initializer
     {
         public static void Initialize(ConnectionType type)
         {
-            CreateDBAndTableIfNecessary(type);            
+            CreateDBAndTableIfNecessary(type);
+            InstanceFactory.Initialize();
         }
 
         private static void CreateDBAndTableIfNecessary(ConnectionType type)
