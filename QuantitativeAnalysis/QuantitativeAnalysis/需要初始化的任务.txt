@@ -1,5 +1,0 @@
-﻿1.StockDaily数据库（DailyTransaction）和表（Stock）的建立
-2.Common数据的建立，表TransactionDate,OptionInfo,StockInfo的建立
-
-
-

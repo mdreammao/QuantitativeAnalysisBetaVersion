@@ -32,6 +32,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Autofac, Version=4.6.1.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
+      <HintPath>..\packages\Autofac.4.6.1\lib\net45\Autofac.dll</HintPath>
+    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.12\lib\net45\NLog.dll</HintPath>
     </Reference>
@@ -54,6 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Initializer.cs" />
+    <Compile Include="InstanceFactory.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -73,13 +77,17 @@
       <Project>{0011d010-5617-417a-bfcf-cfe03b19f0fe}</Project>
       <Name>QuantitativeAnalysis.Model</Name>
     </ProjectReference>
+    <ProjectReference Include="..\QuantitativeAnalysis.Transaction\QuantitativeAnalysis.Transaction.csproj">
+      <Project>{da10d5c2-692e-4cbf-91eb-a4c5ac92d7a0}</Project>
+      <Name>QuantitativeAnalysis.Transaction</Name>
+    </ProjectReference>
     <ProjectReference Include="..\QuantitativeAnalysis.Utilities\QuantitativeAnalysis.Utilities.csproj">
       <Project>{47d62782-e308-4103-82f5-5f0751def741}</Project>
       <Name>QuantitativeAnalysis.Utilities</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="需要初始化的任务.txt" />
+    <Content Include="使用说明.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -11,8 +11,8 @@ namespace QuantitativeAnalysis.Model
         public string Code { get; set; }
         public DateTime StartTradingTime { get; set; }
         public DateTime EndTradingTime { get; set; }
-        public decimal Price { get; set; }
-        public decimal Volume { get; set; }
+        public double Price { get; set; }
+        public double Volume { get; set; }
         public TradingType Type { get; set; }
 
     }

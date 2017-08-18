@@ -9,7 +9,7 @@ namespace QuantitativeAnalysis.Model
     public class TransactionResult
     {
         public Signal Signal { get; set; }
-        public decimal TradedVolume { get; set; }
-        public decimal TradedAmount { get; set; }
+        public double TradedVolume { get; set; }
+        public double TradedAmount { get; set; }
     }
 }
