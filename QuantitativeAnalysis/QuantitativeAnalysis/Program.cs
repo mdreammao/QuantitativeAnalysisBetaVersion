@@ -20,8 +20,10 @@ namespace QuantitativeAnalysis
             var logger = LogManager.GetCurrentClassLogger();
             logger.Info("main method start...");
             Initializer.Initialize(DataAccess.Infrastructure.ConnectionType.Default);
-            var stockRepo = new StockInfoRepository(DataAccess.Infrastructure.ConnectionType.Default);
+            //var stockRepo = new StockInfoRepository(DataAccess.Infrastructure.ConnectionType.Default);
             //stockRepo.UpdateStockInfoToNow();
+            var optionRepo = new OptionInfoRepository(DataAccess.Infrastructure.ConnectionType.Default);
+            optionRepo.UpdateOptionInfo("510050.SH");
             logger.Info("main method end...");
         }
     }

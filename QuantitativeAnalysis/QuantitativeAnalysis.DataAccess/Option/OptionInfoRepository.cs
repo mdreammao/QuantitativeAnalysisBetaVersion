@@ -27,6 +27,11 @@ namespace QuantitativeAnalysis.DataAccess.Option
             WriteToSqlServer(underlyingCode,dt);
         }
 
+        public void UpdateOptionInfo()
+        {
+            throw new NotImplementedException();
+        }
+
         private void WriteToSqlServer(string underlyingCode,DataTable dt)
         {
             ClearExistedOptionInfo(underlyingCode);
