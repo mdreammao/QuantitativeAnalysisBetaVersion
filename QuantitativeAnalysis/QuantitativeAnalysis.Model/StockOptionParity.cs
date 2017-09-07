@@ -1,0 +1,16 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace QuantitativeAnalysis.Model
+{
+    public class StockOptionParity
+    {
+        public string call { get; set; }
+        public string put { get; set; }
+        public double strike { get; set; }
+        public DateTime expireDate { get; set; }
+    }
+}

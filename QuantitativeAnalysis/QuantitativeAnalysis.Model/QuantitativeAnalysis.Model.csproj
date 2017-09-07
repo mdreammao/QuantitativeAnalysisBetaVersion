@@ -48,6 +48,7 @@
     <Compile Include="Signal.cs" />
     <Compile Include="StockMinuteInterval.cs" />
     <Compile Include="StockOptionInformation.cs" />
+    <Compile Include="StockOptionParity.cs" />
     <Compile Include="StockOptionTickTransaction.cs" />
     <Compile Include="StockOptionTransaction.cs" />
     <Compile Include="StockTickTransaction.cs" />

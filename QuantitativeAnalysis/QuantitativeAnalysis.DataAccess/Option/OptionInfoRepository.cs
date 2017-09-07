@@ -5,8 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using QuantitativeAnalysis.DataAccess.Infrastructure;
+using QuantitativeAnalysis.Model;
 using System.Configuration;
 using System.IO;
+using QuantitativeAnalysis.DataAccess.Stock;
+using NLog;
 
 namespace QuantitativeAnalysis.DataAccess.Option
 {
@@ -14,10 +17,50 @@ namespace QuantitativeAnalysis.DataAccess.Option
     {
         private WindReader windReader = new WindReader();
         private SqlServerWriter sqlWriter;
+        private const string RedisFieldFormat = "yyyy-MM-dd";
+        private RedisReader redisReader = new RedisReader();
+        private RedisWriter redisWriter = new RedisWriter();
+        private SqlServerReader sqlReader;
+        private TransactionDateTimeRepository dateRepo;
+        private Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         public OptionInfoRepository(ConnectionType type)
         {
             sqlWriter = new SqlServerWriter(type);
+            sqlReader = new SqlServerReader(type);
+            dateRepo = new TransactionDateTimeRepository(type);
         }
+       
+        public List<StockOptionInformation> GetStockOptionInfo(string underlying,DateTime start,DateTime end)
+        {
+            logger.Info(string.Format("begin to fetch stock{0} Option Information from {1} to {2}...",underlying,start,end));
+            var optionList=new List<StockOptionInformation>();
+            var latestTradingDate = dateRepo.GetPreviousTransactionDate(DateTime.Now.AddDays(1));
+            var dt=ReadFromSqlServer(underlying,start,end);
+            var codeStr=underlying.Split('.');
+
+            if (Convert.ToDateTime(dt.Rows[0]["update_date_time"]).Date<latestTradingDate.Date)
+            {
+                UpdateOptionInfo(underlying);
+                dt=ReadFromSqlServer(underlying,start,end);
+            }
+            foreach (DataRow item in dt.Rows)
+            {
+                var info=new StockOptionInformation();
+                info.code=Convert.ToString(item["wind_code"])+"."+codeStr[1];
+                info.name=Convert.ToString(item["sec_name"]);
+                info.underlying=underlying;
+                info.exerciseMode=Convert.ToString(item["exercise_mode"]);
+                info.strike=Convert.ToDouble(item["exercise_price"]);
+                info.type=Convert.ToString(item["call_or_put"]);
+                info.unit=Convert.ToInt32(item["contract_unit"]);
+                info.listedDate=Convert.ToDateTime(item["listed_date"]);
+                info.expireDate=Convert.ToDateTime(item["expire_date"]);
+                optionList.Add(info);
+            }
+            return optionList;
+         }
+
         public void UpdateOptionInfo(string underlyingCode)
         {
             underlyingCode = underlyingCode.ToUpper();
@@ -27,15 +70,17 @@ namespace QuantitativeAnalysis.DataAccess.Option
             WriteToSqlServer(underlyingCode,dt);
         }
 
-        public void UpdateOptionInfo()
-        {
-            throw new NotImplementedException();
-        }
-
         private void WriteToSqlServer(string underlyingCode,DataTable dt)
         {
             ClearExistedOptionInfo(underlyingCode);
             sqlWriter.InsertBulk(dt, "[Common].dbo.[OptionInfo]");
+        }
+
+        private DataTable ReadFromSqlServer(string underlyingCode,DateTime start,DateTime end)
+        {
+            var sqlStr = string.Format("select * from [Common].dbo.[OptionInfo] where option_mark_code='{0}' and  listed_date<='{2}' and expire_date>'{1}';",underlyingCode,start,end);
+            return sqlReader.GetDataTable(sqlStr);
+
         }
 
         private void ClearExistedOptionInfo(string underlyingCode)

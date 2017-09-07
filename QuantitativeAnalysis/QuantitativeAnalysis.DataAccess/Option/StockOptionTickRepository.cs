@@ -225,7 +225,7 @@ end
 else
 begin
 select 0
-end ", date.Year, date.ToString("yyyy-MM-dd"), code.Split('.')[0]);
+end ", date.Year, date.ToString("yyyy-MM-dd"), code.ToUpper());
             var res = sqlReader.ExecuteScriptScalar<int>(sqlScript);
             return res > default(int);
         }

@@ -66,7 +66,7 @@ namespace QuantitativeAnalysis.Model
         public bool MoveNext()
         {
             _current = GetNext(_current);
-            return _current <= End;
+            return _current.Date <= End.Date;
         }
 
         #region unimportant method

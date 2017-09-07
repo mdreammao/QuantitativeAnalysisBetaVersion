@@ -19,13 +19,14 @@ namespace QuantitativeAnalysis
     {
         static TypedParameter conn_type = new TypedParameter(typeof(ConnectionType), ConnectionType.Default);
         static Logger logger = LogManager.GetCurrentClassLogger();
+
+
         static void Main(string[] args)
         {
             logger.Info("main method start...");
             Initializer.Initialize(ConnectionType.Default);
-            var stock = InstanceFactory.Get<StockTransaction>();
-
-
+            var monitor = new Arbitrary("2017-08-01 09:00:00".ToDateTime(), "2017-08-30 17:00:00".ToDateTime());
+            monitor.record();
             logger.Info("main method end...");
         }
 
@@ -64,7 +65,7 @@ namespace QuantitativeAnalysis
 
         static void StockTickDemo()
         {
-            var source = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockDailyDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Server217)));
+            var source = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockTickDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Server217)));
             var repo = InstanceFactory.Get<StockTickRepository>(conn_type,source);
 
             var res =repo.GetStockTransaction("000001.SZ", "2017-01-01 14:10:40".ToDateTime(), "2017-02-11 14:50:00".ToDateTime());
