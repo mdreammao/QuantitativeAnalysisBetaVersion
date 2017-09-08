@@ -4,16 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F57C39E5-1458-412D-929C-37F5F16B6D6F}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>QuantitativeAnalysis</RootNamespace>
-    <AssemblyName>QuantitativeAnalysis</AssemblyName>
+    <ProjectGuid>{3D303D01-A40D-4095-94A2-60C3752B03EA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>QuantitativeAnalysis.Monitor</RootNamespace>
+    <AssemblyName>QuantitativeAnalysis.Monitor</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -23,7 +23,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -38,37 +37,18 @@
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.12\lib\net45\NLog.dll</HintPath>
     </Reference>
-    <Reference Include="StackExchange.Redis, Version=1.2.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\StackExchange.Redis.1.2.4\lib\net45\StackExchange.Redis.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="WAPIWrapperCSharp">
-      <HintPath>..\WAPIWrapperCSharp.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Initializer.cs" />
-    <Compile Include="InstanceFactory.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="Arbitrary.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="NLog.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\QuantitativeAnalysis.DataAccess\QuantitativeAnalysis.DataAccess.csproj">
@@ -78,10 +58,6 @@
     <ProjectReference Include="..\QuantitativeAnalysis.Model\QuantitativeAnalysis.Model.csproj">
       <Project>{0011d010-5617-417a-bfcf-cfe03b19f0fe}</Project>
       <Name>QuantitativeAnalysis.Model</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\QuantitativeAnalysis.Monitor\QuantitativeAnalysis.Monitor.csproj">
-      <Project>{3d303d01-a40d-4095-94a2-60c3752b03ea}</Project>
-      <Name>QuantitativeAnalysis.Monitor</Name>
     </ProjectReference>
     <ProjectReference Include="..\QuantitativeAnalysis.Transaction\QuantitativeAnalysis.Transaction.csproj">
       <Project>{da10d5c2-692e-4cbf-91eb-a4c5ac92d7a0}</Project>
@@ -93,7 +69,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="使用说明.txt" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

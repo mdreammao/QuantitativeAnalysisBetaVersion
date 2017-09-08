@@ -12,12 +12,14 @@ using QuantitativeAnalysis.DataAccess.Option;
 using NLog;
 using Autofac;
 using QuantitativeAnalysis.Transaction;
+using QuantitativeAnalysis.Monitor;
 
 namespace QuantitativeAnalysis
 {
     class Program
     {
         static TypedParameter conn_type = new TypedParameter(typeof(ConnectionType), ConnectionType.Default);
+        static TypedParameter conn_type170 = new TypedParameter(typeof(ConnectionType), ConnectionType.Server170);
         static Logger logger = LogManager.GetCurrentClassLogger();
 
 
@@ -25,10 +27,20 @@ namespace QuantitativeAnalysis
         {
             logger.Info("main method start...");
             Initializer.Initialize(ConnectionType.Default);
-            var monitor = new Arbitrary("2017-08-01 09:00:00".ToDateTime(), "2017-08-30 17:00:00".ToDateTime());
-            monitor.record();
+            //var monitor = new Arbitrary("2017-08-01 09:00:00".ToDateTime(), "2017-08-30 17:00:00".ToDateTime());
+            //monitor.record();
+            var optionSource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockOptionTickDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Server170)));
+            var optionRepo = InstanceFactory.Get<StockOptionTickRepository>(conn_type, optionSource);
+            var stockSource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockTickDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Server170)));
+            var etfRepo = InstanceFactory.Get<StockTickRepository>(conn_type, stockSource);
+            var infoRepo = InstanceFactory.Get<OptionInfoRepository>(conn_type);
+            Arbitrary test = new Arbitrary(infoRepo, optionRepo, etfRepo);
+            test.record("2007-07-01".ToDateTime(), "2017-07-10".ToDateTime());
             logger.Info("main method end...");
         }
+
+
+        
 
         private static void StockMinuteTranSimulatorDemo()
         {

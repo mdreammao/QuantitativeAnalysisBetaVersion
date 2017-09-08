@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis.Transa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis.Utilities", "QuantitativeAnalysis.Utilities\QuantitativeAnalysis.Utilities.csproj", "{47D62782-E308-4103-82F5-5F0751DEF741}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis.Monitor", "QuantitativeAnalysis.Monitor\QuantitativeAnalysis.Monitor.csproj", "{3D303D01-A40D-4095-94A2-60C3752B03EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -123,6 +125,22 @@ Global
 		{47D62782-E308-4103-82F5-5F0751DEF741}.Release|x64.Build.0 = Release|Any CPU
 		{47D62782-E308-4103-82F5-5F0751DEF741}.Release|x86.ActiveCfg = Release|Any CPU
 		{47D62782-E308-4103-82F5-5F0751DEF741}.Release|x86.Build.0 = Release|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Debug|ARM.Build.0 = Debug|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Debug|x64.Build.0 = Debug|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Debug|x86.Build.0 = Debug|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|ARM.ActiveCfg = Release|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|ARM.Build.0 = Release|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|x64.ActiveCfg = Release|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|x64.Build.0 = Release|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|x86.ActiveCfg = Release|Any CPU
+		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
