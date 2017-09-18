@@ -47,7 +47,8 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             }
             logger.Info(string.Format("completed fetching stock{0} tick data from {1} to {2}...", code, start, end));
             var ticks = FetchDataFromRedis(code, transDates).Where(c=>c.TransactionDateTime>=start&&c.TransactionDateTime<=end).OrderBy(c=>c.TransactionDateTime).ToList();
-            return StockTickFiller.Fill(ticks);    
+            //return StockTickFiller.Fill(ticks);
+            return ticks;
         }
 
         private List<StockTickTransaction> FetchDataFromRedis(string code, List<DateTime> transDates)

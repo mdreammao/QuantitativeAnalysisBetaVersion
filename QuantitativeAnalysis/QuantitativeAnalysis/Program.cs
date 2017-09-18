@@ -35,7 +35,7 @@ namespace QuantitativeAnalysis
             var etfRepo = InstanceFactory.Get<StockTickRepository>(conn_type, stockSource);
             var infoRepo = InstanceFactory.Get<OptionInfoRepository>(conn_type);
             Arbitrary test = new Arbitrary(infoRepo, optionRepo, etfRepo);
-            test.record("2007-07-01".ToDateTime(), "2017-07-10".ToDateTime());
+            test.record("2016-01-01".ToDateTime(), "2017-08-31".ToDateTime());
             logger.Info("main method end...");
         }
 
