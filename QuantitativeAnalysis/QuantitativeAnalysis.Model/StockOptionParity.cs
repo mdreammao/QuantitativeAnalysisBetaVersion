@@ -17,10 +17,14 @@ namespace QuantitativeAnalysis.Model
     public class StockOptionParityProfit
     {
         public DateTime date { get; set; }
+        public DateTime maturitydate { get; set; }
         public int expiredate  { get; set; }
         public double profit { get; set; }
         public double strike { get; set; }
         public double etfPrice { get; set; }
         public double cost { get; set; }
+        public double callPrice { get; set; }
+        public double putPrice { get; set; }
+
     }
 }

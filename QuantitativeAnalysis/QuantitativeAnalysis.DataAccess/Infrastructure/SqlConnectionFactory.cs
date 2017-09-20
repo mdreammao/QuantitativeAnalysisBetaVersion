@@ -22,6 +22,7 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
         Default,
         Local,
         Server170,
-        Server217
+        Server217,
+        Server84
     }
 }
