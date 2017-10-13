@@ -27,4 +27,11 @@ namespace QuantitativeAnalysis.Model
         public double putPrice { get; set; }
 
     }
+
+    public class StockOptionProperty
+    {
+        public double strike { get; set; }
+        public DateTime expireDate { get; set; }
+        public string call_or_put { get; set; }
+    }
 }

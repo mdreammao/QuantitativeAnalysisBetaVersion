@@ -51,8 +51,9 @@
     <Compile Include="DataTableExtension.cs" />
     <Compile Include="DataTimeStampExtension.cs" />
     <Compile Include="DateTimeExtension.cs" />
+    <Compile Include="ImpliedVolatilityExtension.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="StockOptionExtension.cs" />
+    <Compile Include="StockOptionInfoExtension.cs" />
     <Compile Include="StringExtension.cs" />
   </ItemGroup>
   <ItemGroup>

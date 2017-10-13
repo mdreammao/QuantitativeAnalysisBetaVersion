@@ -41,28 +41,47 @@ namespace QuantitativeAnalysis.Monitor
             this.stockRepo = stockRepo;
             this.rate = rate;
             dateRepo = new TransactionDateTimeRepository(ConnectionType.Default);
-            sqlWriter = new SqlServerWriter(ConnectionType.Default);
-            sqlReader = new SqlServerReader(ConnectionType.Default);
+            sqlWriter = new SqlServerWriter(ConnectionType.Server84);
+            sqlReader = new SqlServerReader(ConnectionType.Server84);
+        }
+        public void recorddata(DateTime startDate,DateTime endDate)
+        {
+            var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
+            foreach (var date in tradedays)
+            {
+                stockRepo.GetStockTransaction("510050.SH", date, date.AddHours(17));
+
+                var list = infoRepo.GetStockOptionInfo(underlying, date, date);
+                foreach (var item in list)
+                {
+                    optionRepo.GetStockTransaction(item.code, date, date.AddHours(17));
+                }
+            }
         }
 
         public void record(DateTime startDate, DateTime endDate)
         {
 
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
-           
+            //CreateDBOrTableIfNecessary(startDate);
+            //CreateDBOrTableIfNecessary(startDate.AddYears(1));
+            //var start = startDate;
+            //while (start<endDate)
+            //{
+            //    if (!ExistInSqlServer(start))
+            //    {
+            //        CreateDBOrTableIfNecessary(start);
+            //    }
+            //    start = start.AddYears(1);
+            //}
+            //if (!ExistInSqlServer(endDate))
+            //{
+            //    CreateDBOrTableIfNecessary(endDate);
+            //}
+
             foreach (var date in tradedays)
             {
-                DataTable recordList = new DataTable();
-                recordList.Columns.Add("tdatetime");
-                recordList.Columns.Add("expiredate");
-                recordList.Columns.Add("maturitydate");
-                recordList.Columns.Add("annualizedReturn");
-                recordList.Columns.Add("annualizedCloseCost");
-                recordList.Columns.Add("etfPrice");
-                recordList.Columns.Add("strike");
-                recordList.Columns.Add("callPrice");
-                recordList.Columns.Add("putPrice");
-                myList = new List<StockOptionParityProfit>();
+               
                 var list = infoRepo.GetStockOptionInfo(underlying, date, date);
                 parityList = new List<StockOptionParity>();
                 foreach (var item in list)
@@ -75,34 +94,47 @@ namespace QuantitativeAnalysis.Monitor
                         parityList.Add(pair);
                     }
                 }
-                compute(date,recordList);
-                SaveResultToMssql(date, recordList);
+                compute(date);
             }
         }
 
         
 
-        private void compute(DateTime date,DataTable dt)
+        private void compute(DateTime date)
         {
             List<StockTickTransaction> etf = new List<StockTickTransaction>();
             etf =DataTimeStampExtension.ModifyStockTickData(stockRepo.GetStockTransaction("510050.SH", date, date.AddHours(17)));
             foreach (var item in parityList)
             {
+                DataTable dt = new DataTable();
+                dt.Columns.Add("tdatetime");
+                dt.Columns.Add("expiredate");
+                dt.Columns.Add("maturitydate");
+                dt.Columns.Add("annualizedReturn");
+                dt.Columns.Add("annualizedCloseCost");
+                dt.Columns.Add("etfPrice");
+                dt.Columns.Add("strike");
+                dt.Columns.Add("callPrice");
+                dt.Columns.Add("putPrice");
+                double strike=item.strike;
+                int expiredate=0;
                 List<StockOptionTickTransaction> call = new List<StockOptionTickTransaction>();
                 List<StockOptionTickTransaction> put = new List<StockOptionTickTransaction>();
                 call=DataTimeStampExtension.ModifyOptionTickData(optionRepo.GetStockTransaction(item.call, date, date.AddHours(17)));
                 put=DataTimeStampExtension.ModifyOptionTickData(optionRepo.GetStockTransaction(item.put, date, date.AddHours(17)));
                 //计算套利空间
+                myList = new List<StockOptionParityProfit>();
                 TimeSpan span = item.expireDate - date;
                 for (int i = 0; i < 28802; i++)
                 {
                     StockOptionParityProfit result=new StockOptionParityProfit();
-                    if (etf[i]!=null && call[i]!=null && put[i]!=null && etf[i].LastPrice!=0 && call[i].LastPrice!=0 && put[i].LastPrice!=0)
+                    if (etf[i]!=null && call[i]!=null && put[i]!=null && etf[i].LastPrice!=0 && call[i].LastPrice!=0 && put[i].LastPrice!=0 && call[i].Ask1!=0 && put[i].Bid1!=0 && call[i].Bid1!=0 && put[i].Ask1!=0)
                     {
                         result.date = etf[i].TransactionDateTime;
                         result.strike = item.strike;
                         result.etfPrice = etf[i].LastPrice;
                         result.expiredate = span.Days + 1;
+                        expiredate = result.expiredate;
                         result.maturitydate = item.expireDate;
                         double profit = result.strike - (etf[i].Ask1 - call[i].Bid1 + put[i].Ask1);
                         double margin = (etf[i].Ask1 - call[i].Bid1 + put[i].Ask1) + (call[i].LastPrice + Math.Max(0.12 * etf[i].LastPrice - Math.Max(result.strike - etf[i].LastPrice, 0), 0.07 * etf[i].LastPrice));
@@ -116,33 +148,28 @@ namespace QuantitativeAnalysis.Monitor
                         DataRow dr = dt.NewRow();
                         dr["tdatetime"] = result.date;
                         dr["maturitydate"] = result.maturitydate;
-                        dr["strike"] = Math.Round(result.strike,2);
+                        dr["strike"] = Math.Round(result.strike,4);
                         dr["annualizedReturn"] =Math.Round(result.profit,4);
                         dr["annualizedCloseCost"] =Math.Round(result.cost,4);
                         dr["expiredate"] = result.expiredate;
                         dr["etfPrice"] = result.etfPrice;
                         dr["callPrice"] = result.callPrice;
                         dr["putPrice"] = result.putPrice;
-                        dt.Rows.Add(dr);
+                        if (result.date<result.date.Date+new TimeSpan(14,57,00))
+                        {
+                            dt.Rows.Add(dr);
+                        }
                     }
                 }
+                SaveResultToMssql(date, dt,strike,expiredate);
             }
 
         }
 
-        private void SaveResultToMssql(DateTime date, DataTable dt)
+        private void SaveResultToMssql(DateTime date, DataTable dt,double strike,int expiredate)
         {
-            if (!ExistInSqlServer(date))
-            {
-                CreateDBOrTableIfNecessary(date);
-                //sqlWriter.InsertBulk(dt, string.Format("[PutCallParity{0}].[dbo].[{1}]", date.Year, date.ToString("yyyy")));
-            }
-            //else
-            //{
-            //    var sql = string.Format(@"delete from [PutCallParity{0}].[dbo].[{1}]", date.Year, date.ToString("yyyy-MM-dd"));
-            //    sqlWriter.WriteChanges(sql);
-            //    sqlWriter.InsertBulk(dt, string.Format("[PutCallParity{0}].[dbo].[{1}]", date.Year, date.ToString("yyyy-MM-dd")));
-            //}
+            var sql = string.Format(@"delete from [PutCallParity{0}].[dbo].[{1}] where tdatetime>'{2}' and tdatetime<'{3}' and strike='{4}' and expiredate='{5}'", date.Year, date.ToString("yyyy"),date.ToString("yyyy-MM-dd"),date.AddDays(1).ToString("yyyy-MM-dd"),strike,expiredate);
+            sqlWriter.WriteChanges(sql);
             sqlWriter.InsertBulk(dt, string.Format("[PutCallParity{0}].[dbo].[{1}]", date.Year, date.ToString("yyyy")));
         }
 
@@ -169,7 +196,7 @@ if object_id('[PutCallParity{0}].dbo.[{1}]') is null
 begin
 CREATE TABLE [PutCallParity{0}].[dbo].[{1}](
 	[tdatetime] [datetime] NOT NULL,
-    [strike] [decimal](4, 2) NULL,
+    [strike] [decimal](8, 4) NULL,
 	[expiredate] [decimal](10, 0) NULL,
     [maturitydate] [datetime] NOT NULL,
 	[annualizedReturn] [decimal](12, 4) NULL,

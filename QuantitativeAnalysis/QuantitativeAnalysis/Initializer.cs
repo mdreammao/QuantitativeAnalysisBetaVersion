@@ -103,7 +103,7 @@ CREATE TABLE [Common].[dbo].[OptionInfo](
 	[sec_name] [nvarchar](30) NULL,
 	[option_mark_code] [varchar](15) NOT NULL,
 	[exercise_mode] [nvarchar](10) NULL,
-	[exercise_price] [decimal](10, 3) NULL,
+	[exercise_price] [nvarchar](10) NULL,
 	[call_or_put] [nvarchar](10) NULL,
 	[contract_unit] [int] NULL,
 	[listed_date] [date] NULL,

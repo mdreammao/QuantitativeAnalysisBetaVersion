@@ -27,15 +27,25 @@ namespace QuantitativeAnalysis
         {
             logger.Info("main method start...");
             Initializer.Initialize(ConnectionType.Default);
+            //double option = 0.1639;
+            //double t = 0.063010;
+            //double r = 0.04;
+            //double spot = 2.1519 * Math.Exp(-r * t);
+            //double strike = 2.3;
+            //var sigma=ImpliedVolatilityExtension.sigmaOfCallByBisection(option, spot, strike, t, r);
+            //var sigma2 = ImpliedVolatilityExtension.sigmaOfPutByBisection(option, spot, strike, t, r);
             //var monitor = new Arbitrary("2017-08-01 09:00:00".ToDateTime(), "2017-08-30 17:00:00".ToDateTime());
             //monitor.record();
             var optionSource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockOptionTickDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Server170)));
             var optionRepo = InstanceFactory.Get<StockOptionTickRepository>(conn_type, optionSource);
-            var stockSource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockTickDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Server170)));
+            var stockSource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockTickDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Local)));
             var etfRepo = InstanceFactory.Get<StockTickRepository>(conn_type, stockSource);
             var infoRepo = InstanceFactory.Get<OptionInfoRepository>(conn_type);
-            Arbitrary test = new Arbitrary(infoRepo, optionRepo, etfRepo);
-            test.record("2017-06-29".ToDateTime(), "2017-06-29".ToDateTime());
+            // Arbitrary test = new Arbitrary(infoRepo, optionRepo, etfRepo);
+            //test.recorddata("2017-05-15".ToDateTime(), "2017-06-30".ToDateTime());
+            //test.record("2015-02-09".ToDateTime(), "2017-01-19".ToDateTime());
+            Impv test = new Impv(infoRepo, optionRepo, etfRepo);
+            test.computeImpv("2017-01-01".ToDateTime(), "2017-06-30".ToDateTime());
             logger.Info("main method end...");
         }
 

@@ -39,7 +39,7 @@ namespace QuantitativeAnalysis.DataAccess.Option
             var dt=ReadFromSqlServer(underlying,start,end);
             var codeStr=underlying.Split('.');
 
-            if (Convert.ToDateTime(dt.Rows[0]["update_date_time"]).Date<latestTradingDate.Date)
+            if (dt.Rows.Count==0 || Convert.ToDateTime(dt.Rows[0]["update_date_time"]).Date<latestTradingDate.Date)
             {
                 UpdateOptionInfo(underlying);
                 dt=ReadFromSqlServer(underlying,start,end);
