@@ -119,6 +119,10 @@ namespace QuantitativeAnalysis.Utilities
             double low = 0, up = 3;
             double epsilon = 10000;
             double sigma = -1;
+            if (optionPrice<=0)
+            {
+                return sigma;
+            }
             while (Math.Abs(up-low)>0.000001)
             {
                 double mid = (low + up) / 2;
@@ -160,6 +164,10 @@ namespace QuantitativeAnalysis.Utilities
             double low = 0, up = 3;
             double epsilon = 10000;
             double sigma = -1;
+            if (optionPrice <= 0)
+            {
+                return sigma;
+            }
             while (Math.Abs(up - low) > 0.000001)
             {
                 double mid = (low + up) / 2;
@@ -229,7 +237,7 @@ namespace QuantitativeAnalysis.Utilities
             {
                 return sigmaOfPutByBisection(optionLastPrice, futurePrice * Math.Exp(-r * duration), strike, duration, r);
             }
-            return 0;
+            return -1;
         }
 
         /// <summary>

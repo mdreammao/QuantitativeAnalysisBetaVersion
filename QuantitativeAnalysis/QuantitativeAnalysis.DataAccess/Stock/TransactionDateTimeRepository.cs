@@ -12,6 +12,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public class TransactionDateTimeRepository
     {
+        public List<DateTime> allTradeDays = new List<DateTime>();
         public TransactionDateTimeRepository(ConnectionType type)
         {
             sqlReader = new SqlServerReader(type);
@@ -33,6 +34,18 @@ namespace QuantitativeAnalysis.DataAccess.Stock
 
             }
             return FetchTransactionDateFromSql(start, end);
+        }
+
+        public int GetDuration(DateTime start, DateTime end)
+        {
+            if (allTradeDays.Count==0)
+            {
+                var sqlStr = string.Format("select DateTime from [Common].[dbo].[TransactionDate]");
+                var res = sqlReader.GetDataTable(sqlStr);
+                allTradeDays=res.ToList<DateTime>();
+            }
+            return allTradeDays.IndexOf(end)-allTradeDays.IndexOf(start)+1;
+
         }
         public DateTime GetLastTransactionDate(DateTime current,DateLevel level)
         {

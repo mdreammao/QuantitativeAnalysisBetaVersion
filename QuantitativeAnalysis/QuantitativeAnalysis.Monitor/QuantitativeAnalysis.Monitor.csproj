@@ -50,7 +50,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arbitrary.cs" />
+    <Compile Include="ETFArbitrary.cs" />
     <Compile Include="Impv.cs" />
+    <Compile Include="ivix.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

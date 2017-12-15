@@ -32,11 +32,13 @@ namespace QuantitativeAnalysis.Monitor
         private SqlServerWriter sqlWriter;
         private SqlServerReader sqlReader;
         private double volumeTarget = 10;
+        private double emaCoeff = 0.03;
+        private List<TimeSpan> timelist = DataTimeStampExtension.GetStockTickStamp();
 
         private double getOptionMidPrice(StockOptionTickTransaction tick, double volumeTarget = 10)
         {
             double mid = 0;
-            if (tick == null || tick.AskV1 == 0 || tick.BidV1==0)
+            if (tick == null || tick.AskV1 == 0 || tick.BidV1 == 0 || tick.Ask1 == 0 || tick.Bid1 == 0)
             {
                 return mid;
             }
@@ -62,18 +64,35 @@ namespace QuantitativeAnalysis.Monitor
             {
                 mid= (x) / (0.1 - x) * ((tick.Ask1 - tick.Bid1) / 2) + (tick.Ask1 + tick.Bid1) / 2;
             }
-            if (mid>tick.Ask1 || mid<tick.Bid1)
-            {
-
-            }
             return mid;
 
         }
 
+        private double getOptionSpread(StockOptionTickTransaction tick, double volumeTarget = 10)
+        {
+            double mid = tick.Ask1-tick.Bid1;
+            var askv1 = Math.Min(volumeTarget, tick.AskV1);
+            var askv2 = Math.Max(Math.Min(volumeTarget - askv1, tick.AskV2), 0);
+            var askv3 = Math.Max(Math.Min(volumeTarget - askv1 - askv2, tick.AskV3), 0);
+            var askv4 = Math.Max(Math.Min(volumeTarget - askv1 - askv2 - askv3, tick.AskV4), 0);
+            var askv5 = Math.Max(Math.Min(volumeTarget - askv1 - askv2 - askv3 - askv4, tick.AskV5), 0);
+            var bidv1 = Math.Min(volumeTarget, tick.BidV1);
+            var bidv2 = Math.Max(Math.Min(volumeTarget - bidv1, tick.BidV2), 0);
+            var bidv3 = Math.Max(Math.Min(volumeTarget - bidv1 - bidv2, tick.BidV3), 0);
+            var bidv4 = Math.Max(Math.Min(volumeTarget - bidv1 - bidv2 - bidv3, tick.BidV4), 0);
+            var bidv5 = Math.Max(Math.Min(volumeTarget - bidv1 - bidv2 - bidv3 - bidv4, tick.BidV5), 0);
+            var askvtotal = askv1 + askv2 + askv3 + askv4 + askv5;
+            var bidvtotal = bidv1 + bidv2 + bidv3 + bidv4 + bidv5;
+            var askMean = (askv1 * tick.Ask1 + askv2 * tick.Ask2 + askv3 * tick.Ask3 + askv4 * tick.Ask4 + askv5 * tick.Ask5) / askvtotal;
+            var bidMean = (bidv1 * tick.Bid1 + bidv2 * tick.Bid2 + bidv3 * tick.Bid3 + bidv4 * tick.Bid4 + bidv5 * tick.Bid5) / bidvtotal;
+            mid = askMean - bidMean;
+            return mid;
+
+        }
         private double getStockMidPrice(StockTickTransaction tick,double volumeTarget=1000)
         {
             double mid = 0;
-            if (tick == null || tick.AskV1 == 0 || tick.BidV1 == 0)
+            if (tick == null || tick.AskV1 == 0 || tick.BidV1 == 0 || tick.Ask1==0 || tick.Bid1==0)
             {
                 return mid;
             }
@@ -129,7 +148,6 @@ namespace QuantitativeAnalysis.Monitor
                 }
                 double[,] myFuture = new double[4,28802];
                 var tickdata = new Dictionary<string, List<StockOptionTickTransaction>>();
-                var etf0 = stockRepo.GetStockTransaction("510050.SH", date, date.AddHours(17));
                 var etf= DataTimeStampExtension.ModifyStockTickData(stockRepo.GetStockTransaction("510050.SH", date, date.AddHours(17)));
                 var list = infoRepo.GetStockOptionInfo(underlying, date, date).Where(x=>x.unit==10000);
                 Dictionary<StockOptionProperty, string> optionCode = new Dictionary<StockOptionProperty, string>();
@@ -179,7 +197,7 @@ namespace QuantitativeAnalysis.Monitor
                             continue;
                         }
                         var expireDate = expireDateList[k];
-                        var strikeListNow = strikeList.OrderBy(x => Math.Abs(x - etfMid * Math.Exp(rate * OptionUtilities.getDurationByYear(date, expireDate)))).ToList();
+                        var strikeListNow = strikeList.OrderBy(x => Math.Abs(x - etfMid * Math.Exp(rate * dateRepo.GetDuration(date, expireDate)/252.0))).ToList();
 
                         for (int j = 0; j <= 3; j++)
                         {
@@ -208,10 +226,11 @@ namespace QuantitativeAnalysis.Monitor
                                 var putMid = getOptionMidPrice(putTick[i], volumeTarget);
                                 if (callMid > 0 && putMid > 0)
                                 {
-                                    futures[j, i] = (callMid - putMid) * Math.Exp(rate * OptionUtilities.getDurationByYear(date, expireDate)) + strikeListNow[j];
-                                    weights[j, i] = 1 / ((Math.Pow(callTick[i].Ask1 - callTick[i].Bid1, 2) + Math.Pow(putTick[i].Ask1 - putTick[i].Bid1, 2)) / 2);
+                                    var callSpread = getOptionSpread(callTick[i], volumeTarget);
+                                    var putSpread = getOptionSpread(putTick[i], volumeTarget);
+                                    futures[j, i] = (callMid - putMid) * Math.Exp(rate * dateRepo.GetDuration(date, expireDate)/252.0) + strikeListNow[j];
+                                    weights[j, i] = 1 / ((Math.Pow(callSpread, 2) + Math.Pow(putSpread, 2)) / 2);
                                 }
-
                             }
                         }
                         myFuture[k, i] = 0;
@@ -221,18 +240,42 @@ namespace QuantitativeAnalysis.Monitor
                             myFuture[k, i] += futures[j, i] * weights[j, i];
                             weightsAll += weights[j, i];
                         }
-                        myFuture[k, i] /= weightsAll;
-                        if (myFuture[k, i] == 0)
+                        if (weightsAll!=0)
+                        {
+                            myFuture[k, i] /= weightsAll;
+                        }
+                    }
+                    int firstNonZero = 0;
+                    for (int i = 0; i < 28802; i++)
+                    {
+                        if (myFuture[k,i]!=0)
+                        {
+                            firstNonZero = i;
+                            break;
+                        }
+                    }
+                    for (int i = firstNonZero+1; i < 28802; i++)
+                    {
+                        if (myFuture[k,i]==0)
+                        {
+                            myFuture[k, i] = myFuture[k, i - 1];
+                        }
+                    }
+                    for (int i = firstNonZero+1; i < 28802; i++)
+                    {
+                       myFuture[k, i] = emaCoeff * myFuture[k, i] + (1 - emaCoeff) * myFuture[k, i - 1];
+                    }
+                    //计算隐含波动率
+
+                    foreach (var item in list)
+                    {
+                        if (item.expireDate!= expireDateList[k])
                         {
                             continue;
                         }
-                    }
-                        //计算隐含波动率
-                    foreach (var item in list)
-                    {
                         DataTable dt = new DataTable();
                         dt.Columns.Add("code");
-                        dt.Columns.Add("tdatetime");
+                        dt.Columns.Add("tdatetime",typeof(DateTime));
                         dt.Columns.Add("expiredate");
                         dt.Columns.Add("futurePrice");
                         dt.Columns.Add("futurePrice0");
@@ -245,52 +288,58 @@ namespace QuantitativeAnalysis.Monitor
                         dt.Columns.Add("bid");
                         dt.Columns.Add("ask_impv");
                         dt.Columns.Add("bid_impv");
-                        for (int i = 0; i < 28802; i++)
+                        StockOptionProperty option = new StockOptionProperty { strike = item.strike, call_or_put = item.type, expireDate = item.expireDate };
+                        foreach (var key in optionCode.Keys)
                         {
-                            var etfMid = getStockMidPrice(etf[i], volumeTarget * 100);
-                            if (etfMid == 0)
+                            if (key.call_or_put == option.call_or_put && key.strike == option.strike && key.expireDate == option.expireDate)
                             {
-                                continue;
+                                option = key;
                             }
-                            var expireDate = expireDateList[k];
-                            var strikeListNow = strikeList.OrderBy(x => Math.Abs(x - etfMid * Math.Exp(rate * OptionUtilities.getDurationByYear(date, expireDate)))).ToList();
-                            StockOptionProperty option = new StockOptionProperty { strike = item.strike, call_or_put = item.type, expireDate = item.expireDate };
-                            foreach (var key in optionCode.Keys)
+                        }
+                        if (optionCode.ContainsKey(option) == true)
+                        {
+                            for (int i = 0; i < 28802; i++)
                             {
-                                if (key.call_or_put == option.call_or_put && key.strike == option.strike && key.expireDate == option.expireDate)
+                                if (myFuture[k, i] == 0)
                                 {
-                                    option = key;
+                                    continue;
                                 }
-                            }
-                            if (optionCode.ContainsKey(option)==true)
-                            {
+                                var etfMid = getStockMidPrice(etf[i], volumeTarget * 100);
+                                if (etfMid == 0)
+                                {
+                                    continue;
+                                }
+                                var strikeListNow = strikeList.OrderBy(x => Math.Abs(x - etfMid * Math.Exp(rate * dateRepo.GetDuration(date, item.expireDate) / 252.0))).ToList();
                                 var optionTick = tickdata[optionCode[option]];
+                                if (optionTick[i] == null)
+                                {
+                                    continue;
+                                }
                                 double etfprice = etf[i].LastPrice;
                                 double ask = optionTick[i].Ask1;
                                 double bid = optionTick[i].Bid1;
-                                double duration = ((item.expireDate - date).Days+1.0) / 365.0;
+                                double duration = dateRepo.GetDuration(date, option.expireDate) / 252.0;
                                 double strike = item.strike;
                                 string callorput = item.type;
-                                double askvol = ImpliedVolatilityExtension.sigmaByFuture(myFuture[k,i], ask, strike, duration, rate, callorput);
-                                double bidvol = ImpliedVolatilityExtension.sigmaByFuture(myFuture[k,i], bid, strike, duration, rate, callorput);
+                                double askvol = Math.Round(ImpliedVolatilityExtension.sigmaByFuture(myFuture[k, i], ask, strike, duration, rate, callorput), 4);
+                                double bidvol = Math.Round(ImpliedVolatilityExtension.sigmaByFuture(myFuture[k, i], bid, strike, duration, rate, callorput), 4);
                                 double future0 = 0;
-                                for (int m = 0; m <=3; m++)
+                                for (int m = 0; m <= 3; m++)
                                 {
-                                    if (strikeListNow[m]==item.strike)
+                                    if (strikeListNow[m] == item.strike)
                                     {
-                                        future0 = futures[m,i];
+                                        future0 = futures[m, i];
                                         break;
                                     }
                                 }
-                               
                                 DataRow dr = dt.NewRow();
                                 dr["code"] = item.code;
-                                dr["tdatetime"] = etf[i].TransactionDateTime;
+                                dr["tdatetime"] =Convert.ToDateTime(date + timelist[i]);//etf[i].TransactionDateTime;
                                 dr["maturitydate"] = item.expireDate;
-                                dr["futurePrice"] = myFuture[k, i];
-                                dr["futurePrice0"] = future0;
+                                dr["futurePrice"] = Math.Round(myFuture[k, i], 4);
+                                dr["futurePrice0"] = Math.Round(future0, 4);
                                 dr["strike"] = Math.Round(strike, 4);
-                                dr["expiredate"] = (item.expireDate - date).Days+1;
+                                dr["expiredate"] = dateRepo.GetDuration(date, option.expireDate);
                                 dr["duration"] = Math.Round(duration, 5);
                                 dr["etfPrice"] = etfprice;
                                 dr["call_or_put"] = item.type;
@@ -304,7 +353,7 @@ namespace QuantitativeAnalysis.Monitor
                                 {
                                     dr["ask_impv"] = null;
                                 }
-                                if (bidvol>0 && bidvol<3)
+                                if (bidvol > 0 && bidvol < 3)
                                 {
                                     dr["bid_impv"] = bidvol;
                                 }
@@ -316,12 +365,11 @@ namespace QuantitativeAnalysis.Monitor
                                 {
                                     dt.Rows.Add(dr);
                                 }
-                               
                             }
                         }
-                        SaveResultToMssql(date, dt, item.strike, (item.expireDate - date).Days + 1, item.type,item.code);
+                            
+                        SaveResultToMssql(date, dt, item.strike,dateRepo.GetDuration(date,item.expireDate), item.type,item.code);
                     }
-                   
                 }
             }
         }

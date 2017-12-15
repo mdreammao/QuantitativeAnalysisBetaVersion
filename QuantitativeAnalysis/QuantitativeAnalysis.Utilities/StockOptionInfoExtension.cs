@@ -13,7 +13,7 @@ namespace QuantitativeAnalysis.Utilities
         static double standardContractMultiplier = 10000;
         
         
-        private static double getDuration(StockOptionInformation option,DateTime date)
+        public static double getDuration(StockOptionInformation option,DateTime date)
         {
             TimeSpan span = option.expireDate - date;
             return span.Days + 1;
@@ -43,6 +43,31 @@ namespace QuantitativeAnalysis.Utilities
             return new StockOptionInformation();
         }
 
+        /// <summary>
+        /// 根据ETF分红时间来调整历史日期中的行权价
+        /// </summary>
+        /// <param name="list">期权列表</param>
+        /// <param name="today">日期</param>
+        /// <returns></returns>
+        public static List<StockOptionInformation> modifyOptionListByETFBonus(List<StockOptionInformation> list,DateTime today)
+        {
+            DateTime modifyDate1 = new DateTime(2016, 11, 28, 23, 59, 59);
+            DateTime modifyDate2 = new DateTime(2017, 11, 27, 23, 59, 59);
+            foreach (var item in list)
+            {
+                if (item.listedDate<modifyDate1 &&item.expireDate>modifyDate1 && today<modifyDate1)
+                {
+                    item.strike = Math.Round(item.strike * (item.unit / 10000.0),2);
+                    item.unit = 10000;
+                }
+                if (item.listedDate < modifyDate2 && item.expireDate > modifyDate2 && today < modifyDate2)
+                {
+                    item.strike = Math.Round(item.strike *(item.unit / 10000.0), 2);
+                    item.unit = 10000;
+                }
+            }
+            return list;
+        }
 
         /// <summary>
         /// 根据给定的条件，查找对应期权的合约代码

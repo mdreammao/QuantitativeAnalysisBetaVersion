@@ -10,6 +10,12 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
 {
     public class WindReader
     {
+        //public DataTable GetETFConstituentByDate(string code,DateTime date)
+        //{
+        //    var wData = WindClientSingleton.Instance.wset("etfconstituent", string.Format(@"date={0};windcode={1}",date.ToString("yyyy-MM-dd"),code));
+        //    return wData.ToDataTable();
+        //}
+
         public DataTable GetDailyDataTable(string code, string fields, DateTime startTime, DateTime endTime, string options = "")
         {
             if (startTime > endTime) throw new Exception("开始时间不能大于结束时间。");

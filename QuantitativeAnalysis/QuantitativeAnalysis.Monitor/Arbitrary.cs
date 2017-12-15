@@ -44,6 +44,8 @@ namespace QuantitativeAnalysis.Monitor
             sqlWriter = new SqlServerWriter(ConnectionType.Server84);
             sqlReader = new SqlServerReader(ConnectionType.Server84);
         }
+
+
         public void recorddata(DateTime startDate,DateTime endDate)
         {
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
@@ -66,7 +68,7 @@ namespace QuantitativeAnalysis.Monitor
             //CreateDBOrTableIfNecessary(startDate);
             //CreateDBOrTableIfNecessary(startDate.AddYears(1));
             //var start = startDate;
-            //while (start<endDate)
+            //while (start < endDate)
             //{
             //    if (!ExistInSqlServer(start))
             //    {
