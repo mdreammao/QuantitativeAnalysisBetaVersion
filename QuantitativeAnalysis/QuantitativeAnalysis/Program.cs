@@ -13,6 +13,7 @@ using NLog;
 using Autofac;
 using QuantitativeAnalysis.Transaction;
 using QuantitativeAnalysis.Monitor;
+using QuantitativeAnalysis.Statistics;
 
 namespace QuantitativeAnalysis
 {
@@ -36,21 +37,38 @@ namespace QuantitativeAnalysis
             //var sigma2 = ImpliedVolatilityExtension.sigmaOfPutByBisection(option, spot, strike, t, r);
             //var monitor = new Arbitrary("2017-08-01 09:00:00".ToDateTime(), "2017-08-30 17:00:00".ToDateTime());
             //monitor.record();
+
+            //获取tick数据
             var optionSource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockOptionTickDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Server170)));
             var optionRepo = InstanceFactory.Get<StockOptionTickRepository>(conn_type, optionSource);
             var stockSource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockTickDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Server170)));
             var etfRepo = InstanceFactory.Get<StockTickRepository>(conn_type, stockSource);
+            //获取日线数据
             var stockDailysource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockDailyDataSource>());
             var stockDailyRepo = InstanceFactory.Get<StockDailyRepository>(conn_type, stockDailysource);
             var infoRepo = InstanceFactory.Get<OptionInfoRepository>(conn_type);
-             //Arbitrary test = new Arbitrary(infoRepo, optionRepo, etfRepo);
-            ivix test= new ivix(infoRepo, optionRepo, etfRepo);
+            //获取分钟线数据
+            var stockMinutelySource= new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockMinuteDataSource>());
+            var stockMinutelyRepo= InstanceFactory.Get<StockMinuteRepository>(conn_type, stockMinutelySource);
+
+
+
+            //Arbitrary test = new Arbitrary(infoRepo, optionRepo, etfRepo);
+            //ivix test = new ivix(infoRepo, optionRepo, etfRepo);
             //test.recorddata("2017-05-15".ToDateTime(), "2017-06-30".ToDateTime());
-            test.record("2017-10-20".ToDateTime(), "2017-11-23".ToDateTime());
+            //test.record("2016-03-17".ToDateTime(), "2017-12-25".ToDateTime());
+            //test.record("2016-11-01".ToDateTime(), "2016-12-31".ToDateTime());
             //Impv test = new Impv(infoRepo, optionRepo, etfRepo);
             //test.computeImpv("2017-08-10".ToDateTime(), "2017-10-20".ToDateTime());
             //ETFArbitrary test = new ETFArbitrary(etfRepo,stockDailyRepo,"510050.SH");
             //test.compute("2017-08-01".ToDateTime(), "2017-08-01".ToDateTime());
+
+            ImbalanceInfactor test = new ImbalanceInfactor(etfRepo, stockDailyRepo, "510050.SH");
+            test.computeImbalanceInfactor("2017-08-01".ToDateTime(), "2017-12-31".ToDateTime());
+
+            // ivixMinutely myRecord = new ivixMinutely(infoRepo, stockMinutelyRepo);
+            //myRecord.record("2017-11-20".ToDateTime(), "2017-12-18".ToDateTime());
+
             logger.Info("main method end...");
         }
 

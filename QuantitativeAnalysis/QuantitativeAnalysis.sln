@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.12
+VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis", "QuantitativeAnalysis\QuantitativeAnalysis.csproj", "{F57C39E5-1458-412D-929C-37F5F16B6D6F}"
 EndProject
@@ -16,6 +16,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis.Utilities", "QuantitativeAnalysis.Utilities\QuantitativeAnalysis.Utilities.csproj", "{47D62782-E308-4103-82F5-5F0751DEF741}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis.Monitor", "QuantitativeAnalysis.Monitor\QuantitativeAnalysis.Monitor.csproj", "{3D303D01-A40D-4095-94A2-60C3752B03EA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuantitativeAnalysis.Statistics", "QuantitativeAnalysis.Statistics\QuantitativeAnalysis.Statistics.csproj", "{FE78F94B-A25E-4600-A8EF-23392404DBA3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -141,6 +143,22 @@ Global
 		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|x64.Build.0 = Release|Any CPU
 		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|x86.ActiveCfg = Release|Any CPU
 		{3D303D01-A40D-4095-94A2-60C3752B03EA}.Release|x86.Build.0 = Release|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Debug|ARM.Build.0 = Debug|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Debug|x64.Build.0 = Debug|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Debug|x86.Build.0 = Debug|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Release|ARM.ActiveCfg = Release|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Release|ARM.Build.0 = Release|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Release|x64.ActiveCfg = Release|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Release|x64.Build.0 = Release|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Release|x86.ActiveCfg = Release|Any CPU
+		{FE78F94B-A25E-4600-A8EF-23392404DBA3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

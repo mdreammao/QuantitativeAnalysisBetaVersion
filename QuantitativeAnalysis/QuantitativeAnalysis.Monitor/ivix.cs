@@ -21,6 +21,7 @@ namespace QuantitativeAnalysis.Monitor
     public class ivix
     {
         private double rate;
+        private double cashVega = 10000;
         private TypedParameter conn_type = new TypedParameter(typeof(ConnectionType), ConnectionType.Default);
         private Logger logger = LogManager.GetCurrentClassLogger();
         private string underlying = "510050.SH";
@@ -32,7 +33,7 @@ namespace QuantitativeAnalysis.Monitor
         private SqlServerWriter sqlWriter;
         private SqlServerReader sqlReader;
 
-        public ivix(OptionInfoRepository infoRepo, StockOptionTickRepository optionRepo, StockTickRepository stockRepo, double rate = 0.02)
+        public ivix(OptionInfoRepository infoRepo, StockOptionTickRepository optionRepo, StockTickRepository stockRepo, double rate = 0.04)
         {
             this.infoRepo = infoRepo;
             this.optionRepo = optionRepo;
@@ -49,39 +50,30 @@ namespace QuantitativeAnalysis.Monitor
             CreateDBOrTableIfNecessary(startDate);
             CreateDBOrTableIfNecessary(startDate.AddYears(1));
             var start = startDate;
-            //while (start < endDate)
-            //{
-            //    if (!ExistInSqlServer(start))
-            //    {
-            //        CreateDBOrTableIfNecessary(start);
-            //    }
-            //    start = start.AddYears(1);
-            //}
-            //if (!ExistInSqlServer(endDate))
-            //{
-            //    CreateDBOrTableIfNecessary(endDate);
-            //}
+            while (start < endDate)
+            {
+                if (!ExistInSqlServer(start))
+                {
+                    CreateDBOrTableIfNecessary(start);
+                }
+                start = start.AddYears(1);
+            }
+            if (!ExistInSqlServer(endDate))
+            {
+                CreateDBOrTableIfNecessary(endDate);
+            }
 
             foreach (var date in tradedays)
             {
                 DataTable dt = new DataTable();
-                dt.Columns.Add("tdatetime");
-                dt.Columns.Add("expiredate1");
-                dt.Columns.Add("expiredate2");
-                dt.Columns.Add("duration1");
-                dt.Columns.Add("duration2");
-                dt.Columns.Add("sigma1Ask");
-                dt.Columns.Add("sigma1Bid");
-                dt.Columns.Add("sigma2Ask");
-                dt.Columns.Add("sigma2Bid");
-                dt.Columns.Add("sigmaAsk");
-                dt.Columns.Add("sigmaBid");
+                dt = initializeDataTable(dt);
                 double[] sigma1Ask = new double[28802];
                 double[] sigma1Bid = new double[28802];
                 double[] sigma2Ask = new double[28802];
                 double[] sigma2Bid = new double[28802];
                 double[] vixAsk = new double[28802];
                 double[] vixBid = new double[28802];
+                
                 var list = infoRepo.GetStockOptionInfo(underlying, date, date);
                 list = OptionUtilities.modifyOptionListByETFBonus(list,date);
                 List<StockOptionInformation> callListThisMonth = new List<StockOptionInformation>();
@@ -191,6 +183,9 @@ namespace QuantitativeAnalysis.Monitor
                     {
                         continue;
                     }
+                    //初始化记录合约信息的列表
+                    List<iVixInfo> thisMonthInfo = new List<iVixInfo>();
+                    List<iVixInfo> nextMonthInfo = new List<iVixInfo>();
                     DataRow dr = dt.NewRow();
                     var now = callDataThisMonth[strikeListThisMonth[0]][index].TransactionDateTime;
                     var expiredate1 = callListThisMonth[0].expireDate;
@@ -224,6 +219,7 @@ namespace QuantitativeAnalysis.Monitor
                     //计算近月ivix
                     for (int i = 0; i < strikeListThisMonth.Count(); i++)
                     {
+                        iVixInfo info = new iVixInfo();
                         double ask = 0;
                         double bid = 0;
                         double dK = 0;
@@ -236,24 +232,60 @@ namespace QuantitativeAnalysis.Monitor
                         {
                             dK = strikeListThisMonth[i + 1] - strikeListThisMonth[i];
                         }
+                        info.strike = k;
+                        info.duration = T1;
+                        info.coefficient = 2 / info.duration * dK / Math.Pow(info.strike, 2) * Math.Exp(rate * info.duration);
                         if (strikeListThisMonth[i]<kThisMonth)
                         {
                             ask = putDataThisMonth[strikeListThisMonth[i]][index].Ask1;
                             bid = putDataThisMonth[strikeListThisMonth[i]][index].Bid1;
+                            var mid = (ask + bid) / 2;
+                            info.sigma = Math.Round(ImpliedVolatilityExtension.sigmaByFuture(F, mid, info.strike, info.duration, rate, "认沽"), 4);
+                            info.vega = ImpliedVolatilityExtension.ComputeOptionVega(info.strike, info.duration, rate, 0, info.sigma, F * Math.Exp(-rate * info.duration))/100.0;
+                            info.ask = ask;
+                            info.askv = putDataThisMonth[strikeListThisMonth[i]][index].AskV1;
+                            info.bid = bid;
+                            info.bidv = putDataThisMonth[strikeListThisMonth[i]][index].BidV1;
+                            info.minutelyVolume = ComputeMinutelyVolume(putDataThisMonth[strikeListThisMonth[i]], index);
                         }
                         else if (strikeListThisMonth[i]==kThisMonth)
                         {
                             ask = (putDataThisMonth[strikeListThisMonth[i]][index].Ask1 + callDataThisMonth[strikeListThisMonth[i]][index].Ask1)/2;
                             bid = (putDataThisMonth[strikeListThisMonth[i]][index].Bid1 + callDataThisMonth[strikeListThisMonth[i]][index].Bid1)/2;
+                            var mid1 = (putDataThisMonth[strikeListThisMonth[i]][index].Ask1 + putDataThisMonth[strikeListThisMonth[i]][index].Bid1) / 2;
+                            var mid2 = (callDataThisMonth[strikeListThisMonth[i]][index].Ask1 + callDataThisMonth[strikeListThisMonth[i]][index].Bid1) / 2;
+                            var sigma1= Math.Round(ImpliedVolatilityExtension.sigmaByFuture(F, mid1, info.strike, info.duration, rate, "认沽"), 4);
+                            var sigma2= Math.Round(ImpliedVolatilityExtension.sigmaByFuture(F, mid2, info.strike, info.duration, rate, "认购"), 4);
+                            var vega1= ImpliedVolatilityExtension.ComputeOptionVega(k, info.duration, rate, 0, sigma1, F * Math.Exp(-rate * info.duration)) / 100.0;
+                            var vega2 = ImpliedVolatilityExtension.ComputeOptionVega(k, info.duration, rate, 0, sigma2, F * Math.Exp(-rate * info.duration)) / 100.0;
+                            info.sigma = (sigma1 + sigma2) / 2;
+                            info.vega = (vega1 + vega2) / 2;
+                            info.ask = ask;
+                            info.askv = Math.Min(putDataThisMonth[strikeListThisMonth[i]][index].AskV1, callDataThisMonth[strikeListThisMonth[i]][index].AskV1) * 2;
+                            info.bid = bid;
+                            info.bidv = Math.Min(putDataThisMonth[strikeListThisMonth[i]][index].BidV1, callDataThisMonth[strikeListThisMonth[i]][index].BidV1) * 2;
+                            var volumeCall = ComputeMinutelyVolume(callDataThisMonth[strikeListThisMonth[i]], index);
+                            var volumePut = ComputeMinutelyVolume(putDataThisMonth[strikeListThisMonth[i]], index);
+                            info.minutelyVolume = Math.Min(volumeCall, volumePut) * 2;
                         }
                         else
                         {
                             ask = callDataThisMonth[strikeListThisMonth[i]][index].Ask1;
                             bid = callDataThisMonth[strikeListThisMonth[i]][index].Bid1;
+                            var mid = (ask + bid) / 2;
+                            info.sigma = Math.Round(ImpliedVolatilityExtension.sigmaByFuture(F, mid, info.strike, info.duration, rate, "认购"), 4);
+                            info.vega = ImpliedVolatilityExtension.ComputeOptionVega(k, info.duration, rate, 0, info.sigma, F * Math.Exp(-rate * info.duration)) / 100.0;
+                            info.ask = ask;
+                            info.askv = callDataThisMonth[strikeListThisMonth[i]][index].AskV1;
+                            info.bid = bid;
+                            info.bidv = callDataThisMonth[strikeListThisMonth[i]][index].BidV1;
+                            info.minutelyVolume = ComputeMinutelyVolume(callDataThisMonth[strikeListThisMonth[i]], index);
                         }
                         sigma1Ask[index] += (2 / T1) * dK / (k * k) * Math.Exp(rate * T1) * ask;
                         sigma1Bid[index] += (2 / T1) * dK / (k * k) * Math.Exp(rate * T1) * bid;
+                        thisMonthInfo.Add(info);
                     }
+                    
                     sigma1Ask[index] += -1 / T1 * Math.Pow((F / kThisMonth) - 1, 2);
                     sigma1Bid[index] += -1 / T1 * Math.Pow((F / kThisMonth) - 1, 2);
                     sigma1Ask[index] = Math.Sqrt(sigma1Ask[index]);
@@ -291,6 +323,7 @@ namespace QuantitativeAnalysis.Monitor
                     //计算远月ivix
                     for (int i = 0; i < strikeListNextMonth.Count(); i++)
                     {
+                        iVixInfo info = new iVixInfo();
                         double ask = 0;
                         double bid = 0;
                         double dK = 0;
@@ -303,23 +336,60 @@ namespace QuantitativeAnalysis.Monitor
                         {
                             dK = strikeListNextMonth[i + 1] - strikeListNextMonth[i];
                         }
+                        info.strike = k;
+                        info.duration = T2;
+                        info.coefficient = 2 / info.duration * dK / Math.Pow(info.strike, 2) * Math.Exp(rate * info.duration);
+                       
+
                         if (strikeListNextMonth[i] < kNextMonth)
                         {
                             ask = putDataNextMonth[strikeListNextMonth[i]][index].Ask1;
                             bid = putDataNextMonth[strikeListNextMonth[i]][index].Bid1;
+                            var mid = (ask + bid) / 2;
+                            info.sigma = Math.Round(ImpliedVolatilityExtension.sigmaByFuture(F, mid, info.strike, info.duration, rate, "认沽"), 4);
+                            info.vega = ImpliedVolatilityExtension.ComputeOptionVega(info.strike, info.duration, rate, 0, info.sigma, F * Math.Exp(-rate * info.duration)) / 100.0;
+                            info.ask = ask;
+                            info.askv = putDataNextMonth[strikeListNextMonth[i]][index].AskV1;
+                            info.bid = bid;
+                            info.bidv = putDataNextMonth[strikeListNextMonth[i]][index].BidV1;
+                            info.minutelyVolume = ComputeMinutelyVolume(putDataNextMonth[strikeListNextMonth[i]], index);
                         }
                         else if (strikeListNextMonth[i] == kNextMonth)
                         {
                             ask = (putDataNextMonth[strikeListNextMonth[i]][index].Ask1 + callDataNextMonth[strikeListNextMonth[i]][index].Ask1) / 2;
                             bid = (putDataNextMonth[strikeListNextMonth[i]][index].Bid1 + callDataNextMonth[strikeListNextMonth[i]][index].Bid1) / 2;
+                            var mid1 = (putDataNextMonth[strikeListNextMonth[i]][index].Ask1 + putDataNextMonth[strikeListNextMonth[i]][index].Bid1) / 2;
+                            var mid2 = (callDataNextMonth[strikeListNextMonth[i]][index].Ask1 + callDataNextMonth[strikeListNextMonth[i]][index].Bid1) / 2;
+                            var sigma1 = Math.Round(ImpliedVolatilityExtension.sigmaByFuture(F, mid1, info.strike, info.duration, rate, "认沽"), 4);
+                            var sigma2 = Math.Round(ImpliedVolatilityExtension.sigmaByFuture(F, mid2, info.strike, info.duration, rate, "认购"), 4);
+                            var vega1 = ImpliedVolatilityExtension.ComputeOptionVega(k, info.duration, rate, 0, sigma1, F * Math.Exp(-rate * info.duration)) / 100.0;
+                            var vega2 = ImpliedVolatilityExtension.ComputeOptionVega(k, info.duration, rate, 0, sigma2, F * Math.Exp(-rate * info.duration)) / 100.0;
+                            info.sigma = (sigma1 + sigma2) / 2;
+                            info.vega = (vega1 + vega2) / 2;
+                            info.ask = ask;
+                            info.askv = Math.Min(putDataNextMonth[strikeListNextMonth[i]][index].AskV1, callDataNextMonth[strikeListNextMonth[i]][index].AskV1) * 2;
+                            info.bid = bid;
+                            info.bidv = Math.Min(putDataNextMonth[strikeListNextMonth[i]][index].BidV1, callDataNextMonth[strikeListNextMonth[i]][index].BidV1) * 2;
+                            var volumeCall= ComputeMinutelyVolume(callDataNextMonth[strikeListNextMonth[i]], index);
+                            var volumePut= ComputeMinutelyVolume(putDataNextMonth[strikeListNextMonth[i]], index);
+                            info.minutelyVolume = Math.Min(volumeCall, volumePut) * 2;
                         }
                         else
                         {
                             ask = callDataNextMonth[strikeListNextMonth[i]][index].Ask1;
                             bid = callDataNextMonth[strikeListNextMonth[i]][index].Bid1;
+                            var mid = (ask + bid) / 2;
+                            info.sigma = Math.Round(ImpliedVolatilityExtension.sigmaByFuture(F, mid, info.strike, info.duration, rate, "认购"), 4);
+                            info.vega = ImpliedVolatilityExtension.ComputeOptionVega(k, info.duration, rate, 0, info.sigma, F * Math.Exp(-rate * info.duration)) / 100.0;
+                            info.ask = ask;
+                            info.askv = callDataNextMonth[strikeListNextMonth[i]][index].AskV1;
+                            info.bid = bid;
+                            info.bidv = callDataNextMonth[strikeListNextMonth[i]][index].BidV1;
+                            info.minutelyVolume = ComputeMinutelyVolume(callDataNextMonth[strikeListNextMonth[i]], index);
                         }
                         sigma2Ask[index] += (2 / T2) * dK / (k * k) * Math.Exp(rate * T2) * ask;
                         sigma2Bid[index] += (2 / T2) * dK / (k * k) * Math.Exp(rate * T2) * bid;
+                        nextMonthInfo.Add(info);
                     }
                     sigma2Ask[index] += -1 / T2 * Math.Pow((F / kNextMonth) - 1, 2);
                     sigma2Bid[index] += -1 / T2 * Math.Pow((F / kNextMonth) - 1, 2);
@@ -329,7 +399,136 @@ namespace QuantitativeAnalysis.Monitor
                     {
                         vixAsk[index] = Math.Sqrt((T1 * Math.Pow(sigma1Ask[index], 2) * (T2 - 30.0 / 365.0) / (T2 - T1) + T2 * Math.Pow(sigma2Ask[index], 2) * (30.0 / 365.0 - T1) / (T2 - T1)) * 365.0 / 30.0);
                         vixBid[index] = Math.Sqrt((T1 * Math.Pow(sigma1Bid[index], 2) * (T2 - 30.0 / 365.0) / (T2 - T1) + T2 * Math.Pow(sigma2Bid[index], 2) * (30.0 / 365.0 - T1) / (T2 - T1)) * 365.0 / 30.0);
+                        foreach (var item in thisMonthInfo)
+                        {
+                            item.coefficient *= T1 * (T2 - 30.0 / 365.0) / (T2 - T1) * 365.0 / 30.0;
+                        }
+                        foreach (var item in nextMonthInfo)
+                        {
+                            item.coefficient *= T2 * (30.0 / 365.0 - T1) / (T2 - T1) * 365.0 / 30.0;
+                        }
                     }
+                    //计算整体的vega，以及盘口的量
+                    double vegaTotal = 0;
+                    double number = 0;
+                    double percentAskMax = 0;
+                    double percentAskMin = 1;
+                    double percentBidMax = 0;
+                    double percentBidMin = 1;
+                    double percentVolumeMax = 0;
+                    double percentVolumeMin = 1;
+                    if (durationThisMonth > 30)
+                    {
+                        foreach (var item in thisMonthInfo)
+                        {
+                            vegaTotal += item.vega * item.coefficient*10000;
+                        }
+                        number = cashVega / vegaTotal;
+                        foreach (var item in thisMonthInfo)
+                        {
+                            double percentAsk = item.askv / number;
+                            double percentBid = item.bidv / number;
+                            double percentVolume = item.minutelyVolume / number;
+                            
+                            if (percentAsk>percentAskMax)
+                            {
+                                percentAskMax = percentAsk;
+                            }
+                            if (percentAsk<percentAskMin)
+                            {
+                                percentAskMin = percentAsk;
+                            }
+                            if (percentBid > percentBidMax)
+                            {
+                                percentBidMax = percentBid;
+                            }
+                            if (percentBid < percentBidMin)
+                            {
+                                percentBidMin = percentBid;
+                            }
+                            if (percentVolume>percentVolumeMax)
+                            {
+                                percentVolumeMax = percentVolume;
+                            }
+                            if (percentVolume<percentVolumeMin)
+                            {
+                                percentVolumeMin = percentVolume;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var item in thisMonthInfo)
+                        {
+                            vegaTotal += item.vega * item.coefficient * 10000;
+                        }
+                        foreach (var item in nextMonthInfo)
+                        {
+                            vegaTotal += item.vega * item.coefficient * 10000;
+                        }
+                        number = cashVega / 2/vegaTotal;
+                        foreach (var item in thisMonthInfo)
+                        {
+                            double percentAsk = item.askv / number /item.coefficient;
+                            double percentBid = item.bidv / number /item.coefficient;
+                            double percentVolume = item.minutelyVolume / number;
+                            if (percentAsk > percentAskMax)
+                            {
+                                percentAskMax = percentAsk;
+                            }
+                            if (percentAsk < percentAskMin)
+                            {
+                                percentAskMin = percentAsk;
+                            }
+                            if (percentBid > percentBidMax)
+                            {
+                                percentBidMax = percentBid;
+                            }
+                            if (percentBid < percentBidMin)
+                            {
+                                percentBidMin = percentBid;
+                            }
+                            if (percentVolume > percentVolumeMax)
+                            {
+                                percentVolumeMax = percentVolume;
+                            }
+                            if (percentVolume < percentVolumeMin)
+                            {
+                                percentVolumeMin = percentVolume;
+                            }
+                        }
+                        foreach (var item in nextMonthInfo)
+                        {
+                            double percentAsk = item.askv / number / item.coefficient;
+                            double percentBid = item.bidv / number / item.coefficient;
+                            double percentVolume = item.minutelyVolume / number;
+                            if (percentAsk > percentAskMax)
+                            {
+                                percentAskMax = percentAsk;
+                            }
+                            if (percentAsk < percentAskMin)
+                            {
+                                percentAskMin = percentAsk;
+                            }
+                            if (percentBid > percentBidMax)
+                            {
+                                percentBidMax = percentBid;
+                            }
+                            if (percentBid < percentBidMin)
+                            {
+                                percentBidMin = percentBid;
+                            }
+                            if (percentVolume > percentVolumeMax)
+                            {
+                                percentVolumeMax = percentVolume;
+                            }
+                            if (percentVolume < percentVolumeMin)
+                            {
+                                percentVolumeMin = percentVolume;
+                            }
+                        }
+                    }
+
                     dr["tdatetime"] = now;
                     dr["expiredate1"] = expiredate1;
                     dr["expiredate2"] = expiredate2;
@@ -341,6 +540,14 @@ namespace QuantitativeAnalysis.Monitor
                     dr["sigma2Bid"] = Math.Round(sigma2Bid[index] * 100, 4);
                     dr["sigmaAsk"] = Math.Round(vixAsk[index] * 100, 4);
                     dr["sigmaBid"] = Math.Round(vixBid[index] * 100, 4);
+                    dr["vegaTotal"] = Math.Round(vegaTotal,4);
+                    dr["number"] = Math.Round(number,4);
+                    dr["percentAskMax"] =Math.Round(percentAskMax,4);
+                    dr["percentAskMin"] = Math.Round(percentAskMin,4);
+                    dr["percentBidMax"] = Math.Round(percentBidMax,4);
+                    dr["percentBidMin"] = Math.Round(percentBidMin,4);
+                    dr["percentVolumeMax"] = Math.Round(percentVolumeMax, 4);
+                    dr["percentVolumeMin"] = Math.Round(percentVolumeMin, 4);
                     if (now < date.Date + new TimeSpan(14, 57, 00))
                     {
                         dt.Rows.Add(dr);
@@ -351,6 +558,19 @@ namespace QuantitativeAnalysis.Monitor
         }
 
        
+        private double ComputeMinutelyVolume(List<StockOptionTickTransaction> data,int index)
+        {
+            double volume = 0;
+            if (index > 120 && data[index - 120] != null)
+            {
+                volume = data[index].Volume - data[index - 120].Volume;
+            }
+            else
+            {
+                volume = Math.Round(data[index].Volume / Convert.ToDouble(index + 1) * 120.0, 0);
+            }
+            return volume;
+        }
 
         private void SaveResultToMssql(DateTime date, DataTable dt)
         {
@@ -392,6 +612,14 @@ CREATE TABLE [ivix{0}].[dbo].[{1}](
     [sigma2Bid] [decimal](10, 4) NULL,
     [sigmaAsk] [decimal](10, 4) NULL,
     [sigmaBid] [decimal](10, 4) NULL,
+    [vegaTotal] [decimal](10, 4) NULL,
+    [number] [decimal](10, 4) NULL,
+    [percentAskMax] [decimal](10, 4) NULL,
+    [percentAskMin] [decimal](10, 4) NULL,
+    [percentBidMax] [decimal](10, 4) NULL,
+    [percentBidMin] [decimal](10, 4) NULL,
+    [percentVolumeMax] [decimal](10, 4) NULL,
+    [percentVolumeMin] [decimal](10, 4) NULL,
 	[LastUpdatedTime] [datetime] NULL
 ) ON [PRIMARY]
 ALTER TABLE [ivix{0}].[dbo].[{1}] ADD  CONSTRAINT [DF_{1}_LastUpdatedTime]  DEFAULT (getdate()) FOR [LastUpdatedTime]
@@ -420,6 +648,30 @@ select 0
 end ", date.Year, date.ToString("yyyy"));
             var res = sqlReader.ExecuteScriptScalar<int>(sqlScript);
             return res > default(int);
+        }
+
+        private DataTable initializeDataTable(DataTable dt)
+        {
+            dt.Columns.Add("tdatetime");
+            dt.Columns.Add("expiredate1");
+            dt.Columns.Add("expiredate2");
+            dt.Columns.Add("duration1");
+            dt.Columns.Add("duration2");
+            dt.Columns.Add("sigma1Ask");
+            dt.Columns.Add("sigma1Bid");
+            dt.Columns.Add("sigma2Ask");
+            dt.Columns.Add("sigma2Bid");
+            dt.Columns.Add("sigmaAsk");
+            dt.Columns.Add("sigmaBid");
+            dt.Columns.Add("vegaTotal");
+            dt.Columns.Add("number");
+            dt.Columns.Add("percentAskMax");
+            dt.Columns.Add("percentAskMin");
+            dt.Columns.Add("percentBidMax");
+            dt.Columns.Add("percentBidMin");
+            dt.Columns.Add("percentVolumeMax");
+            dt.Columns.Add("percentVolumeMin");
+            return dt;
         }
 
     }

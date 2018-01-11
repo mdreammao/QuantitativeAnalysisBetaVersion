@@ -12,6 +12,7 @@ namespace QuantitativeAnalysis.Model
         public string put { get; set; }
         public double strike { get; set; }
         public DateTime expireDate { get; set; }
+        public double unit { get; set; }
     }
 
     public class StockOptionParityProfit

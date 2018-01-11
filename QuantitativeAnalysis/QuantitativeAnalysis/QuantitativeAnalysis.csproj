@@ -83,6 +83,10 @@
       <Project>{3d303d01-a40d-4095-94a2-60c3752b03ea}</Project>
       <Name>QuantitativeAnalysis.Monitor</Name>
     </ProjectReference>
+    <ProjectReference Include="..\QuantitativeAnalysis.Statistics\QuantitativeAnalysis.Statistics.csproj">
+      <Project>{fe78f94b-a25e-4600-a8ef-23392404dba3}</Project>
+      <Name>QuantitativeAnalysis.Statistics</Name>
+    </ProjectReference>
     <ProjectReference Include="..\QuantitativeAnalysis.Transaction\QuantitativeAnalysis.Transaction.csproj">
       <Project>{da10d5c2-692e-4cbf-91eb-a4c5ac92d7a0}</Project>
       <Name>QuantitativeAnalysis.Transaction</Name>

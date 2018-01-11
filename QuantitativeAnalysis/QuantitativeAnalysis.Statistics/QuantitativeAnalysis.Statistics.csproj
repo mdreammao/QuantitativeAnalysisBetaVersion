@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3D303D01-A40D-4095-94A2-60C3752B03EA}</ProjectGuid>
+    <ProjectGuid>{FE78F94B-A25E-4600-A8EF-23392404DBA3}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>QuantitativeAnalysis.Monitor</RootNamespace>
-    <AssemblyName>QuantitativeAnalysis.Monitor</AssemblyName>
+    <RootNamespace>QuantitativeAnalysis.Statistics</RootNamespace>
+    <AssemblyName>QuantitativeAnalysis.Statistics</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -38,22 +38,23 @@
       <HintPath>..\packages\NLog.4.4.12\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="WAPIWrapperCSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <Reference Include="WAPIWrapperCSharp">
+      <HintPath>..\WAPIWrapperCSharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Arbitrary.cs" />
-    <Compile Include="ETFArbitrary.cs" />
-    <Compile Include="Impv.cs" />
-    <Compile Include="ivix.cs" />
-    <Compile Include="ivixMinutely.cs" />
+    <Compile Include="ImbalanceInfactor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

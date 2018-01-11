@@ -23,6 +23,14 @@ namespace QuantitativeAnalysis.Utilities
                 return normcdf(d1) - 1;
             }
         }
+
+        public static double ComputeOptionVega(double strike, double duration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice)
+        {
+            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * duration) / (optionVolatility * Math.Sqrt(duration));
+            double vega = Math.Sqrt(duration / 2.0 / Math.PI) * underlyingPrice * Math.Exp(-d1 * d1 / 2.0);
+            return vega;
+        }
+
         public static double ComputeOptionPrice(double strike, double duration, double riskFreeRate, double StockRate, string optionType, double optionVolatility, double underlyingPrice)
         {
             double etfPirce = underlyingPrice * Math.Exp(-StockRate * duration);
