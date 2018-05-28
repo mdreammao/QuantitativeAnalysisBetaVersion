@@ -9,6 +9,8 @@ using System.Configuration;
 using System.Data;
 using QuantitativeAnalysis.Utilities;
 using NLog;
+using static QuantitativeAnalysis.Utilities.DateTimeExtension;
+
 namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public class StockMinuteRepository : IStockRepository
@@ -118,6 +120,26 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
             if (latestTime < endTime)
             {
                 var dataTable = dataSource.Get(code, latestTime, endTime);
+                //清洗NaN数据
+                for (int i = dataTable.Rows.Count - 1; i >= 0; i--)
+                {
+                    if (double.IsNaN(Convert.ToDouble(dataTable.Rows[i]["open"])) == true)
+                    {
+                        dataTable.Rows[i]["open"] = DBNull.Value;
+                    }
+                    if (double.IsNaN(Convert.ToDouble(dataTable.Rows[i]["high"])) == true)
+                    {
+                        dataTable.Rows[i]["high"] = DBNull.Value;
+                    }
+                    if (double.IsNaN(Convert.ToDouble(dataTable.Rows[i]["low"])) == true)
+                    {
+                        dataTable.Rows[i]["low"] = DBNull.Value;
+                    }
+                    if (double.IsNaN(Convert.ToDouble(dataTable.Rows[i]["close"])) == true)
+                    {
+                        dataTable.Rows[i]["close"] = DBNull.Value;
+                    }
+                }
                 WriteToSql(dataTable);
             }
         }
@@ -151,13 +173,26 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
             return monthData;
         }
 
+        /// <summary>
+        /// 计算当前日期下的最后交易时间
+        /// </summary>
+        /// <param name="currentTime"></param>
+        /// <returns></returns>
         private DateTime GetEndTime(DateTime currentTime)
         {
             if (currentTime.Year < DateTime.Now.Year)
-                return dateTimeRepo.GetLastTransactionDate(currentTime, DateLevel.Year).AddHours(15).AddMinutes(1);
-            return new DateTime(currentTime.Year, DateTime.Now.Month, DateTime.Now.Day - 1, 15, 1, 0);
+                return dateTimeRepo.GetLastTransactionDate(currentTime, DateLevel.Year).AddHours(15).AddMinutes(0);
+            var date = new DateTime(currentTime.Year, DateTime.Now.Month, DateTime.Now.Day - 1, 15, 0, 0);
+            date = DateUtils.PreviousTradeDay(date);
+            return new DateTime(date.Year, date.Month, date.Day, 15, 0, 0);
         }
 
+        /// <summary>
+        /// 找到当年SQL数据对应标的的最后一条数据的时间。为了插入新的数据做准备。
+        /// </summary>
+        /// <param name="code"></param>
+        /// <param name="currentTime"></param>
+        /// <returns></returns>
         private DateTime GetLatestTimeFromSql(string code, DateTime currentTime)
         {
             DateTime latest = default(DateTime);
@@ -175,8 +210,6 @@ begin
 		begin
 			set @latest_date=@tem_date
 		end
-		else
-			break;
 	end
 	set @date = dateadd(month,1,@date)
 	set @index=@index+1

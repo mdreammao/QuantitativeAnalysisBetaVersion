@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CFEFutures.cs" />
     <Compile Include="ETFConsitituent.cs" />
     <Compile Include="IDateTimeInterval.cs" />
     <Compile Include="iVixInfo.cs" />

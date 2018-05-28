@@ -36,6 +36,7 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
         {
             using (var conn = SqlConnectionFactory.Create(connType))
             {
+               
                 using (var bulkCopy = new SqlBulkCopy(conn))
                 {
                     bulkCopy.DestinationTableName = destinationTbName;

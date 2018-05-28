@@ -14,6 +14,7 @@ using Autofac;
 using QuantitativeAnalysis.Transaction;
 using QuantitativeAnalysis.Monitor;
 using QuantitativeAnalysis.Statistics;
+using static QuantitativeAnalysis.Utilities.DateTimeExtension;
 
 namespace QuantitativeAnalysis
 {
@@ -28,6 +29,7 @@ namespace QuantitativeAnalysis
         {
             logger.Info("main method start...");
             Initializer.Initialize(ConnectionType.Default);
+            
             //double option = 0.1639;
             //double t = 0.063010;
             //double r = 0.04;
@@ -50,8 +52,24 @@ namespace QuantitativeAnalysis
             //获取分钟线数据
             var stockMinutelySource= new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockMinuteDataSource>());
             var stockMinutelyRepo= InstanceFactory.Get<StockMinuteRepository>(conn_type, stockMinutelySource);
+            //获取日期数据
+            TransactionDateTimeRepository dateRepo= new TransactionDateTimeRepository(ConnectionType.Default);
+            DateUtils.setTradeDays(dateRepo.GetStockTransactionDate("2007-01-01".ToDateTime(), "2019-12-31".ToDateTime()));
 
 
+            //var test = new BasisStatistics(stockMinutelyRepo, "IC");
+            //test.compute("2016-04-01".ToDateTime(), "2018-04-1".ToDateTime());
+
+
+            //BasisChoice test = new BasisChoice(stockMinutelyRepo, "IC");
+            //test.compute("2016-04-01".ToDateTime(), "2018-04-11".ToDateTime());
+
+            //BasisFrontNext test = new BasisFrontNext(stockMinutelyRepo, "IC");
+            //test.parameterIteration("2018-03-01".ToDateTime(), "2018-04-1".ToDateTime());
+
+
+            IndexDeltaHedge test = new IndexDeltaHedge(stockMinutelyRepo, stockDailyRepo, "IC");
+            test.deltaHedge("2017-09-01".ToDateTime(), "2018-04-1".ToDateTime());
 
             //Arbitrary test = new Arbitrary(infoRepo, optionRepo, etfRepo);
             //ivix test = new ivix(infoRepo, optionRepo, etfRepo);
@@ -63,8 +81,8 @@ namespace QuantitativeAnalysis
             //ETFArbitrary test = new ETFArbitrary(etfRepo,stockDailyRepo,"510050.SH");
             //test.compute("2017-08-01".ToDateTime(), "2017-08-01".ToDateTime());
 
-            ImbalanceInfactor test = new ImbalanceInfactor(etfRepo, stockDailyRepo, "510050.SH");
-            test.computeImbalanceInfactor("2017-08-01".ToDateTime(), "2017-12-31".ToDateTime());
+            // ImbalanceInfactor test = new ImbalanceInfactor(etfRepo, stockDailyRepo, "510050.SH");
+            //test.computeImbalanceInfactor("2017-08-01".ToDateTime(), "2017-12-31".ToDateTime());
 
             // ivixMinutely myRecord = new ivixMinutely(infoRepo, stockMinutelyRepo);
             //myRecord.record("2017-11-20".ToDateTime(), "2017-12-18".ToDateTime());

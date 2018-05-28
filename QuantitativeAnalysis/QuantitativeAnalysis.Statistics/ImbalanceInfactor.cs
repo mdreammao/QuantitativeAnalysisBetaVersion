@@ -57,21 +57,21 @@ namespace QuantitativeAnalysis.Statistics
                     }
                     if (i<28801 && stock[i] != null && stock[i+1]!=null)
                     {
-                        priceChange[i] = Math.Round(stock[i + 1].LastPrice - stock[i].LastPrice,4);
+                        priceChange[i] = Math.Round(stock[i + 1].Bid1 - stock[i].Bid1,4);
                     }
                 }
                 double total = 0;
                 double right = 0;
                 for (int i = 0; i < 28802; i++)
                 {
-                    if (priceChange[i]!=0 && Math.Abs(imbalanceInfactor[i]-0.5)>0.25)
+                    //if (priceChange[i]!=0 && Math.Abs(imbalanceInfactor[i]-0.5)>=0)
                     {
                         total += 1;
-                        if (priceChange[i]>0 && imbalanceInfactor[i]>0.5)
+                        if (priceChange[i]>0 && imbalanceInfactor[i]>0.75)
                         {
                             right += 1;
                         }
-                        if (priceChange[i] < 0 && imbalanceInfactor[i] < 0.5)
+                        if (priceChange[i] < 0 && imbalanceInfactor[i] < 0.25)
                         {
                             right += 1;
                         }

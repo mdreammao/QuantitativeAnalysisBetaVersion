@@ -22,10 +22,16 @@ namespace QuantitativeAnalysis.Utilities
         public class DateUtils
         {
             private static List<DateTime> _tradeDays;
+            public static void setTradeDays(List<DateTime> tradedays)
+            {
+                _tradeDays = tradedays;
+            }
             public static List<DateTime> getTradeDays(List<DateTime> tradedays=null)
             {
                 return _tradeDays;
             }
+
+
             private static DateTime getTradeDay(int index)
             {
                 if (index >= 0 && index < getTradeDays().Count)
@@ -213,6 +219,49 @@ namespace QuantitativeAnalysis.Utilities
                 var d = new DateTime(year, month, (n - 1) * 7 + 1);
                 while (DayOfWeekToInt(d.DayOfWeek) != m) d = d.AddDays(1);
                 return d;
+            }
+
+
+            /// <summary>
+            /// 获取下个月的第一天
+            /// </summary>
+            /// <param name="date"></param>
+            /// <returns></returns>
+            public static DateTime GetFirstDateOfNextMonth(DateTime date)
+            {
+                string dateStr= date.ToString("yyyy-MM-01");
+                return DateTime.Parse(dateStr).AddMonths(1);
+            }
+
+            /// <summary>
+            /// 获取上个月的第一天
+            /// </summary>
+            /// <param name="date"></param>
+            /// <returns></returns>
+            public static DateTime GetFirstDateOfPreviousMonth(DateTime date)
+            {
+                string dateStr = date.ToString("yyyy-MM-01");
+                return DateTime.Parse(dateStr).AddMonths(-1);
+            }
+
+            /// <summary>
+            /// 获取本季度第一天
+            /// </summary>
+            /// <param name="date"></param>
+            /// <returns></returns>
+            public static DateTime GetFirstDateOfThisSeason(DateTime date)
+            {
+                return DateTime.Parse(date.AddMonths(0 - ((date.Month - 1) % 3)).ToString("yyyy-MM-01"));
+            }
+
+            /// <summary>
+            /// 获取本季度最后一天
+            /// </summary>
+            /// <param name="date"></param>
+            /// <returns></returns>
+            public static DateTime GetLastDateOfThisSeason(DateTime date)
+            {
+                return DateTime.Parse(date.AddMonths(3 - ((date.Month - 1) % 3)).ToString("yyyy-MM-01")).AddDays(-1);
             }
 
             /// <summary>

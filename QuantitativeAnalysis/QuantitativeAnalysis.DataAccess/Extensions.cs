@@ -39,6 +39,7 @@ namespace QuantitativeAnalysis.DataAccess
                 wData.GetRowData().ForEach(c => dt.LoadDataRow(c, false));
                 dt.EndLoadData();
             }
+
             return dt;
         }
 

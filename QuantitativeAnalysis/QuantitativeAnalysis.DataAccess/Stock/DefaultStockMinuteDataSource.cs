@@ -14,7 +14,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         
         public DataTable Get(string code, DateTime begin,DateTime end)
         {
-            return windReader.GetMinuteDataTable(code, "open,high,low,close,volume,amt", begin, end, "Fill=Previous");
+            return windReader.GetMinuteDataTable(code, "open,high,low,close,volume,amt", begin, end, "periodstart=09:30:00;periodend=15:00:00;Fill=Previous");
         }
     }
 }

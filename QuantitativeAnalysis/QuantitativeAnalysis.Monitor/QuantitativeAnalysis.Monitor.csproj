@@ -50,8 +50,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arbitrary.cs" />
+    <Compile Include="BasisChoice.cs" />
+    <Compile Include="BasisFrontNext.cs" />
+    <Compile Include="BasisStatistics.cs" />
     <Compile Include="ETFArbitrary.cs" />
+    <Compile Include="DeltaHedge.cs" />
     <Compile Include="Impv.cs" />
+    <Compile Include="IndexDeltaHedge.cs" />
     <Compile Include="ivix.cs" />
     <Compile Include="ivixMinutely.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
