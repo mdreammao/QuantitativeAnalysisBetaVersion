@@ -47,7 +47,7 @@ namespace QuantitativeAnalysis
             DateUtils.setTradeDays(dateRepo.GetStockTransactionDate("2007-01-01".ToDateTime(), "2019-12-31".ToDateTime()));
 
 
-            var twap = new TWAP(stockTickRepo,dateRepo, "300274.SZ");
+            var twap = new STWAP(stockTickRepo,dateRepo, "300274.SZ");
             twap.computeSTWAP("2018-01-01".ToDateTime(), "2018-04-30".ToDateTime());
 
             logger.Info("main method end...");
