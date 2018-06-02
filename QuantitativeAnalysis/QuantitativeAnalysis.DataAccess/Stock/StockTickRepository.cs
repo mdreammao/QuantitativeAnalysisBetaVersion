@@ -39,6 +39,9 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             code = code.ToUpper();
             if (end.Date >= DateTime.Now.Date)
                 throw new ArgumentException("结束时间只能小于当天时间");
+            //处理开始时间和结束时间
+            start = new DateTime(start.Year, start.Month, start.Day, 9, 30, 00);
+            end = new DateTime(end.Year, end.Month, end.Day, 15, 00, 00);
             var transDates = transDateRepo.GetStockTransactionDate(start, end);
             foreach(var date in transDates)
             {
@@ -47,7 +50,6 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             }
             logger.Info(string.Format("completed fetching stock{0} tick data from {1} to {2}...", code, start, end));
             var ticks = FetchDataFromRedis(code, transDates).Where(c=>c.TransactionDateTime>=start&&c.TransactionDateTime<=end).OrderBy(c=>c.TransactionDateTime).ToList();
-            //return StockTickFiller.Fill(ticks);
             return ticks;
         }
 
@@ -143,7 +145,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             return entries;
         }
 
-        private void LoadDataToSqlServerFromSourceIfNecessary(string code, DateTime date)
+        private void LoadDataToSqlServerFromSourceIfNecessary(string code, DateTime date, Infrastructure.ConnectionType type= Infrastructure.ConnectionType.Local)
         {
             if (!ExistInSqlServer(code,date))
             {
@@ -151,6 +153,10 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                 var dt = dataSource.Get(code, new DateTime(date.Year,date.Month,date.Day,9,30,0,0), new DateTime(date.Year,date.Month,date.Day,15,0,0,0));
                 if(dt.Rows.Count>0)
                     sqlWriter.InsertBulk(dt, string.Format("[StockTickTransaction{0}].[dbo].[{1}]",date.Year,date.ToString("yyyy-MM-dd")));
+            }
+            else
+            {
+                var dt = dataSource.GetFromSpecializedSQLServer(code, date, type);
             }
         }
 

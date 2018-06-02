@@ -11,6 +11,55 @@ namespace QuantitativeAnalysis.Utilities
     {
         public static List<TimeSpan> stockTickStamp=new List<TimeSpan>();
 
+        public static TimeSpan GetStockSecondsTimeByIndex(int index)
+        {
+            TimeSpan now = new TimeSpan();
+            TimeSpan open1 = new TimeSpan(9, 30, 00);
+            TimeSpan close1 = new TimeSpan(11, 30, 00);
+            TimeSpan open2 = new TimeSpan(13, 00, 00);
+            TimeSpan close2 = new TimeSpan(15, 00, 00);
+
+            if (index>=0 && index<=7200)
+            {
+                TimeSpan addtional = new TimeSpan(0, 0, index);
+                now = open1.Add(addtional);
+            }
+            else if (index>=7201 && index<=14401)
+            {
+                TimeSpan addtional = new TimeSpan(0, 0, index-7201);
+                now = open2.Add(addtional);
+            }
+            return now;
+        }
+
+
+        public static int GetStockSecondsIndex(DateTime time)
+        {
+            int index = -1;
+            TimeSpan now = time.TimeOfDay;
+            TimeSpan open1 = new TimeSpan(9, 30, 00);
+            TimeSpan close1= new TimeSpan(11, 30, 00);
+            TimeSpan open2 = new TimeSpan(13, 00, 00);
+            TimeSpan close2 = new TimeSpan(15, 00, 00);
+            if (now<=close1)
+            {
+                index =Convert.ToInt32((now - open1).TotalSeconds);
+            }
+            else if (now<open2)
+            {
+                index = Convert.ToInt32((close1 - open1).TotalSeconds);
+            }
+            else if (now<=close2)
+            {
+                index = Convert.ToInt32((close1 - open1).TotalSeconds + (now - open2).TotalSeconds)+1;
+            }
+            else
+            {
+                index= Convert.ToInt32((close1 - open1).TotalSeconds + (close2 - open2).TotalSeconds)+1;
+            }
+            return index;
+        }
+
         public static List<TimeSpan> GetStockTickStamp()
         {
             List<TimeSpan> stamp = stockTickStamp;
@@ -63,6 +112,8 @@ namespace QuantitativeAnalysis.Utilities
 
             return modify.ToList();
         }
+
+
 
         public static List<StockTickTransaction> ModifyStockTickData(List<StockTickTransaction> original)
         {

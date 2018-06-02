@@ -30,21 +30,11 @@ namespace QuantitativeAnalysis
             logger.Info("main method start...");
             Initializer.Initialize(ConnectionType.Default);
             
-            //double option = 0.1639;
-            //double t = 0.063010;
-            //double r = 0.04;
-            //double spot = 2.1519 * Math.Exp(-r * t);
-            //double strike = 2.3;
-            //var sigma=ImpliedVolatilityExtension.sigmaOfCallByBisection(option, spot, strike, t, r);
-            //var sigma2 = ImpliedVolatilityExtension.sigmaOfPutByBisection(option, spot, strike, t, r);
-            //var monitor = new Arbitrary("2017-08-01 09:00:00".ToDateTime(), "2017-08-30 17:00:00".ToDateTime());
-            //monitor.record();
-
             //获取tick数据
             var optionSource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockOptionTickDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Server170)));
             var optionRepo = InstanceFactory.Get<StockOptionTickRepository>(conn_type, optionSource);
             var stockSource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockTickDataSource>(new TypedParameter(typeof(ConnectionType), ConnectionType.Server170)));
-            var etfRepo = InstanceFactory.Get<StockTickRepository>(conn_type, stockSource);
+            var stockTickRepo = InstanceFactory.Get<StockTickRepository>(conn_type, stockSource);
             //获取日线数据
             var stockDailysource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockDailyDataSource>());
             var stockDailyRepo = InstanceFactory.Get<StockDailyRepository>(conn_type, stockDailysource);
@@ -53,39 +43,12 @@ namespace QuantitativeAnalysis
             var stockMinutelySource= new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockMinuteDataSource>());
             var stockMinutelyRepo= InstanceFactory.Get<StockMinuteRepository>(conn_type, stockMinutelySource);
             //获取日期数据
-            TransactionDateTimeRepository dateRepo= new TransactionDateTimeRepository(ConnectionType.Default);
+            TransactionDateTimeRepository dateRepo = new TransactionDateTimeRepository(ConnectionType.Default);
             DateUtils.setTradeDays(dateRepo.GetStockTransactionDate("2007-01-01".ToDateTime(), "2019-12-31".ToDateTime()));
 
 
-            //var test = new BasisStatistics(stockMinutelyRepo, "IC");
-            //test.compute("2016-04-01".ToDateTime(), "2018-04-1".ToDateTime());
-
-
-            //BasisChoice test = new BasisChoice(stockMinutelyRepo, "IC");
-            //test.compute("2016-04-01".ToDateTime(), "2018-04-11".ToDateTime());
-
-            //BasisFrontNext test = new BasisFrontNext(stockMinutelyRepo, "IC");
-            //test.parameterIteration("2018-03-01".ToDateTime(), "2018-04-1".ToDateTime());
-
-
-            IndexDeltaHedge test = new IndexDeltaHedge(stockMinutelyRepo, stockDailyRepo, "IC");
-            test.deltaHedge("2017-09-01".ToDateTime(), "2018-04-1".ToDateTime());
-
-            //Arbitrary test = new Arbitrary(infoRepo, optionRepo, etfRepo);
-            //ivix test = new ivix(infoRepo, optionRepo, etfRepo);
-            //test.recorddata("2017-05-15".ToDateTime(), "2017-06-30".ToDateTime());
-            //test.record("2016-03-17".ToDateTime(), "2017-12-25".ToDateTime());
-            //test.record("2016-11-01".ToDateTime(), "2016-12-31".ToDateTime());
-            //Impv test = new Impv(infoRepo, optionRepo, etfRepo);
-            //test.computeImpv("2017-08-10".ToDateTime(), "2017-10-20".ToDateTime());
-            //ETFArbitrary test = new ETFArbitrary(etfRepo,stockDailyRepo,"510050.SH");
-            //test.compute("2017-08-01".ToDateTime(), "2017-08-01".ToDateTime());
-
-            // ImbalanceInfactor test = new ImbalanceInfactor(etfRepo, stockDailyRepo, "510050.SH");
-            //test.computeImbalanceInfactor("2017-08-01".ToDateTime(), "2017-12-31".ToDateTime());
-
-            // ivixMinutely myRecord = new ivixMinutely(infoRepo, stockMinutelyRepo);
-            //myRecord.record("2017-11-20".ToDateTime(), "2017-12-18".ToDateTime());
+            var twap = new TWAP(stockTickRepo,dateRepo, "300274.SZ");
+            twap.computeSTWAP("2018-01-01".ToDateTime(), "2018-04-30".ToDateTime());
 
             logger.Info("main method end...");
         }

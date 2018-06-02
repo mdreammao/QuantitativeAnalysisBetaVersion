@@ -33,5 +33,10 @@ namespace QuantitativeAnalysis.DataAccess.Option
             // begin.ToString("yyyyMM"), code.Replace('.', '_'), begin, end);
             return sqlReader.GetDataTable(sqlStr);
         }
+
+        public DataTable GetFromSpecializedSQLServer(string code, DateTime date, ConnectionType type)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -15,5 +15,10 @@ namespace QuantitativeAnalysis.DataAccess.Option
         {
             return windReader.GetDailyDataTable(code, "open,high,low,close,volume,amt,settle,oi", begin, end);
         }
+
+        public DataTable GetFromSpecializedSQLServer(string code, DateTime date, ConnectionType type)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

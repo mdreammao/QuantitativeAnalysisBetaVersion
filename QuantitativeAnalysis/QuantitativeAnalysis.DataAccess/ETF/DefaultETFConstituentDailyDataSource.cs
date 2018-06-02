@@ -11,12 +11,14 @@ namespace QuantitativeAnalysis.DataAccess.ETF
     public class DefaultETFConstituentDailyDataSource : IDataSource
     {
         private WindReader windReader = new WindReader();
-        //public DataTable Get(string code, DateTime date)
-        //{
-        //    return windReader.GetETFConstituentByDate(code, date);
-        //}
-
+    
         public DataTable Get(string code, DateTime begin, DateTime end)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        public DataTable GetFromSpecializedSQLServer(string code, DateTime date, ConnectionType type)
         {
             throw new NotImplementedException();
         }

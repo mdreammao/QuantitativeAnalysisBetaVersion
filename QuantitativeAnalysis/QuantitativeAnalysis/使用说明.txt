@@ -7,5 +7,43 @@
 Get方法的参数是T类型的构造函数的参数
 
 
+历史策略的用法
+var test = new BasisStatistics(stockMinutelyRepo, "IC");
+test.compute("2016-04-01".ToDateTime(), "2018-04-1".ToDateTime());
 
 
+BasisChoice test = new BasisChoice(stockMinutelyRepo, "IC");
+test.compute("2016-04-01".ToDateTime(), "2018-04-11".ToDateTime());
+
+BasisFrontNext test = new BasisFrontNext(stockMinutelyRepo, "IC");
+test.parameterIteration("2018-03-01".ToDateTime(), "2018-04-1".ToDateTime());
+
+
+IndexDeltaHedge test = new IndexDeltaHedge(stockMinutelyRepo, stockDailyRepo, "IC");
+test.deltaHedge("2017-09-01".ToDateTime(), "2018-04-1".ToDateTime());
+
+Arbitrary test = new Arbitrary(infoRepo, optionRepo, etfRepo);
+ivix test = new ivix(infoRepo, optionRepo, etfRepo);
+test.recorddata("2017-05-15".ToDateTime(), "2017-06-30".ToDateTime());
+test.record("2016-03-17".ToDateTime(), "2017-12-25".ToDateTime());
+test.record("2016-11-01".ToDateTime(), "2016-12-31".ToDateTime());
+Impv test = new Impv(infoRepo, optionRepo, etfRepo);
+test.computeImpv("2017-08-10".ToDateTime(), "2017-10-20".ToDateTime());
+ETFArbitrary test = new ETFArbitrary(etfRepo, stockDailyRepo, "510050.SH");
+test.compute("2017-08-01".ToDateTime(), "2017-08-01".ToDateTime());
+
+ImbalanceInfactor test = new ImbalanceInfactor(etfRepo, stockDailyRepo, "510050.SH");
+test.computeImbalanceInfactor("2017-08-01".ToDateTime(), "2017-12-31".ToDateTime());
+
+ivixMinutely myRecord = new ivixMinutely(infoRepo, stockMinutelyRepo);
+myRecord.record("2017-11-20".ToDateTime(), "2017-12-18".ToDateTime());
+
+double option = 0.1639;
+double t = 0.063010;
+double r = 0.04;
+double spot = 2.1519 * Math.Exp(-r * t);
+double strike = 2.3;
+var sigma = ImpliedVolatilityExtension.sigmaOfCallByBisection(option, spot, strike, t, r);
+var sigma2 = ImpliedVolatilityExtension.sigmaOfPutByBisection(option, spot, strike, t, r);
+var monitor = new Arbitrary("2017-08-01 09:00:00".ToDateTime(), "2017-08-30 17:00:00".ToDateTime());
+monitor.record();

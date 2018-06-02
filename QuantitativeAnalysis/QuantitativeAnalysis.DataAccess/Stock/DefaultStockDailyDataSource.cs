@@ -15,5 +15,10 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         {
             return windReader.GetDailyDataTable(code, "open,high,low,close,volume,amt,adjfactor,trade_status", begin,end);
         }
+
+        public DataTable GetFromSpecializedSQLServer(string code, DateTime date, ConnectionType type)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

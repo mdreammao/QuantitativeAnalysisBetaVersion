@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QuantitativeAnalysis.DataAccess.Infrastructure;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -10,5 +11,7 @@ namespace QuantitativeAnalysis.DataAccess
     public interface IDataSource
     {
         DataTable Get(string code, DateTime begin,DateTime end);
+
+        DataTable GetFromSpecializedSQLServer(string code, DateTime date, ConnectionType type);
     }
 }

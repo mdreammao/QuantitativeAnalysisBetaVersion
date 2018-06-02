@@ -16,5 +16,10 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         {
             return windReader.GetMinuteDataTable(code, "open,high,low,close,volume,amt", begin, end, "periodstart=09:30:00;periodend=15:00:00;Fill=Previous");
         }
+
+        public DataTable GetFromSpecializedSQLServer(string code, DateTime date, ConnectionType type)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
