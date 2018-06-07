@@ -46,9 +46,16 @@ namespace QuantitativeAnalysis
             TransactionDateTimeRepository dateRepo = new TransactionDateTimeRepository(ConnectionType.Default);
             DateUtils.setTradeDays(dateRepo.GetStockTransactionDate("2007-01-01".ToDateTime(), "2019-12-31".ToDateTime()));
 
-
-            var twap = new STWAP(stockTickRepo,dateRepo, "300274.SZ");
-            twap.computeSTWAP("2018-01-01".ToDateTime(), "2018-04-30".ToDateTime());
+            var twap = new STWAP(stockTickRepo,dateRepo, "603939.SH");
+            twap.computeSTWAP("2015-01-01".ToDateTime(), "2018-06-06".ToDateTime());
+            //twap = new STWAP(stockTickRepo, dateRepo, "000544.SZ");
+            //twap.computeSTWAP("2015-01-01".ToDateTime(), "2018-06-06".ToDateTime());
+            //twap = new STWAP(stockTickRepo, dateRepo, "300274.SZ");
+            //twap.computeSTWAP("2015-01-01".ToDateTime(), "2018-06-06".ToDateTime());
+            //twap = new STWAP(stockTickRepo, dateRepo, "000738.SZ");
+            //twap.computeSTWAP("2015-01-01".ToDateTime(), "2018-06-06".ToDateTime());
+            //twap = new STWAP(stockTickRepo, dateRepo, "300230.SZ");
+            //twap.computeSTWAP("2015-01-01".ToDateTime(), "2018-06-06".ToDateTime());
 
             logger.Info("main method end...");
         }
