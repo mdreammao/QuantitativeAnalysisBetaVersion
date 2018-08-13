@@ -10,13 +10,11 @@ using QuantitativeAnalysis.DataAccess;
 using QuantitativeAnalysis.DataAccess.Stock;
 using NLog;
 using Autofac;
-
-
-
+using static QuantitativeAnalysis.Utilities.DateTimeExtension;
 
 namespace QuantitativeAnalysis.Monitor
 {
-    public class STWAP
+    public class TWAP
     {
         private TypedParameter conn_type = new TypedParameter(typeof(ConnectionType), ConnectionType.Default);
         private Logger logger = LogManager.GetCurrentClassLogger();
@@ -24,20 +22,23 @@ namespace QuantitativeAnalysis.Monitor
         private Logger mylog = NLog.LogManager.GetCurrentClassLogger();
         private TransactionDateTimeRepository dateRepo;
         private StockTickRepository stockRepo;
+        private StockMinuteRepository stockMinuteRepo;
         private int tradeId = 0;
         private int orderId = 0;
         private int eachOrderVolumeLimit = 1000000;
         private int totalTime = 14222;
         private double tradingRate = 0.8;
 
-        public STWAP(StockTickRepository stockRepo, TransactionDateTimeRepository dateRepo, string code)
+        public TWAP(StockTickRepository stockRepo, TransactionDateTimeRepository dateRepo, StockMinuteRepository stockMinuteRepo,string code)
         {
             this.code = code;
             this.stockRepo = stockRepo;
+            this.stockMinuteRepo = stockMinuteRepo;
             this.dateRepo = dateRepo;
+
         }
 
-        public void computeSTWAP(DateTime startDate, DateTime endDate, int totalVolume=10000000,int newOrderTimeInterval = 15,int oldOrderTimeInterval=15,int oldOrderFrequency=10,int newOrderPriceMode=1,int oldOrderPriceMode=1,int cancelTimeInterval=120)
+        public void computeTWAP(DateTime startDate, DateTime endDate, int totalVolume = 10000000, int newOrderTimeInterval = 15, int oldOrderTimeInterval = 15, int oldOrderFrequency = 10, int newOrderPriceMode = -1, int oldOrderPriceMode = -1, int cancelTimeInterval = 120)
         {
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
             foreach (var date in tradedays)
@@ -52,11 +53,12 @@ namespace QuantitativeAnalysis.Monitor
                 {
                     Console.WriteLine("code:{0},date:{1} No Data!!", code, date);
                 }
-                if (data.Count()==0)
+                if (data.Count() == 0)
                 {
                     Console.WriteLine("code:{0},date:{1} No Data!!", code, date);
                     continue;
                 }
+                double vol = getVolatilityMinutly(code, date, 10);
                 double mean = 0;
                 double marketMean = 0;
                 int seconds = 0;
@@ -73,13 +75,14 @@ namespace QuantitativeAnalysis.Monitor
                 int orderNeedToTrade = 0;
                 int orderAlreadyTrade = 0;
                 int counting = 0;
+                double lastNewOrderPrice = 0;
                 //逐秒进行判断成交以及策略挂单
-                for (seconds = 0; seconds <=14221; seconds++)
+                for (seconds = 0; seconds <= 14221; seconds++)
                 {
-                    DateTime time =date.Date+DataTimeStampExtension.GetStockSecondsTimeByIndex(seconds);
+                    DateTime time = date.Date + DataTimeStampExtension.GetStockSecondsTimeByIndex(seconds);
                     //获取市场数据部分
                     var lastTick = onTick(seconds, data);
-                    if (lastTick.Bid1==0)
+                    if (lastTick.Bid1 == 0)
                     {
                         continue;
                     }
@@ -90,17 +93,25 @@ namespace QuantitativeAnalysis.Monitor
                     //策略挂单撤单部分
                     double newOrderPrice = getOrderPrice(newOrderPriceMode, lastTick);
                     double oldOrderPrice = getOrderPrice(oldOrderPriceMode, lastTick);
-                    if (counting % newOrderTimeInterval==1)//每个新挂单周期的第1秒进行挂单
+                    if (counting % newOrderTimeInterval == 1)//每个新挂单周期的第1秒进行挂单
                     {
                         orderNeedToTrade = orderNeedToTrade + stockNeedToTradePerTimeInterval;
-                        if (orderVolumePerTimeInterval>0)
+                        if (orderVolumePerTimeInterval > 0)
                         {
                             orderId += 1;
                             double price = getOrderPrice(newOrderPriceMode, lastTick);
                             placeAnOrder(ref orderBook, lastTick, price, time, orderVolumePerTimeInterval, orderId);
+                            lastNewOrderPrice = price;
+                        }
+                        //如果价格跳涨，单位时间内多挂1倍的单
+                        if (lastNewOrderPrice>0 && (lastTick.Ask1/lastNewOrderPrice-1)>1*vol*Math.Sqrt(newOrderTimeInterval/60.0))
+                        {
+                            orderId += 1;
+                            placeAnOrder(ref orderBook, lastTick, lastTick.Ask1, time, orderVolumePerTimeInterval, orderId);
+                            lastNewOrderPrice = lastTick.Ask1;
                         }
                     }
-                    
+
                     if (counting % oldOrderTimeInterval == 5)//每个补单周期的第5秒进行补单
                     {
 
@@ -115,7 +126,7 @@ namespace QuantitativeAnalysis.Monitor
                         }
                     }
 
-                    
+
                     if (counting % cancelTimeInterval == 0) //每个撤单周期进行撤单，并计算需要补挂的单子
                     {
                         int activeOrderNumbers = getActivieOrderNumbers(orderBook);
@@ -125,13 +136,13 @@ namespace QuantitativeAnalysis.Monitor
                             cancelPartialDeviateOrders(ref orderBook, lastTick);
                             activeOrderNumbers = getActivieOrderNumbers(orderBook);
                         }
-                            //计算后续补单每次挂单量
+                        //计算后续补单每次挂单量
                         int oldOrderUntrade = orderNeedToTrade - orderAlreadyTrade - activeOrderNumbers;
                         oldOrderVolumePerTimeInterval = getVolumeOfTimeInterval(oldOrderUntrade, oldOrderFrequency);
                     }
                     //判断成交部分
                     dataSeconds = DataTimeStampExtension.GetStockSecondsIndex(data[dataIndex].TransactionDateTime);
-                    if (dataSeconds==seconds)
+                    if (dataSeconds == seconds)
                     {
                         //根据该tick的盘口数据，进行成交判断
                         transactionSimulation(ref orderBook, ref tradeBook, data[dataIndex]);
@@ -139,7 +150,7 @@ namespace QuantitativeAnalysis.Monitor
                         orderAlreadyTrade = getTradedNumbers(tradeBook);
                         untradeVolume = totalVolume - orderAlreadyTrade;
                         //移到下一个tick的数据
-                        if (dataIndex+1<data.Count())
+                        if (dataIndex + 1 < data.Count())
                         {
                             dataIndex = dataIndex + 1;
                         }
@@ -153,6 +164,61 @@ namespace QuantitativeAnalysis.Monitor
                     }
                 }
             }
+        }
+
+
+        private double getVolatilityMinutly(string code,DateTime today,int period)
+        {
+            double vol=0;
+            int num = 0;
+            DateTime start = DateUtils.PreviousTradeDay(today, period);
+            DateTime end = DateUtils.PreviousTradeDay(today, 1);
+            var tradedays = dateRepo.GetStockTransactionDate(start, end);
+            foreach (var date in tradedays)
+            {
+                var data = stockMinuteRepo.GetStockTransaction(code, date,date);
+                if (data.Count==0)
+                {
+                    continue;
+                }
+                List<double> priceList = new List<double>();
+                for (int i = 1; i < data.Count()-1; i++)
+                {
+                    priceList.Add(data[i].Close);
+                }
+                double volToday = getVolatility(priceList);
+                vol += volToday;
+                num += 1;
+            }
+            if (num>0)
+            {
+                vol = vol / num;
+            }
+            return vol;
+        }
+
+        private double getVolatility(List<double> priceList)
+        {
+            double vol = 0;
+            double mean = 0;
+            double variance = 0;
+            List<double> returnList = new List<double>();
+            for (int i = 1; i <priceList.Count(); i++)
+            {
+                returnList.Add(Math.Log(priceList[i] / priceList[i - 1]));
+            }
+            for (int i = 0; i < returnList.Count(); i++)
+            {
+                mean = mean + returnList[i];
+            }
+            mean = mean / returnList.Count();
+            for (int i = 0; i < returnList.Count(); i++)
+            {
+                variance += Math.Pow(returnList[i] - mean, 2);
+            }
+            variance /= returnList.Count() - 1;
+            vol = Math.Sqrt(variance);
+            return vol;
         }
 
         private int getOrderBookVolume(List<OrderBook> orderBook)
@@ -177,7 +243,7 @@ namespace QuantitativeAnalysis.Monitor
             return totalAmount / totalVolume;
         }
 
-        private void placeAnOrder(ref List<OrderBook> orderBook,StockTickTransaction tickData,double price,DateTime time,int volume,int orderId)
+        private void placeAnOrder(ref List<OrderBook> orderBook, StockTickTransaction tickData, double price, DateTime time, int volume, int orderId)
         {
             var marketSummary = getMarketWaitingVolumeSummary(tickData);
             var order = new OrderBook();
@@ -191,34 +257,34 @@ namespace QuantitativeAnalysis.Monitor
             {
                 order.waitingVolume = marketSummary[price];
             }
-            else if (marketSummary.Count()>0)
+            else if (marketSummary.Count() > 0)
             {
-                if (price>marketSummary.Keys.Max() && marketSummary.Keys.Max()>0)
+                if (price > marketSummary.Keys.Max() && marketSummary.Keys.Max() > 0)
                 {
-                    order.waitingVolume =2* marketSummary[marketSummary.Keys.Max()];
+                    order.waitingVolume = 2 * marketSummary[marketSummary.Keys.Max()];
                 }
             }
             orderBook.Add(order);
         }
 
         //根据盘口数据更新orderbook中的waitingvolume字段
-        private void modifyOrderBookByTickData(ref List<OrderBook> orderBook,StockTickTransaction tickData)
+        private void modifyOrderBookByTickData(ref List<OrderBook> orderBook, StockTickTransaction tickData)
         {
             var marketSummary = getMarketWaitingVolumeSummary(tickData);
             var orderSummary = getOrderBookSummary(orderBook);
             foreach (var market in marketSummary)
             {
-                if (orderSummary.ContainsKey(market.Key) && orderSummary[market.Key]>0)
+                if (orderSummary.ContainsKey(market.Key) && orderSummary[market.Key] > 0)
                 {
                     //从后往前更新数据
-                    int waitingVolume =market.Value;
-                    for (int i = orderBook.Count()-1; i >= 0; i--)
+                    int waitingVolume = market.Value;
+                    for (int i = orderBook.Count() - 1; i >= 0; i--)
                     {
                         var order = orderBook[i];
-                        if (order.price==market.Key && order.volume>0)
+                        if (order.price == market.Key && order.volume > 0)
                         {
                             order.waitingVolume = waitingVolume;
-                            waitingVolume = Math.Max(waitingVolume-order.volume,0);
+                            waitingVolume = Math.Max(waitingVolume - order.volume, 0);
                         }
                     }
 
@@ -241,11 +307,11 @@ namespace QuantitativeAnalysis.Monitor
         }
 
         //撤单，撤掉五档行情之外的挂单
-        private void cancelDeviateOrders(ref List<OrderBook> orderBook,StockTickTransaction tickData)
+        private void cancelDeviateOrders(ref List<OrderBook> orderBook, StockTickTransaction tickData)
         {
             foreach (var item in orderBook)
             {
-                if (item.price>tickData.Ask5)
+                if (item.price > tickData.Ask5)
                 {
                     item.volume = 0;
                     item.waitingVolume = 0;
@@ -259,7 +325,7 @@ namespace QuantitativeAnalysis.Monitor
             int numbers = 0;
             foreach (var item in tradeBookSummary)
             {
-                if (item.Value>0)
+                if (item.Value > 0)
                 {
                     numbers += item.Value;
                 }
@@ -273,7 +339,7 @@ namespace QuantitativeAnalysis.Monitor
             int numbers = 0;
             foreach (var item in orderBookSummary)
             {
-                if (item.Value>0)
+                if (item.Value > 0)
                 {
                     numbers += item.Value;
                 }
@@ -281,22 +347,22 @@ namespace QuantitativeAnalysis.Monitor
             return numbers;
         }
 
-        private int getVolumeOfTimeInterval(int totalVolume,int numberOfTimeInterval)
+        private int getVolumeOfTimeInterval(int totalVolume, int numberOfTimeInterval)
         {
             //四舍五入
-            int volume = (int)(Math.Round(Convert.ToDouble( totalVolume) / (numberOfTimeInterval * 100.0)) * 100);
+            int volume = (int)(Math.Round(Convert.ToDouble(totalVolume) / (numberOfTimeInterval * 100.0)) * 100);
             volume = Math.Min(volume, eachOrderVolumeLimit);
             volume = getRound2Digital(volume);
             return volume;
         }
 
 
-        private double getOrderPrice(int orderPriceMode,StockTickTransaction tickData)
+        private double getOrderPrice(int orderPriceMode, StockTickTransaction tickData)
         {
             double price = -1;
             switch (orderPriceMode)
             {
-                case 5: 
+                case 5:
                     price = tickData.Ask5;
                     break;
                 case 4:
@@ -316,20 +382,20 @@ namespace QuantitativeAnalysis.Monitor
                     break;
                 case -2:
                     price = tickData.Bid2;
-                    break;           
-                case -3:             
+                    break;
+                case -3:
                     price = tickData.Bid3;
-                    break;           
-                case -4:             
+                    break;
+                case -4:
                     price = tickData.Bid4;
-                    break;           
-                case -5:             
+                    break;
+                case -5:
                     price = tickData.Bid5;
-                    break;           
+                    break;
                 default:
                     break;
             }
-            if (price==0 && tickData.Bid1!=0)
+            if (price == 0 && tickData.Bid1 != 0)
             {
                 price = tickData.Bid1;
             }
@@ -340,18 +406,18 @@ namespace QuantitativeAnalysis.Monitor
         private int getRound2Digital(int volume)
         {
             int roundVolume = 0;
-            roundVolume = Convert.ToInt32((Math.Round(Convert.ToDouble(volume/100.0), 2)) * 100);
+            roundVolume = Convert.ToInt32((Math.Round(Convert.ToDouble(volume / 100.0), 2)) * 100);
             return roundVolume;
         }
 
-        private StockTickTransaction onTick(int seconds,List<StockTickTransaction> data)
+        private StockTickTransaction onTick(int seconds, List<StockTickTransaction> data)
         {
             StockTickTransaction tick = new StockTickTransaction();
             int secondsIndex = DataTimeStampExtension.GetStockSecondsIndex(data[0].TransactionDateTime);
             for (int i = 0; i < data.Count(); i++)
             {
                 secondsIndex = DataTimeStampExtension.GetStockSecondsIndex(data[i].TransactionDateTime);
-                if (secondsIndex<=seconds)
+                if (secondsIndex <= seconds)
                 {
                     tick = data[i];
                 }
@@ -364,15 +430,15 @@ namespace QuantitativeAnalysis.Monitor
         }
 
         //按盘口价格模拟成交
-        private void transactionSimulation(ref List<OrderBook> orderBook,ref List<TradeBook> tradeBook,StockTickTransaction tickData)
+        private void transactionSimulation(ref List<OrderBook> orderBook, ref List<TradeBook> tradeBook, StockTickTransaction tickData)
         {
             //如果orderbook上的挂单时间早于tickData数据的时间，认为orderbook的挂单完全成交。
             for (int i = 0; i < orderBook.Count(); i++)
             {
                 var order = orderBook[i];
-                if (order.time<tickData.TransactionDateTime)
+                if (order.time < tickData.TransactionDateTime)
                 {
-                    if (order.price<tickData.Bid1 && order.volume>0) //若order的卖价小于等于bid1的价格，认为其在该时刻已经成交了。
+                    if (order.price <= tickData.Bid1 && order.volume > 0) //若order的卖价小于等于bid1的价格，认为其在该时刻已经成交了。
                     {
                         //记录成交信息
                         TradeBook trade = new TradeBook();
@@ -400,12 +466,12 @@ namespace QuantitativeAnalysis.Monitor
                 {
                     int tradableVolume = getTradableVolumeFromMarket(tickData, price);
                     int tradedVolume = 0;
-                    if (tradableVolume<=0)
+                    if (tradableVolume <= 0)
                     {
                         break;
                     }
                     var order = orderBook[i];
-                    if (orderBook[i].volume==0 || orderBook[i].price!=price)
+                    if (orderBook[i].volume == 0 || orderBook[i].price != price)
                     {
                         continue;
                     }
@@ -423,7 +489,7 @@ namespace QuantitativeAnalysis.Monitor
                     else if (tradableVolume <= orderBook[i].waitingVolume + orderBook[i].volume)
                     {
                         //部分成交
-                        UpdateOrderBookWaitingVolume(price, tradableVolume, i+1, ref orderBook);
+                        UpdateOrderBookWaitingVolume(price, tradableVolume, i + 1, ref orderBook);
                         TradeBook trade = new TradeBook();
                         trade.tradeId = tradeId;
                         tradeId += 1;
@@ -444,8 +510,8 @@ namespace QuantitativeAnalysis.Monitor
                     else
                     {
                         //完全成交
-                        UpdateOrderBookWaitingVolume(price, orderBook[i].waitingVolume+orderBook[i].volume, i+1, ref orderBook);
-                        
+                        UpdateOrderBookWaitingVolume(price, orderBook[i].waitingVolume + orderBook[i].volume, i + 1, ref orderBook);
+
                         TradeBook trade = new TradeBook();
                         trade.code = code;
                         trade.tradeId = tradeId;
@@ -467,7 +533,7 @@ namespace QuantitativeAnalysis.Monitor
             }
         }
 
-        private void printTradingLog(TradeBook trade,List<OrderBook> orderBook,StockTickTransaction tickData)
+        private void printTradingLog(TradeBook trade, List<OrderBook> orderBook, StockTickTransaction tickData)
         {
             //foreach (var order in orderBook)
             //{
@@ -479,14 +545,14 @@ namespace QuantitativeAnalysis.Monitor
         }
 
 
-        private void UpdateOrderBookWaitingVolume(double price,int volume,int index,ref List<OrderBook> orderBook)
+        private void UpdateOrderBookWaitingVolume(double price, int volume, int index, ref List<OrderBook> orderBook)
         {
             for (int i = index; i < orderBook.Count(); i++)
             {
-                if (orderBook[i].price==price)
+                if (orderBook[i].price == price)
                 {
                     orderBook[i].waitingVolume -= volume;
-                    if (orderBook[i].waitingVolume<0)
+                    if (orderBook[i].waitingVolume < 0)
                     {
                         orderBook[i].waitingVolume = 0;
                     }
@@ -494,11 +560,11 @@ namespace QuantitativeAnalysis.Monitor
             }
         }
 
-        private int getTradableVolumeFromMarket(StockTickTransaction tickData,double price)
+        private int getTradableVolumeFromMarket(StockTickTransaction tickData, double price)
         {
             int volume = 0;
             SortedDictionary<double, int> market = new SortedDictionary<double, int>();
-            if (tickData.Bid1*tickData.BidV1>0)
+            if (tickData.Bid1 * tickData.BidV1 > 0)
             {
                 market.Add(tickData.Bid1, Convert.ToInt32(tickData.BidV1));
             }
@@ -520,18 +586,18 @@ namespace QuantitativeAnalysis.Monitor
             }
             foreach (var item in market)
             {
-                if (item.Key>=price)
+                if (item.Key >= price)
                 {
                     volume = +item.Value;
                 }
             }
             return volume;
         }
-        
-        private void UpdateTickData(ref StockTickTransaction tickData,int volume)
+
+        private void UpdateTickData(ref StockTickTransaction tickData, int volume)
         {
             int residualVolume = volume;
-            residualVolume -=Convert.ToInt32(Math.Min(volume, tickData.BidV1));
+            residualVolume -= Convert.ToInt32(Math.Min(volume, tickData.BidV1));
             tickData.BidV1 -= Math.Min(volume, tickData.BidV1);
             volume = residualVolume;
             residualVolume -= Convert.ToInt32(Math.Min(volume, tickData.BidV2));
@@ -552,11 +618,11 @@ namespace QuantitativeAnalysis.Monitor
         private SortedDictionary<double, int> getMarketWaitingVolumeSummary(StockTickTransaction tickData)
         {
             SortedDictionary<double, int> market = new SortedDictionary<double, int>();
-            if (tickData.Ask1*tickData.AskV1>0)
+            if (tickData.Ask1 * tickData.AskV1 > 0)
             {
                 market.Add(tickData.Ask1, Convert.ToInt32(tickData.AskV1));
             }
-            if (tickData.Ask2*tickData.AskV2>0)
+            if (tickData.Ask2 * tickData.AskV2 > 0)
             {
                 market.Add(tickData.Ask2, Convert.ToInt32(tickData.AskV2));
             }
@@ -576,12 +642,12 @@ namespace QuantitativeAnalysis.Monitor
         }
 
         //根据orderbook获取挂单汇总
-        private SortedDictionary<double,int> getOrderBookSummary(List<OrderBook> book)
+        private SortedDictionary<double, int> getOrderBookSummary(List<OrderBook> book)
         {
             SortedDictionary<double, int> summary = new SortedDictionary<double, int>();
             foreach (var order in book)
             {
-                if (order.volume>0)
+                if (order.volume > 0)
                 {
                     if (summary.ContainsKey(order.price))
                     {

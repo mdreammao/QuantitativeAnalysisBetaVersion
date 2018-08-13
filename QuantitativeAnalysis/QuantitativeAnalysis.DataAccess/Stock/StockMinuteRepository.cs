@@ -33,7 +33,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         }
         public List<StockTransaction> GetStockTransaction(string code, DateTime start, DateTime end)
         {
-            logger.Info(string.Format("begin to fetch stock{0} minute data from {1} to {2}...", code, start, end));
+            //logger.Info(string.Format("begin to fetch stock{0} minute data from {1} to {2}...", code, start, end));
             var stocks = new List<StockTransaction>();
             var tradingDates = dateTimeRepo.GetStockTransactionDate(start.Date, end.Date==DateTime.Now.Date?end.Date.AddDays(-1):end.Date);
             var timeInterval = new StockMinuteInterval(start, end, tradingDates);
@@ -49,7 +49,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                 }
                 stocks.Add(stock);
             }
-            logger.Info(string.Format("completed fetching stock{0} minute data from {1} to {2}...", code, start, end));
+            //logger.Info(string.Format("completed fetching stock{0} minute data from {1} to {2}...", code, start, end));
             return stocks;
         }
         #region internal method

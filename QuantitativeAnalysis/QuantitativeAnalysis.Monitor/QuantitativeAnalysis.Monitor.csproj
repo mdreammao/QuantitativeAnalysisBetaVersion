@@ -54,13 +54,14 @@
     <Compile Include="BasisFrontNext.cs" />
     <Compile Include="BasisStatistics.cs" />
     <Compile Include="ETFArbitrary.cs" />
-    <Compile Include="DeltaHedge.cs" />
+    <Compile Include="CallDeltaHedge.cs" />
     <Compile Include="Impv.cs" />
     <Compile Include="IndexDeltaHedge.cs" />
     <Compile Include="ivix.cs" />
     <Compile Include="ivixMinutely.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="STWAP.cs" />
+    <Compile Include="TWAP.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\QuantitativeAnalysis.DataAccess\QuantitativeAnalysis.DataAccess.csproj">

@@ -46,10 +46,12 @@ namespace QuantitativeAnalysis
             TransactionDateTimeRepository dateRepo = new TransactionDateTimeRepository(ConnectionType.Default);
             DateUtils.setTradeDays(dateRepo.GetStockTransactionDate("2007-01-01".ToDateTime(), "2019-12-31".ToDateTime()));
 
-            var twap = new STWAP(stockTickRepo,dateRepo, "603939.SH");
-            twap.computeSTWAP("2015-01-01".ToDateTime(), "2018-06-06".ToDateTime());
-            //twap = new STWAP(stockTickRepo, dateRepo, "000544.SZ");
-            //twap.computeSTWAP("2015-01-01".ToDateTime(), "2018-06-06".ToDateTime());
+            CallDeltaHedge hedgeDemo = new CallDeltaHedge(stockTickRepo, stockDailyRepo, "510050.SH", 60);
+            hedgeDemo.compute("2018-01-10".ToDateTime(), "2018-08-10".ToDateTime());
+            //var twap = new TWAP(stockTickRepo,dateRepo, stockMinutelyRepo,"603939.SH");
+            //twap.computeTWAP("2018-01-01".ToDateTime(), "2018-06-06".ToDateTime());
+            //var twap = new STWAP(stockTickRepo, dateRepo, "000544.SZ");
+            //twap.computeSTWAP("2018-06-20".ToDateTime(), "2018-06-20".ToDateTime());
             //twap = new STWAP(stockTickRepo, dateRepo, "300274.SZ");
             //twap.computeSTWAP("2015-01-01".ToDateTime(), "2018-06-06".ToDateTime());
             //twap = new STWAP(stockTickRepo, dateRepo, "000738.SZ");
