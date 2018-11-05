@@ -33,27 +33,25 @@ namespace QuantitativeAnalysis.Model
             if (transactionDates.Contains(nextTime.Date))
             {
                 var time = new TimeSpan(nextTime.Hour, nextTime.Minute, 0);
-                if (time <= new TimeSpan(9, 25, 0))
-                    return new DateTime(nextTime.Year, nextTime.Month, nextTime.Day, 9, 25, 0);
-                if (time > new TimeSpan(9, 25, 0) && time <= new TimeSpan(9, 30, 0))
+                if (time <= new TimeSpan(9, 30, 0))
                     return new DateTime(nextTime.Year, nextTime.Month, nextTime.Day, 9, 30, 0);
                 if (time > new TimeSpan(9, 30, 0) && time <= new TimeSpan(11, 29, 0))
                     return new DateTime(nextTime.Year, nextTime.Month, nextTime.Day, nextTime.Hour, nextTime.Minute, 0);
                 if (time > new TimeSpan(11, 29, 0) && time <= new TimeSpan(13, 0, 0))
                     return new DateTime(nextTime.Year, nextTime.Month, nextTime.Day, 13, 0, 0);
-                if (time > new TimeSpan(13, 0, 0) && time <= new TimeSpan(15, 0, 0))
+                if (time > new TimeSpan(13, 0, 0) && time <= new TimeSpan(14, 59, 0))
                     return new DateTime(nextTime.Year, nextTime.Month, nextTime.Day, nextTime.Hour, nextTime.Minute, 0);
-                if(time >new TimeSpan(15,0,0)&& nextTime.Date < transactionDates.Last())
+                if(time >new TimeSpan(14,59,0)&& nextTime.Date < transactionDates.Last())
                 {
                     var nextDate = transactionDates[transactionDates.IndexOf(nextTime.Date) + 1];
-                    return new DateTime(nextDate.Year, nextDate.Month, nextDate.Day, 9, 25, 0);
+                    return new DateTime(nextDate.Year, nextDate.Month, nextDate.Day, 9, 30, 0);
                 }
             }
             else
             {
                 var res = transactionDates.FirstOrDefault(c => c > nextTime.Date);
                 if (res != default(DateTime))
-                    return new DateTime(res.Year, res.Month, res.Day, 9, 25, 0);
+                    return new DateTime(res.Year, res.Month, res.Day, 9, 30, 0);
             }
             return End.AddDays(1);
         }

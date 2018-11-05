@@ -47,6 +47,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                     BulkLoadStockMinuteToRedisFromSql(code, currentTime);
                     stock = FetchStockMinuteTransFromRedis(code, currentTime);
                 }
+
                 stocks.Add(stock);
             }
             //logger.Info(string.Format("completed fetching stock{0} minute data from {1} to {2}...", code, start, end));
