@@ -30,6 +30,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="InfluxDB.Collector, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\InfluxDB.Collector.1.1.0\lib\net45\InfluxDB.Collector.dll</HintPath>
+    </Reference>
+    <Reference Include="InfluxDB.LineProtocol, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\InfluxDB.LineProtocol.1.1.0\lib\net45\InfluxDB.LineProtocol.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -53,6 +59,9 @@
       <Project>{0011d010-5617-417a-bfcf-cfe03b19f0fe}</Project>
       <Name>QuantitativeAnalysis.Model</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

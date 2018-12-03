@@ -33,6 +33,12 @@
     <Reference Include="Autofac, Version=4.6.1.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\packages\Autofac.4.6.1\lib\net45\Autofac.dll</HintPath>
     </Reference>
+    <Reference Include="InfluxDB.Collector, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\InfluxDB.Collector.1.1.0\lib\net45\InfluxDB.Collector.dll</HintPath>
+    </Reference>
+    <Reference Include="InfluxDB.LineProtocol, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\InfluxDB.LineProtocol.1.1.0\lib\net45\InfluxDB.LineProtocol.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -53,8 +59,11 @@
     <Compile Include="DateTimeExtension.cs" />
     <Compile Include="HistoricalVolatilityExtension.cs" />
     <Compile Include="ImpliedVolatilityExtension.cs" />
+    <Compile Include="ListExtension.cs" />
+    <Compile Include="ListToCSV.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StockOptionInfoExtension.cs" />
+    <Compile Include="strategyPerformance.cs" />
     <Compile Include="StringExtension.cs" />
   </ItemGroup>
   <ItemGroup>
