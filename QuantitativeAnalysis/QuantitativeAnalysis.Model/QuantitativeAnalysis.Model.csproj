@@ -49,12 +49,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BollingerBand.cs" />
     <Compile Include="CFEFutures.cs" />
     <Compile Include="ETFConsitituent.cs" />
     <Compile Include="IDateTimeInterval.cs" />
     <Compile Include="iVixInfo.cs" />
     <Compile Include="OneByOneTransaction.cs" />
     <Compile Include="orderBook.cs" />
+    <Compile Include="PairTrading.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Signal.cs" />
     <Compile Include="StockMinuteInterval.cs" />

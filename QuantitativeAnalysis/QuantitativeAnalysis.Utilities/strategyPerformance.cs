@@ -15,8 +15,9 @@ namespace QuantitativeAnalysis.Utilities
             {
                 yieldRate.Add(netvalue[i] / netvalue[i - 1] - 1);
             }
-            double AnnuliezdStd =  strategyPerformance.std(yieldRate)*Math.Sqrt(250);
-            double sharpe =(yieldRate.Average() * 250-r)/AnnuliezdStd;
+            double AnnuliezdStd =  strategyPerformance.std(yieldRate)*Math.Sqrt(annualizedCoefficient);
+            double mean = (netvalue[netvalue.Count() - 1] / netvalue[0]-1) / netvalue.Count() * annualizedCoefficient;
+            double sharpe =(mean - r)/AnnuliezdStd;
             return sharpe;
         }
 

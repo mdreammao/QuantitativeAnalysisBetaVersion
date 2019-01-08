@@ -59,39 +59,65 @@ namespace QuantitativeAnalysis.Monitor
                 underlyingAll.AddRange(underlyingToday);
             }
             double bestSharpe = 0;
-            double bestf1 = 1;
-            double bestf2 = 1;
-            double bestf3=1;
+            double bestf1 = 0.64;
+            double bestf2 = 0.48;
+            double bestf3=0.08;
             double step = 0.04;
 
-            for (int i = 1; i <= 1/step; i=i+1)
-            {
-                for (int j = 1; j <= 1 / step; j = j + 1)
-                {
-                    for (int k = 1; k <= 1 / step; k = k + 1)
-                    {
-                        double f1 = i * step;
-                        double f2 = j * step;
-                        double f3 = k * step;
-                        double[] netvalue0 = getPerformance(startDate, endDate, tradedays, underlyingDaily, f1, f2, f3);
-                        var nv = getNetValueCurveDaily(getNetValueDaily(underlyingAll, netvalue0));
-                        double sharpe = Utilities.strategyPerformance.sharpeRatioByDailyNetValue(nv);
-                        if (sharpe>bestSharpe)
-                        {
-                            bestf1 = f1;
-                            bestf2 = f2;
-                            bestf3 = f3;
-                            bestSharpe = sharpe;
-                            Console.WriteLine("Best parameters:f1={0}, f2={1}, f3={2}, sharpe={3}", f1, f2, f3, sharpe);
-                        }
-                    }
-                }
-            }
+            //for (int i = 1; i <= 1/step; i=i+1)
+            //{
+            //    for (int j = 1; j <= 1 / step; j = j + 1)
+            //    {
+            //        for (int k = 1; k <= 1 / step; k = k + 1)
+            //        {
+            //            double f1 = i * step;
+            //            double f2 = j * step;
+            //            double f3 = k * step;
+            //            double[] netvalue0 = getPerformance(startDate, endDate, tradedays, underlyingDaily, f1, f2, f3);
+            //            var nv = getNetValueCurveDaily(getNetValueDaily(underlyingAll, netvalue0));
+            //            double sharpe = Utilities.strategyPerformance.sharpeRatioByDailyNetValue(nv);
+            //            if (sharpe>bestSharpe)
+            //            {
+            //                bestf1 = f1;
+            //                bestf2 = f2;
+            //                bestf3 = f3;
+            //                bestSharpe = sharpe;
+            //                Console.WriteLine("Best parameters:f1={0}, f2={1}, f3={2}, sharpe={3}", f1, f2, f3, sharpe);
+            //            }
+            //        }
+            //    }
+            //}
 
             double[] netvalue = getPerformance(startDate, endDate, tradedays, underlyingDaily, bestf1, bestf2, bestf3);
             var nvDaily = getNetValueDaily(underlyingAll, netvalue);
             DataTableExtension.SaveCSV(DataTableExtension.ToDataTable<netvalueDaily>(nvDaily), "E:\\result\\break\\netvalue.csv");
             statisticDataOfTransaction(transactionData, tradedays);
+            double mean = 0;
+            double num = 0;
+            for (int i = -5; i <= 5; i = i + 1)
+            {
+                for (int j = -5; j <= 5; j = j + 1)
+                {
+                    for (int k = -5; k <= 5; k = k + 1)
+                    {
+                        double f1 =bestf1+i*step*0.25;
+                        double f2 =bestf2+j * step*0.25;
+                        double f3 =bestf3+k * step*0.25;
+                        if (f1<=0 || f2<=0 || f3<=0)
+                        {
+                            continue;
+                        }
+                        double[] netvalue0 = getPerformance(startDate, endDate, tradedays, underlyingDaily, f1, f2, f3);
+                        var nv = getNetValueCurveDaily(getNetValueDaily(underlyingAll, netvalue0));
+                        double sharpe = Utilities.strategyPerformance.sharpeRatioByDailyNetValue(nv);
+                        mean += sharpe;
+                        num += 1;
+                        Console.WriteLine("parameters around best:f1={0}, f2={1}, f3={2}, sharpe={3}", f1, f2, f3, sharpe);
+                    }
+                }
+            }
+            Console.WriteLine("mean:{0}", mean / num);
+
         }
 
         public double[] getPerformance(DateTime startDate, DateTime endDate,List<DateTime> tradedays,List<StockTransaction> underlyingDaily,double f1,double f2,double f3)

@@ -13,6 +13,7 @@ namespace QuantitativeAnalysis.Model
         public double position { get; set; }
         public double openPrice { get; set; }
         public double closePrice { get; set; }
+        public string closeStatus { get; set; }
     }
 
     public class netvalueDaily

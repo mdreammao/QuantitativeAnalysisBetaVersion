@@ -59,6 +59,9 @@
     <Compile Include="BasisChoice.cs" />
     <Compile Include="BasisFrontNext.cs" />
     <Compile Include="BasisStatistics.cs" />
+    <Compile Include="DualTrust.cs" />
+    <Compile Include="pairtradingDaily.cs" />
+    <Compile Include="pairTradingDaily2.cs" />
     <Compile Include="RBreakStrategy.cs" />
     <Compile Include="DiagonalSpread.cs" />
     <Compile Include="ETFArbitrary.cs" />

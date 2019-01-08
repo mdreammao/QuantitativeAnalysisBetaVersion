@@ -47,8 +47,18 @@ namespace QuantitativeAnalysis
             DateUtils.setTradeDays(dateRepo.GetStockTransactionDate("2007-01-01".ToDateTime(), "2019-12-31".ToDateTime()));
 
 
-            RBreakStrategy mybreak = new RBreakStrategy(stockMinutelyRepo, stockDailyRepo, "IC.CFE");
-            mybreak.compute("2016-01-01".ToDateTime(), "2018-11-20".ToDateTime());
+
+
+            //DualTrust dt0 = new DualTrust(stockMinutelyRepo, stockDailyRepo, "IF.CFE", "000300.SH");
+            //dt0.compute("2018-07-01".ToDateTime(), "2018-12-28".ToDateTime());
+
+            pairtradingDaily2 mypair = new pairtradingDaily2(stockDailyRepo,"600030.SH", "601688.SH");
+            mypair = new pairtradingDaily2(stockDailyRepo, "000333.SZ", "000651.SZ");
+            mypair = new pairtradingDaily2(stockDailyRepo, "601398.SH", "601939.SH");
+            mypair = new pairtradingDaily2(stockDailyRepo, "601318.SH", "601601.SH");
+            mypair.compute("2010-01-01".ToDateTime(), "2018-12-28".ToDateTime());
+            //RBreakStrategy mybreak = new RBreakStrategy(stockMinutelyRepo, stockDailyRepo, "IC.CFE");
+            //mybreak.compute("2016-01-01".ToDateTime(), "2018-11-20".ToDateTime());
             //DiagonalSpread backtest = new DiagonalSpread(stockMinutelyRepo, stockDailyRepo, "510050.SH");
             //backtest.compute("2016-01-01".ToDateTime(), "2018-09-25".ToDateTime());
             //VolumeDistribitionStrategy vd = new VolumeDistribitionStrategy(stockMinutelyRepo, stockDailyRepo, "510050.SH");

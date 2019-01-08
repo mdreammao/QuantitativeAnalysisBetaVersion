@@ -61,6 +61,7 @@
     <Compile Include="ImpliedVolatilityExtension.cs" />
     <Compile Include="ListExtension.cs" />
     <Compile Include="ListToCSV.cs" />
+    <Compile Include="MathUtility.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StockOptionInfoExtension.cs" />
     <Compile Include="strategyPerformance.cs" />
