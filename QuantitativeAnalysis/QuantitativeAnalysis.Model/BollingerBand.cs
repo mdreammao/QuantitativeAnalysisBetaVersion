@@ -31,4 +31,18 @@ namespace QuantitativeAnalysis.Model
         public DateTime time { get; set; }
     }
 
+    public class BollingerBandWithVarietyScale
+    {
+        public DateTime date { get; set; }
+        public double mean { get; set; }
+        public double std { get; set; }
+        public double orignalPrice { get; set; }
+        public double modifiedPrice { get; set; }
+        public double k { get; set; }
+        public double lambda { get; set; }
+        public double up { get; set; }
+        public double low { get; set; }
+    }
+
+
 }

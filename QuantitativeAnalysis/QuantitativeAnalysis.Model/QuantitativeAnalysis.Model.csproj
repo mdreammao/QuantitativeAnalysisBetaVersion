@@ -67,6 +67,7 @@
     <Compile Include="StockTickTransaction.cs" />
     <Compile Include="StockTransaction.cs" />
     <Compile Include="Interval.cs" />
+    <Compile Include="T0.cs" />
     <Compile Include="TransactionResult.cs" />
   </ItemGroup>
   <ItemGroup>
