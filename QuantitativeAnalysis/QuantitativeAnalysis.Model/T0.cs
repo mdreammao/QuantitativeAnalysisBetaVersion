@@ -21,6 +21,8 @@ namespace QuantitativeAnalysis.Model
         public double parameter1 { get; set; }
         public double parameter2 { get; set; }
         public double parameter3 { get; set; }
+        public double bestSharpe { get; set; }
+        public bool existGoodParameter { get; set; }
     }
 
 }

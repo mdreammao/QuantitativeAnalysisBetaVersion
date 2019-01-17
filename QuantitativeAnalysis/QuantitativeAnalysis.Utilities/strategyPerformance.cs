@@ -10,6 +10,10 @@ namespace QuantitativeAnalysis.Utilities
     {
         public static double sharpeRatioByDailyNetValue(List<double> netvalue, double annualizedCoefficient=250,double r=0)
         {
+            if (netvalue.Count()==0)
+            {
+                return -10;
+            }
             List<double> yieldRate = new List<double>();
             for (int i = 1; i < netvalue.Count(); i++)
             {

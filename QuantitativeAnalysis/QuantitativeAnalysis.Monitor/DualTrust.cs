@@ -68,7 +68,7 @@ namespace QuantitativeAnalysis.Monitor
             }
             double k1 = 0, k2 = 0, trailParameter = 0;
             //getParameter(tradedays, underlyingCodeDaily, codeDaily, ref k1, ref k2, ref trailParameter);
-            k1 = 1.6;k2 = 1.2;trailParameter = 0.011;
+            k1 = 2.8;k2 = 2.8;trailParameter = 0.004;
             double sharpe = computeChoiceParameter(tradedays, underlyingCodeDaily, codeDaily, k1, k2, trailParameter);
         }
 
@@ -80,7 +80,7 @@ namespace QuantitativeAnalysis.Monitor
             {
                 for (double k2 = 0.2; k2 <= 3; k2 = k2 + 0.2)
                 {
-                    for (double trailingParameter = 0.001; trailingParameter <= 0.1; trailingParameter = trailingParameter + 0.001)
+                    for (double trailingParameter = 0.002; trailingParameter <= 0.03; trailingParameter = trailingParameter + 0.002)
                     {
                         double sharpe = computeChoiceParameter(tradedays, underlyingDaily1, underlyingDaily2, k1, k2,trailingParameter);
                         if (sharpe > max)

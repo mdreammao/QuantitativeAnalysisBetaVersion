@@ -96,6 +96,21 @@ namespace QuantitativeAnalysis.Utilities
                 return getTradeDay(_IndexOfPreviousTradeDay(today, num));
             }
 
+
+            /// <summary>
+            /// 给出最近的交易日，如果今日是交易日返回今日，如果今日不是交易日则返回上一个交易日
+            /// </summary>
+            /// <param name="today">当前日</param>
+            /// <returns></returns>
+            public static DateTime LatestTradeDay(DateTime today)
+            {
+                if (IsTradeDay(today))
+                {
+                    return today;
+                }
+                return getTradeDay(_IndexOfPreviousTradeDay(today, 1));
+            }
+
             /// <summary>
             /// 给出向后数第N交易日,即比当前天晚的交易日中第N个早的那个。
             /// N=1时，给出下一交易日,即比当前天晚的交易日中最早的一个

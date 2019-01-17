@@ -60,6 +60,7 @@
     <Compile Include="BasisFrontNext.cs" />
     <Compile Include="BasisStatistics.cs" />
     <Compile Include="DualTrust.cs" />
+    <Compile Include="OptionMonitor50ETF2019.cs" />
     <Compile Include="pairtradingDaily.cs" />
     <Compile Include="pairTradingDaily2.cs" />
     <Compile Include="pairtradingDaily3.cs" />
