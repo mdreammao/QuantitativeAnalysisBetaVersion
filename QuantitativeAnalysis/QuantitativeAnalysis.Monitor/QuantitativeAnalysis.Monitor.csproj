@@ -101,5 +101,10 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="AlphaFramework\" />
+    <Folder Include="StockOptionFramework\" />
+    <Folder Include="TickDataToMinuteData\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

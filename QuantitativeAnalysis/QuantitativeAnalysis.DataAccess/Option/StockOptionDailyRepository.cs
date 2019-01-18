@@ -125,6 +125,17 @@ namespace QuantitativeAnalysis.DataAccess.Option
             foreach (var item in nonExistedDateIntervalInSql)
             {
                 var dt = dataSource.Get(code, item.Key, item.Value);
+                //数据需要清洗一遍，为NaN的数据变成0
+                foreach (DataRow dr in dt.Rows)
+                {
+                    for (int i = 2; i < dt.Columns.Count; i++)
+                    {
+                        if (double.IsNaN(Convert.ToDouble(dr[i]))==true)
+                        {
+                            dr[i] = 0;
+                        }
+                    }
+                }
                 sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[StockOption]");
             }
         }

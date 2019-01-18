@@ -38,6 +38,8 @@ namespace QuantitativeAnalysis
             //获取日线数据
             var stockDailysource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockDailyDataSource>());
             var stockDailyRepo = InstanceFactory.Get<StockDailyRepository>(conn_type, stockDailysource);
+            var optionDailySource=new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockOptionDailyDataSource>());
+            var optionDailyRepo= InstanceFactory.Get<StockOptionDailyRepository>(conn_type, optionDailySource);
             var infoRepo = InstanceFactory.Get<OptionInfoRepository>(conn_type);
             //获取分钟线数据
             var stockMinutelySource= new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockMinuteDataSource>());
@@ -46,6 +48,8 @@ namespace QuantitativeAnalysis
             TransactionDateTimeRepository dateRepo = new TransactionDateTimeRepository(ConnectionType.Default);
             DateUtils.setTradeDays(dateRepo.GetStockTransactionDate("2007-01-01".ToDateTime(), "2019-12-31".ToDateTime()));
 
+
+            OptionMonitor50ETF2019 optionMonitor = new OptionMonitor50ETF2019(infoRepo, dateRepo, stockDailyRepo, stockMinutelyRepo,optionDailyRepo,"2015-02-09".ToDateTime(), "2019-01-14".ToDateTime());
 
            //trendT0 myt0 = new trendT0(stockMinutelyRepo, stockDailyRepo, "000016.SH", "2016-02-01".ToDateTime(), "2019-01-14".ToDateTime());
             
