@@ -132,8 +132,8 @@ namespace QuantitativeAnalysis.DataAccess.Option
                     {
                         if (double.IsNaN(Convert.ToDouble(dr[i]))==true)
                         {
-                            dr[i] = 0;
-                        }
+                            //dr[i] = 0;
+                            dr[i] = DBNull.Value;                        }
                     }
                 }
                 sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[StockOption]");

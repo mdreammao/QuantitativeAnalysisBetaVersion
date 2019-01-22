@@ -11,6 +11,27 @@ namespace QuantitativeAnalysis.Utilities
     {
         public static List<TimeSpan> stockTickStamp=new List<TimeSpan>();
 
+        public static TimeSpan GetStockMinuteTimeByIndex(int index)
+        {
+            TimeSpan now = new TimeSpan();
+            TimeSpan open1 = new TimeSpan(9, 30, 00);
+            TimeSpan close1 = new TimeSpan(11, 30, 00);
+            TimeSpan open2 = new TimeSpan(13, 00, 00);
+            TimeSpan close2 = new TimeSpan(15, 00, 00);
+            if (index >= 0 && index <= 119)
+            {
+                TimeSpan addtional = new TimeSpan(0, index, 0);
+                now = open1.Add(addtional);
+            }
+            else if (index >= 120 && index <= 239)
+            {
+                TimeSpan addtional = new TimeSpan(0, index-120, 0);
+                now = open2.Add(addtional);
+            }
+            return now;
+        }
+
+
         public static TimeSpan GetStockSecondsTimeByIndex(int index)
         {
             TimeSpan now = new TimeSpan();

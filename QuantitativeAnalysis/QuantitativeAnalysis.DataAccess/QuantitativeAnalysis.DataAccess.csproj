@@ -87,6 +87,7 @@
     <Compile Include="Stock\StockInfoRepository.cs" />
     <Compile Include="Stock\StockMinuteRepository.cs" />
     <Compile Include="Option\StockOptionDailyRepository.cs" />
+    <Compile Include="Stock\StockMinuteStoreRepository.cs" />
     <Compile Include="Stock\StockTickFiller.cs" />
     <Compile Include="Option\StockOptionTickRepository.cs" />
     <Compile Include="Stock\StockTickRepository.cs" />

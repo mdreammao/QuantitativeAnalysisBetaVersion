@@ -37,6 +37,29 @@ namespace QuantitativeAnalysis.Model
         public bool existsModified { get; set; }
     }
 
+    public class optionGreeks
+    {
+        public string code { get; set; }
+        public string name { get; set; }
+        public string underlying { get; set; }
+        public double strike { get; set; }
+        public int unit { get; set; }
+        public DateTime expireDate { get; set; }
+        public double duration { get; set; }
+        public double modifiedDuration { get; set; }
+        public DateTime today { get; set; }
+        public double Basis { get; set; }
+        public double cashBasis { get; set; }
+        public double delta { get; set; }
+        public double cashDelta { get; set; }
+        public double gamma { get; set; }
+        public double cashGamma { get; set; }
+        public double theta { get; set; }
+        public double thetaOfInterest { get; set; }
+        public double thetaOfNonInterest { get; set; }
+        public double vega { get; set; }
+    }
+
 
     public class underlyingDividendInformation
     {

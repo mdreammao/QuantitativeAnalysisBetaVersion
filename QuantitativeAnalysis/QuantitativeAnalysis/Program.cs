@@ -9,6 +9,7 @@ using QuantitativeAnalysis.Model;
 using QuantitativeAnalysis.DataAccess;
 using QuantitativeAnalysis.DataAccess.Stock;
 using QuantitativeAnalysis.DataAccess.Option;
+using QuantitativeAnalysis.Monitor.TickDataToMinuteData;
 using NLog;
 using Autofac;
 using QuantitativeAnalysis.Transaction;
@@ -48,6 +49,7 @@ namespace QuantitativeAnalysis
             TransactionDateTimeRepository dateRepo = new TransactionDateTimeRepository(ConnectionType.Default);
             DateUtils.setTradeDays(dateRepo.GetStockTransactionDate("2007-01-01".ToDateTime(), "2019-12-31".ToDateTime()));
 
+            //StockTickToMinute myData = new StockTickToMinute(dateRepo,stockDailyRepo,stockMinutelyRepo,stockTickRepo, "2016-02-01".ToDateTime(), "2019-01-14".ToDateTime());
 
             OptionMonitor50ETF2019 optionMonitor = new OptionMonitor50ETF2019(infoRepo, dateRepo, stockDailyRepo, stockMinutelyRepo,optionDailyRepo,"2015-02-09".ToDateTime(), "2019-01-14".ToDateTime());
 
