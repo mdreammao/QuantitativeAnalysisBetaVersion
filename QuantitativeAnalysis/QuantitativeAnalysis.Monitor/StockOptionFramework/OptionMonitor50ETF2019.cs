@@ -121,6 +121,7 @@ namespace QuantitativeAnalysis.Monitor
             foreach (var list in strikeDic)
             {
                 DateTime expireDate = list.Key;
+                double avgBasis = 0;
                 Dictionary<double, double> basisByStrike = new Dictionary<double, double>();
                 foreach (var item in list.Value)
                 {
@@ -166,6 +167,13 @@ namespace QuantitativeAnalysis.Monitor
                     basisByStrike.Add(strike, basis);
 
                 }
+                List<double> strikeOrdered = list.Value.OrderBy(x => Math.Abs(x - underlyingClose)).ToList();
+                for (int i = 0; i < 3; i++)
+                {
+                    avgBasis +=basisByStrike[strikeOrdered[i]];
+                }
+                avgBasis = avgBasis / 3;
+                basisList.Add(expireDate, avgBasis);
             }
 
 
