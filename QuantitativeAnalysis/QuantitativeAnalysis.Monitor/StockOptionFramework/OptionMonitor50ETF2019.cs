@@ -67,21 +67,20 @@ namespace QuantitativeAnalysis.Monitor
             foreach (var date in tradedays)
             {
 
-                var today = date.Date + new TimeSpan(15, 0, 0);
-                getGreekInformation(today, underlyingDailyData[date],optionListModifiedByCode,optionDailyDataByDate[date]);
+                var today = date.Date + new TimeSpan(15, 0, 0);//将时间调整到收盘时间
+                var greeks=getGreekInformation(today, underlyingDailyData[date],optionListModifiedByCode,optionDailyDataByDate[date]);
 
             }
         }
 
-        private void getGreekInformation(DateTime date, StockTransaction underlyingData, Dictionary<string,StockOptionInformationWithModified> optionList, List<StockOptionTransaction> optionData)
+        private Dictionary<string, optionGreeks> getGreekInformation(DateTime date, StockTransaction underlyingData, Dictionary<string,StockOptionInformationWithModified> optionList, List<StockOptionTransaction> optionData)
         {
             double oneYearDays = 280;
-            double underlyingClose = underlyingData.Close;
-            
+            double underlyingClose =Math.Round(underlyingData.Close,3);
+            Dictionary<string, optionGreeks> greeks = new Dictionary<string, optionGreeks>();
             Dictionary<DateTime, double> durationDic = new Dictionary<DateTime, double>();
             Dictionary<DateTime, List<double>> strikeDic = new Dictionary<DateTime, List<double>>();
             Dictionary<DateTime, double> basisList = new Dictionary<DateTime, double>();
-            Dictionary<DateTime, Dictionary<double, optionGreeks>> greeks = new Dictionary<DateTime, Dictionary<double, optionGreeks>>();
             //希腊值的处理
             //预处理到期日和行权价
             foreach (var option in optionData)
@@ -175,8 +174,45 @@ namespace QuantitativeAnalysis.Monitor
                 avgBasis = avgBasis / 3;
                 basisList.Add(expireDate, avgBasis);
             }
-
-
+            //逐合约计算波动率及希腊值
+            foreach (var option in optionData)
+            {
+                optionGreeks greek = new optionGreeks();
+                var info = optionList[option.Code];
+                double strike = info.strike;
+                double optionPrice = option.Close;
+                int unit = info.unit;
+                if (info.existsModified == true && date < info.dividendDate)
+                {
+                    strike = info.strike;
+                    unit = info.unitBeforeModifed;
+                }
+                greek.strike = strike;
+                greek.name = info.name;
+                greek.underlying = info.underlying;
+                greek.underlyPrice = underlyingClose;
+                greek.unit = unit;
+                greek.today = date;
+                greek.code = info.code;
+                greek.expireDate = info.expireDate;
+                greek.duration= getInterestDuartion(date, info.expireDate);
+                greek.modifiedDuration= getModifiedDuration(date, info.expireDate, durationModifiedCoff)/ getModifiedDuration(info.expireDate.AddYears(-1), info.expireDate, durationModifiedCoff);
+                greek.Basis = basisList[info.expireDate];
+                greek.optionPrice = optionPrice;
+                greek.type = info.type;
+                double optionPriceWithBasis = greek.underlyPrice + greek.Basis;
+                //计算波动率
+                greek.impliedVol = ImpliedVolatilityExtension.ComputeImpliedVolatility(greek.strike, greek.modifiedDuration, rate, 0, greek.type, greek.optionPrice, optionPriceWithBasis);
+                greek.delta = ImpliedVolatilityExtension.ComputeOptionDelta(greek.strike, greek.modifiedDuration, rate, 0, greek.type, greek.impliedVol, optionPriceWithBasis);
+                greek.cashDelta = greek.delta * greek.unit * greek.underlyPrice * 0.01;
+                greek.vega = ImpliedVolatilityExtension.ComputeOptionVega(greek.strike, greek.modifiedDuration, rate, 0, greek.impliedVol, optionPriceWithBasis);
+                greek.cashVega = greek.vega * greek.unit;
+                greek.cashGamma = 0.5 * greek.gamma * Math.Pow((greek.unit * greek.underlyPrice * 0.01), 2);
+                greek.cashBasis = greek.Basis * greek.delta * greek.unit;
+                //讲信息写入希腊值列表
+                greeks.Add(info.code, greek);
+            }
+            return greeks;
         }
 
 

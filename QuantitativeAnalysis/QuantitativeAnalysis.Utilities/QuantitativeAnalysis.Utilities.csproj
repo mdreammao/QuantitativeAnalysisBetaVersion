@@ -59,6 +59,7 @@
     <Compile Include="DateTimeExtension.cs" />
     <Compile Include="HistoricalVolatilityExtension.cs" />
     <Compile Include="ImpliedVolatilityExtension.cs" />
+    <Compile Include="ImpliedVolatilityExtension2.cs" />
     <Compile Include="ListExtension.cs" />
     <Compile Include="ListToCSV.cs" />
     <Compile Include="MathUtility.cs" />

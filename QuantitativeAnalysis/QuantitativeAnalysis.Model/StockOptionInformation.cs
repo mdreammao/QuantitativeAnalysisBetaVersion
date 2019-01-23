@@ -42,12 +42,16 @@ namespace QuantitativeAnalysis.Model
         public string code { get; set; }
         public string name { get; set; }
         public string underlying { get; set; }
+        public double underlyPrice { get; set; }
+        public double optionPrice { get; set; }
         public double strike { get; set; }
+        public string type { get; set; }
         public int unit { get; set; }
         public DateTime expireDate { get; set; }
         public double duration { get; set; }
         public double modifiedDuration { get; set; }
         public DateTime today { get; set; }
+        public double impliedVol { get; set; }
         public double Basis { get; set; }
         public double cashBasis { get; set; }
         public double delta { get; set; }
@@ -58,6 +62,7 @@ namespace QuantitativeAnalysis.Model
         public double thetaOfInterest { get; set; }
         public double thetaOfNonInterest { get; set; }
         public double vega { get; set; }
+        public double cashVega { get; set; }
     }
 
 
