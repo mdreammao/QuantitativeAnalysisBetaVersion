@@ -11,10 +11,24 @@ namespace QuantitativeAnalysis.Utilities
 
         public static double[] erfList = new double[100000];
 
+        public static double computeD1(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice)
+        {
+            double d1= (Math.Log(underlyingPrice / strike) + (riskFreeRate*duration + Math.Pow(optionVolatility, 2) / 2 * modifiedDuration)) / (optionVolatility * Math.Sqrt(modifiedDuration));
+            return d1;
+        }
+
+        public static double computeD2(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice)
+        {
+            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate * duration + Math.Pow(optionVolatility, 2) / 2 * modifiedDuration)) / (optionVolatility * Math.Sqrt(modifiedDuration));
+            double d2 = d1 - optionVolatility * Math.Sqrt(modifiedDuration);
+            return d2;
+        }
+
+
         //计算delta
         public static double ComputeOptionDelta(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, string optionType, double optionVolatility, double underlyingPrice)
         {
-            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
+            double d1 = computeD1(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice);
             if (optionType == "认购")
             {
                 return normcdf(d1);
@@ -28,7 +42,7 @@ namespace QuantitativeAnalysis.Utilities
         //计算gamma
         public static double ComputeOptionGamma(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice)
         {
-            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
+            double d1 = computeD1(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice);
             double gamma = Math.Exp(-d1 * d1 / 2.0) / (Math.Sqrt(2 * Math.PI * modifiedDuration) * underlyingPrice * optionVolatility);
             return gamma;
         }
@@ -37,7 +51,7 @@ namespace QuantitativeAnalysis.Utilities
         //计算vega
         public static double ComputeOptionVega(double strike, double duration,double modifiedDuration,double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice)
         {
-            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
+            double d1 = computeD1(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice);
             double vega = Math.Sqrt(modifiedDuration / 2.0 / Math.PI) * underlyingPrice * Math.Exp(-d1 * d1 / 2.0);
             return vega;
         }
@@ -53,8 +67,8 @@ namespace QuantitativeAnalysis.Utilities
         //计算利息相关的theta
         public static double ComputeThetaWithInterest(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice, string optionType)
         {
-            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
-            double d2 = d1 - optionVolatility * Math.Sqrt(modifiedDuration);
+            double d1 = computeD1(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice);
+            double d2 = computeD2(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice);
             double theta = 0;
             if (optionType == "认购")
             {
@@ -71,8 +85,8 @@ namespace QuantitativeAnalysis.Utilities
         //计算非利息相关的theta
         public static double ComputeThetaWithoutInterest(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice, string optionType)
         {
-            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
-            double d2 = d1 - optionVolatility * Math.Sqrt(modifiedDuration);
+            double d1 = computeD1(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice);
+            double d2 = computeD2(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice);
             double theta = 0;
             if (optionType == "认购")
             {
@@ -89,8 +103,8 @@ namespace QuantitativeAnalysis.Utilities
         //计算rho
         public static double ComputeOptionRho(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice, string optionType)
         {
-            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
-            double d2 = d1 - optionVolatility * Math.Sqrt(modifiedDuration);
+            double d1 = computeD1(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice);
+            double d2 = computeD2(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice);
             double rho = 0;
             if (optionType=="认购")
             {
@@ -147,8 +161,8 @@ namespace QuantitativeAnalysis.Utilities
             for (int num = 0; num <= 50; num++)
             {
                 sigmaold = sigma;
-                double d1 = (Math.Log(spotPrice / strike) + (r + sigma * sigma / 2) * modifiedDuration) / (sigma * Math.Sqrt(modifiedDuration));
-                double d2 = d1 - sigma * Math.Sqrt(modifiedDuration);
+                double d1 = computeD1(strike, duration, modifiedDuration, r, 0,sigma, spotPrice);
+                double d2 = computeD2(strike, duration, modifiedDuration, r, 0, sigma,spotPrice);
                 double f_sigma = normcdf(d1) * spotPrice - normcdf(d2) * strike * Math.Exp(-r * duration);
                 double df_sigma = spotPrice * Math.Sqrt(modifiedDuration) * Math.Exp(-d1 * d1 / 2) / (Math.Sqrt(2 * Math.PI));
                 if (df_sigma <= 0.000001)
@@ -364,8 +378,9 @@ namespace QuantitativeAnalysis.Utilities
             {
                 return ((spotPrice - strike) > 0) ? (spotPrice - strike) : 0;
             }
-            double d1 = (Math.Log(spotPrice / strike) + (r + sigma * sigma / 2) * modifiedDuration) / (sigma * Math.Sqrt(modifiedDuration));
-            double d2 = d1 - sigma * Math.Sqrt(modifiedDuration);
+            double d1 = computeD1(strike, duration, modifiedDuration, r, 0, sigma, spotPrice);
+            double d2 = computeD2(strike, duration, modifiedDuration, r, 0, sigma, spotPrice);
+
             return normcdf(d1) * spotPrice - normcdf(d2) * strike * Math.Exp(-r * duration);
         }
 
@@ -384,8 +399,8 @@ namespace QuantitativeAnalysis.Utilities
             {
                 return ((strike - spotPrice) > 0) ? (strike - spotPrice) : 0;
             }
-            double d1 = (Math.Log(spotPrice / strike) + (r  + sigma * sigma / 2)*modifiedDuration) / (sigma * Math.Sqrt(modifiedDuration));
-            double d2 = d1 - sigma * Math.Sqrt(modifiedDuration);
+            double d1 = computeD1(strike, duration, modifiedDuration, r, 0, sigma, spotPrice);
+            double d2 = computeD2(strike, duration, modifiedDuration, r, 0, sigma, spotPrice);
             return -normcdf(-d1) * spotPrice + normcdf(-d2) * strike * Math.Exp(-r * duration);
         }
 
