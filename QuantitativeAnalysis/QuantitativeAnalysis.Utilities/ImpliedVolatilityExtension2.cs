@@ -11,9 +11,10 @@ namespace QuantitativeAnalysis.Utilities
 
         public static double[] erfList = new double[100000];
 
-        public static double ComputeOptionDelta(double strike, double duration, double riskFreeRate, double StockRate, string optionType, double optionVolatility, double underlyingPrice)
+        //计算delta
+        public static double ComputeOptionDelta(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, string optionType, double optionVolatility, double underlyingPrice)
         {
-            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * duration) / (optionVolatility * Math.Sqrt(duration));
+            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
             if (optionType == "认购")
             {
                 return normcdf(d1);
@@ -24,23 +25,96 @@ namespace QuantitativeAnalysis.Utilities
             }
         }
 
-        public static double ComputeOptionVega(double strike, double duration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice)
+        //计算gamma
+        public static double ComputeOptionGamma(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice)
         {
-            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * duration) / (optionVolatility * Math.Sqrt(duration));
-            double vega = Math.Sqrt(duration / 2.0 / Math.PI) * underlyingPrice * Math.Exp(-d1 * d1 / 2.0);
+            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
+            double gamma = Math.Exp(-d1 * d1 / 2.0) / (Math.Sqrt(2 * Math.PI * modifiedDuration) * underlyingPrice * optionVolatility);
+            return gamma;
+        }
+
+
+        //计算vega
+        public static double ComputeOptionVega(double strike, double duration,double modifiedDuration,double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice)
+        {
+            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
+            double vega = Math.Sqrt(modifiedDuration / 2.0 / Math.PI) * underlyingPrice * Math.Exp(-d1 * d1 / 2.0);
             return vega;
         }
 
-        public static double ComputeOptionPrice(double strike, double duration, double riskFreeRate, double StockRate, string optionType, double optionVolatility, double underlyingPrice)
+        //计算theta
+        public static double ComputeTheta(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice, string optionType)
+        {
+            double theta = ComputeThetaWithInterest(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice, optionType) + ComputeThetaWithoutInterest(strike, duration, modifiedDuration, riskFreeRate, StockRate, optionVolatility, underlyingPrice, optionType);
+            return theta;
+        }
+
+
+        //计算利息相关的theta
+        public static double ComputeThetaWithInterest(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice, string optionType)
+        {
+            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
+            double d2 = d1 - optionVolatility * Math.Sqrt(modifiedDuration);
+            double theta = 0;
+            if (optionType == "认购")
+            {
+                theta = -riskFreeRate * strike * Math.Exp(-riskFreeRate * duration) * normcdf(d2);
+            }
+            else
+            {
+                theta = riskFreeRate * strike * Math.Exp(-riskFreeRate * duration) * normcdf(-d2);
+            }
+            return theta;
+        }
+
+
+        //计算非利息相关的theta
+        public static double ComputeThetaWithoutInterest(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice, string optionType)
+        {
+            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
+            double d2 = d1 - optionVolatility * Math.Sqrt(modifiedDuration);
+            double theta = 0;
+            if (optionType == "认购")
+            {
+                theta = -underlyingPrice * optionVolatility * Math.Exp(-d1 * d1 / 2) / (2 * Math.Sqrt(modifiedDuration * 2 * Math.PI));
+            }
+            else
+            {
+                theta = -underlyingPrice * optionVolatility * Math.Exp(-d1 * d1 / 2) / (2 * Math.Sqrt(modifiedDuration * 2 * Math.PI));
+            }
+            return theta;
+        }
+
+
+        //计算rho
+        public static double ComputeOptionRho(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, double optionVolatility, double underlyingPrice, string optionType)
+        {
+            double d1 = (Math.Log(underlyingPrice / strike) + (riskFreeRate + Math.Pow(optionVolatility, 2) / 2) * modifiedDuration) / (optionVolatility * Math.Sqrt(modifiedDuration));
+            double d2 = d1 - optionVolatility * Math.Sqrt(modifiedDuration);
+            double rho = 0;
+            if (optionType=="认购")
+            {
+                rho = strike * duration * Math.Exp(-riskFreeRate * duration) * normcdf(d2);
+            }
+            else
+            {
+                rho = -strike * duration * Math.Exp(-riskFreeRate * duration) * normcdf(-d2);
+            }
+            return rho;
+        }
+
+
+        //计算期权价格
+        public static double ComputeOptionPrice(double strike, double duration, double modifiedDuration,double riskFreeRate, double StockRate, string optionType, double optionVolatility, double underlyingPrice)
         {
             double etfPirce = underlyingPrice * Math.Exp(-StockRate * duration);
-            return optionLastPrice(etfPirce, optionVolatility, strike, duration, riskFreeRate, optionType);
+            return optionLastPrice(etfPirce, optionVolatility, strike, duration, modifiedDuration,riskFreeRate, optionType);
         }
-        public static double ComputeImpliedVolatility(double strike, double duration, double riskFreeRate, double StockRate, string optionType, double optionPrice, double underlyingPrice)
+        public static double ComputeImpliedVolatility(double strike, double duration, double modifiedDuration, double riskFreeRate, double StockRate, string optionType, double optionPrice, double underlyingPrice)
         {
 
             double etfPirce = underlyingPrice * Math.Exp(-StockRate * duration);
-            return sigma(etfPirce, optionPrice, strike, duration, riskFreeRate, optionType);
+            return sigma(etfPirce, optionPrice, strike, duration,modifiedDuration,riskFreeRate, optionType);
         }
         public static double _StartPoint(double K, double T, double r, double call, double s)///K 是 执行价格 
         {
@@ -59,10 +133,11 @@ namespace QuantitativeAnalysis.Utilities
         /// <param name="callPrice">期权价格</param>
         /// <param name="spotPrice">标的价格</param>
         /// <param name="strike">期权行权价</param>
-        /// <param name="duration">期权到期日</param>
+        /// <param name="duration">到期时间</param>
+        /// <param name="modifiedDuration">根据交易日调整过的到期时间</param>
         /// <param name="r">无风险利率</param>
         /// <returns>返回隐含波动率</returns>
-        public static double sigmaOfCall(double callPrice, double spotPrice, double strike, double duration, double r)
+        public static double sigmaOfCall(double callPrice, double spotPrice, double strike, double duration, double modifiedDuration,double r)
         {
             double sigma = _StartPoint(strike, duration, r, callPrice, spotPrice), sigmaold = sigma;
             if (callPrice < spotPrice - strike * Math.Exp(-r * duration))
@@ -72,10 +147,10 @@ namespace QuantitativeAnalysis.Utilities
             for (int num = 0; num <= 50; num++)
             {
                 sigmaold = sigma;
-                double d1 = (Math.Log(spotPrice / strike) + (r + sigma * sigma / 2) * duration) / (sigma * Math.Sqrt(duration));
-                double d2 = d1 - sigma * Math.Sqrt(duration);
+                double d1 = (Math.Log(spotPrice / strike) + (r + sigma * sigma / 2) * modifiedDuration) / (sigma * Math.Sqrt(modifiedDuration));
+                double d2 = d1 - sigma * Math.Sqrt(modifiedDuration);
                 double f_sigma = normcdf(d1) * spotPrice - normcdf(d2) * strike * Math.Exp(-r * duration);
-                double df_sigma = spotPrice * Math.Sqrt(duration) * Math.Exp(-d1 * d1 / 2) / (Math.Sqrt(2 * Math.PI));
+                double df_sigma = spotPrice * Math.Sqrt(modifiedDuration) * Math.Exp(-d1 * d1 / 2) / (Math.Sqrt(2 * Math.PI));
                 if (df_sigma <= 0.000001)
                 {
                     break;
@@ -100,16 +175,17 @@ namespace QuantitativeAnalysis.Utilities
         /// <param name="callPrice">期权价格</param>
         /// <param name="spotPrice">标的价格</param>
         /// <param name="strike">期权行权价</param>
-        /// <param name="duration">期权到期日</param>
+        /// <param name="duration">到期时间</param>
+        /// <param name="modifiedDuration">根据交易日调整过的到期时间</param>
         /// <param name="r">无风险利率</param>
         /// <returns>返回隐含波动率</returns>
-        private static double sigmaOfPut(double putPrice, double spotPrice, double strike, double duration, double r)
+        private static double sigmaOfPut(double putPrice, double spotPrice, double strike, double duration, double modifiedDuration,double r)
         {
             if ((putPrice + spotPrice - strike * Math.Exp(-r * duration)) < 0) // put价格太高，返回200%
             {
                 return 2;
             }
-            return sigmaOfCall(putPrice + spotPrice - strike * Math.Exp(-r * duration), spotPrice, strike, duration, r);
+            return sigmaOfCall(putPrice + spotPrice - strike * Math.Exp(-r * duration), spotPrice, strike, duration, modifiedDuration,r);
         }
 
         /// <summary>
@@ -121,7 +197,7 @@ namespace QuantitativeAnalysis.Utilities
         /// <param name="duration">期权到期日</param>
         /// <param name="r">无风险利率</param>
         /// <returns>返回隐含波动率</returns>
-        public static double sigmaOfCallByBisection(double optionPrice, double spotPrice, double strike, double duration, double r)
+        public static double sigmaOfCallByBisection(double optionPrice, double spotPrice, double strike, double duration, double modifiedDuration,double r)
         {
 
             double low = 0, up = 3;
@@ -134,7 +210,7 @@ namespace QuantitativeAnalysis.Utilities
             while (Math.Abs(up - low) > 0.000001)
             {
                 double mid = (low + up) / 2;
-                double callMid = callPrice(spotPrice, strike, mid, duration, r);
+                double callMid = callPrice(spotPrice, strike, mid, duration,modifiedDuration, r);
                 epsilon = Math.Abs(callMid - optionPrice);
                 if (callMid > optionPrice)
                 {
@@ -166,7 +242,7 @@ namespace QuantitativeAnalysis.Utilities
         /// <param name="duration">期权到期日</param>
         /// <param name="r">无风险利率</param>
         /// <returns>返回隐含波动率</returns>
-        public static double sigmaOfPutByBisection(double optionPrice, double spotPrice, double strike, double duration, double r)
+        public static double sigmaOfPutByBisection(double optionPrice, double spotPrice, double strike, double duration, double modifiedDuration,double r)
         {
 
             double low = 0, up = 3;
@@ -179,7 +255,7 @@ namespace QuantitativeAnalysis.Utilities
             while (Math.Abs(up - low) > 0.000001)
             {
                 double mid = (low + up) / 2;
-                double putMid = putPrice(spotPrice, strike, mid, duration, r);
+                double putMid = putPrice(spotPrice, strike, mid, duration,modifiedDuration,r);
                 epsilon = Math.Abs(putMid - optionPrice);
                 if (putMid > optionPrice)
                 {
@@ -208,19 +284,20 @@ namespace QuantitativeAnalysis.Utilities
         /// <param name="etfPrice">50etf价格</param>
         /// <param name="optionLastPrice">期权价格</param>
         /// <param name="strike">期权行权价</param>
-        /// <param name="duration">期权到日期</param>
+        /// <param name="duration">到期时间</param>
+        /// <param name="modifiedDuration">根据交易日调整过的到期时间</param>
         /// <param name="r">无风险利率</param>
         /// <param name="optionType">期权类型区分看涨还是看跌</param>
         /// <returns>返回隐含波动率</returns>
-        public static double sigma(double etfPrice, double optionLastPrice, double strike, double duration, double r, string optionType)
+        public static double sigma(double etfPrice, double optionLastPrice, double strike, double duration, double modifiedDuration,double r, string optionType)
         {
             if (optionType.Equals("认购"))
             {
-                return sigmaOfCall(optionLastPrice, etfPrice, strike, duration, r);
+                return sigmaOfCall(optionLastPrice, etfPrice, strike, duration, modifiedDuration,r);
             }
             else if (optionType.Equals("认沽"))
             {
-                return sigmaOfPut(optionLastPrice, etfPrice, strike, duration, r);
+                return sigmaOfPut(optionLastPrice, etfPrice, strike, duration,modifiedDuration, r);
             }
             return 0;
         }
@@ -235,15 +312,15 @@ namespace QuantitativeAnalysis.Utilities
         /// <param name="r">无风险利率</param>
         /// <param name="optionType">期权类型区分看涨还是看跌</param>
         /// <returns>返回隐含波动率</returns>
-        public static double sigmaByFuture(double futurePrice, double optionLastPrice, double strike, double duration, double r, string optionType)
+        public static double sigmaByFuture(double futurePrice, double optionLastPrice, double strike, double duration,double modifiedDuration, double r, string optionType)
         {
             if (optionType.Equals("认购"))
             {
-                return sigmaOfCallByBisection(optionLastPrice, futurePrice * Math.Exp(-r * duration), strike, duration, r);
+                return sigmaOfCallByBisection(optionLastPrice, futurePrice * Math.Exp(-r * duration), strike, duration,modifiedDuration,r);
             }
             else if (optionType.Equals("认沽"))
             {
-                return sigmaOfPutByBisection(optionLastPrice, futurePrice * Math.Exp(-r * duration), strike, duration, r);
+                return sigmaOfPutByBisection(optionLastPrice, futurePrice * Math.Exp(-r * duration), strike, duration,modifiedDuration,r);
             }
             return -1;
         }
@@ -258,15 +335,15 @@ namespace QuantitativeAnalysis.Utilities
         /// <param name="r">无风险利率</param>
         /// <param name="optionType">期权类型看涨还是看跌</param>
         /// <returns>返回期权理论价格</returns>
-        public static double optionLastPrice(double etfPrice, double sigma, double strike, double duration, double r, string optionType)
+        public static double optionLastPrice(double etfPrice, double sigma, double strike, double duration, double modifiedDuration,double r, string optionType)
         {
             if (optionType.Equals("认购"))
             {
-                return callPrice(etfPrice, strike, sigma, duration, r);
+                return callPrice(etfPrice, strike, sigma, duration,modifiedDuration,r);
             }
             else if (optionType.Equals("认沽"))
             {
-                return putPrice(etfPrice, strike, sigma, duration, r);
+                return putPrice(etfPrice, strike, sigma, duration, modifiedDuration,r);
             }
             return 0.0;
         }
@@ -281,14 +358,14 @@ namespace QuantitativeAnalysis.Utilities
         /// <param name="duration">期权到期日</param>
         /// <param name="r">无风险利率</param>
         /// <returns>返回看涨期权理论价格</returns>
-        private static double callPrice(double spotPrice, double strike, double sigma, double duration, double r)
+        private static double callPrice(double spotPrice, double strike, double sigma, double duration,double modifiedDuration,double r)
         {
             if (duration == 0)
             {
                 return ((spotPrice - strike) > 0) ? (spotPrice - strike) : 0;
             }
-            double d1 = (Math.Log(spotPrice / strike) + (r + sigma * sigma / 2) * duration) / (sigma * Math.Sqrt(duration));
-            double d2 = d1 - sigma * Math.Sqrt(duration);
+            double d1 = (Math.Log(spotPrice / strike) + (r + sigma * sigma / 2) * modifiedDuration) / (sigma * Math.Sqrt(modifiedDuration));
+            double d2 = d1 - sigma * Math.Sqrt(modifiedDuration);
             return normcdf(d1) * spotPrice - normcdf(d2) * strike * Math.Exp(-r * duration);
         }
 
@@ -301,14 +378,14 @@ namespace QuantitativeAnalysis.Utilities
         /// <param name="duration">期权到期日</param>
         /// <param name="r">无风险利率</param>
         /// <returns>返回看跌期权理论价格</returns>
-        private static double putPrice(double spotPrice, double strike, double sigma, double duration, double r)
+        private static double putPrice(double spotPrice, double strike, double sigma, double duration, double modifiedDuration,double r)
         {
             if (duration == 0)
             {
                 return ((strike - spotPrice) > 0) ? (strike - spotPrice) : 0;
             }
-            double d1 = (Math.Log(spotPrice / strike) + (r + sigma * sigma / 2) * duration) / (sigma * Math.Sqrt(duration));
-            double d2 = d1 - sigma * Math.Sqrt(duration);
+            double d1 = (Math.Log(spotPrice / strike) + (r  + sigma * sigma / 2)*modifiedDuration) / (sigma * Math.Sqrt(modifiedDuration));
+            double d2 = d1 - sigma * Math.Sqrt(modifiedDuration);
             return -normcdf(-d1) * spotPrice + normcdf(-d2) * strike * Math.Exp(-r * duration);
         }
 
