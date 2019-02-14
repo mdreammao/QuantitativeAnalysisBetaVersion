@@ -9,6 +9,7 @@ using QuantitativeAnalysis.Model;
 using QuantitativeAnalysis.DataAccess;
 using QuantitativeAnalysis.DataAccess.Stock;
 using QuantitativeAnalysis.DataAccess.Option;
+using QuantitativeAnalysis.Monitor.EstimateStockBonus;
 using QuantitativeAnalysis.Monitor.TickDataToMinuteData;
 using NLog;
 using Autofac;
@@ -16,6 +17,8 @@ using QuantitativeAnalysis.Transaction;
 using QuantitativeAnalysis.Monitor;
 using QuantitativeAnalysis.Statistics;
 using static QuantitativeAnalysis.Utilities.DateTimeExtension;
+using QuantitativeAnalysis.Monitor.IndexRelated;
+using QuantitativeAnalysis.Monitor.DualTrust;
 
 namespace QuantitativeAnalysis
 {
@@ -42,6 +45,7 @@ namespace QuantitativeAnalysis
             var optionDailySource=new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockOptionDailyDataSource>());
             var optionDailyRepo= InstanceFactory.Get<StockOptionDailyRepository>(conn_type, optionDailySource);
             var infoRepo = InstanceFactory.Get<OptionInfoRepository>(conn_type);
+            var stockInfoRepo = InstanceFactory.Get<StockInfoRepository>(conn_type);
             //获取分钟线数据
             var stockMinutelySource= new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockMinuteDataSource>());
             var stockMinutelyRepo= InstanceFactory.Get<StockMinuteRepository>(conn_type, stockMinutelySource);
@@ -51,13 +55,24 @@ namespace QuantitativeAnalysis
 
             //StockTickToMinute myData = new StockTickToMinute(dateRepo,stockDailyRepo,stockMinutelyRepo,stockTickRepo, "2016-02-01".ToDateTime(), "2019-01-14".ToDateTime());
 
-            OptionMonitor50ETF2019 optionMonitor = new OptionMonitor50ETF2019(infoRepo, dateRepo, stockDailyRepo, stockMinutelyRepo,optionDailyRepo,"2015-02-09".ToDateTime(), "2019-01-14".ToDateTime());
+            //IndexAnalysis indexAnalysis = new IndexAnalysis(dateRepo, "2019-02-11".ToDateTime());
+            //indexAnalysis.differ("510180.OF", "000300.SH");
+            //indexAnalysis.differ("159901.OF", "000300.SH");
 
-           //trendT0 myt0 = new trendT0(stockMinutelyRepo, stockDailyRepo, "000016.SH", "2016-02-01".ToDateTime(), "2019-01-14".ToDateTime());
-            
+            DateTime lastDay =DateUtils.LatestTradeDay(DateTime.Now.AddDays(-1));
+           //StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo,stockDailyRepo,dateRepo, lastDay, "000905.SH");
+          //  myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000905.SH");
+           // myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000300.SH");
 
-            //DualTrust dt0 = new DualTrust(stockMinutelyRepo, stockDailyRepo, "IF.CFE", "IF.CFE");
-            //dt0.compute("2016-02-23".ToDateTime(), "2016-07-29".ToDateTime());
+           
+
+            //OptionMonitor50ETF2019 optionMonitor = new OptionMonitor50ETF2019(infoRepo, dateRepo, stockDailyRepo, stockMinutelyRepo,optionDailyRepo,"2015-02-09".ToDateTime(), "2019-01-14".ToDateTime());
+
+            //trendT0 myt0 = new trendT0(stockMinutelyRepo, stockDailyRepo, "000016.SH", "2016-02-01".ToDateTime(), "2019-01-14".ToDateTime());
+
+
+            DualTrust dt0 = new DualTrust(stockMinutelyRepo, stockDailyRepo, "000300.SH", "IF.CFE");
+            dt0.compute("2018-02-01".ToDateTime(), "2019-01-30".ToDateTime());
 
             //pairtradingDaily2 mypair = new pairtradingDaily2(stockDailyRepo,"600030.SH", "601688.SH");
             //mypair = new pairtradingDaily2(stockDailyRepo, "000333.SZ", "000651.SZ");

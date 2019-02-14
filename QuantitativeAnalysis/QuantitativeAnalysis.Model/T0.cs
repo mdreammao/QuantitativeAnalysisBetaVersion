@@ -9,6 +9,7 @@ namespace QuantitativeAnalysis.Model
     public class stockInfo
     {
         public string code { get; set; }
+        public string name { get; set; }
         public DateTime startDate { get; set; }
         public DateTime endDate { get; set; }
     }
