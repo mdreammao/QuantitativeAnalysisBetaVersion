@@ -47,7 +47,6 @@ namespace QuantitativeAnalysis.Monitor.DualTrust
         private Dictionary<DateTime, List<StockTransaction>> underlying = new Dictionary<DateTime, List<StockTransaction>>();
         private List<StockTransaction> underlyingAll = new List<StockTransaction>();
         private double slipPoint = 1;
-        private double multiplicator = 1;
         //预处理计算N天的range值
         Dictionary<int, Dictionary<DateTime, double>> RangeDic = new Dictionary<int, Dictionary<DateTime, double>>();
         //预处理分钟线数据
@@ -72,11 +71,11 @@ namespace QuantitativeAnalysis.Monitor.DualTrust
             double maxK1 = 0;
             double maxK2 = 0;
             double maxSharpe = 0;
-            for (int n = 1; n <= 10; n++)
+            for (int n = 2; n <= 4; n++)
             {
-                for (double k1 = 0.2; k1 < 3; k1 = k1 + 0.2)
+                for (double k1 = 0.2; k1 < 1; k1 = k1 + 0.2)
                 {
-                    for (double k2 = 0.2; k2 < 3; k2 = k2 + 0.2)
+                    for (double k2 = 0.2; k2 < 1; k2 = k2 + 0.2)
                     {
                         double sharpe = getParametersSharpe(startDate, endDate, n, k1, k2);
                         if (sharpe>maxSharpe)
@@ -85,11 +84,13 @@ namespace QuantitativeAnalysis.Monitor.DualTrust
                             maxK1 = k1;
                             maxK2 = k2;
                             maxSharpe = sharpe;
+                            //Console.WriteLine("sharpe:{0}, n:{1}, k1:{2}, k2:{3}", maxSharpe, maxN, maxK1, maxK2);
                         }
+                        Console.WriteLine("sharpe:{0}, n:{1}, k1:{2}, k2:{3}", sharpe, n, k1, k2);
                     }
                 }
             }
-            Console.WriteLine("sharpe:{0}, n:{1}, k1:{2}, k2{3}", maxSharpe, maxN, maxK1, maxK2);
+            Console.WriteLine("sharpe:{0}, n:{1}, k1:{2}, k2:{3}", maxSharpe, maxN, maxK1, maxK2);
         }
 
         //将计算用的数据准备好
@@ -147,7 +148,7 @@ namespace QuantitativeAnalysis.Monitor.DualTrust
             
         }
 
-        private double getParametersSharpe(DateTime startDate,DateTime endDate, int N, double K1, double K2, double lossStopRatio=0.01)
+        private double getParametersSharpe(DateTime startDate,DateTime endDate, int N, double K1, double K2, double lossStopRatio=0.008)
         {
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
             List<double> yieldList = new List<double>();
@@ -177,18 +178,18 @@ namespace QuantitativeAnalysis.Monitor.DualTrust
             double closePrice = 0;
             double longMaxPrice = 0;
             double shortMinPrice = 99999;
-            double open = index[0].Open;
+            double open = underlying[0].Open;
             double lossStopPoints =Math.Round(lossStopRatio * open/5)*5;
-            for (int i = 0; i < index.Count()-5; i++)
+            for (int i = 0; i < index.Count()-30; i++)
             {
-                if (position==0 && index[i].Open>open+K1*range)
+                if (position==0 && underlying[i].Open>open+K1*range)
                 {
                     openPrice = underlying[i].Open + slipPoint;
                     longMaxPrice = openPrice;
                     positionflag = 1;
                     position = 1;
                 }
-                if (position==0 &&index[i].Open<open-K2*range)
+                if (position==0 && underlying[i].Open<open-K2*range)
                 {
                     openPrice = underlying[i].Open - slipPoint;
                     shortMinPrice = openPrice;
@@ -220,16 +221,19 @@ namespace QuantitativeAnalysis.Monitor.DualTrust
             {
                 if (position==1)
                 {
-                    closePrice= underlying[index.Count() - 5].Open - slipPoint;
+                    closePrice= underlying[index.Count() - 3].Open - slipPoint;
                     position = 0;
                 }
                 else if (position==-1)
                 {
-                    closePrice = underlying[index.Count() - 5].Open + slipPoint;
+                    closePrice = underlying[index.Count() - 3].Open + slipPoint;
                     position = 0;
                 }
             }
-            yield = (closePrice / openPrice - 1) * positionflag;
+            if (positionflag!=0)
+            {
+                yield = (closePrice / openPrice - 1) * positionflag;
+            }
             return yield;
         }
 
@@ -239,7 +243,10 @@ namespace QuantitativeAnalysis.Monitor.DualTrust
             double sharpe = 0;
             double std = MathUtility.std(yieldList);
             double mean = yieldList.Average();
-            sharpe = mean / std;
+           // if (mean*252>0.1)
+            {
+                sharpe = mean / std * Math.Sqrt(252);
+            }
             return sharpe;
         }
 

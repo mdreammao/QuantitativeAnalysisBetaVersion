@@ -60,19 +60,22 @@ namespace QuantitativeAnalysis
             //indexAnalysis.differ("159901.OF", "000300.SH");
 
             DateTime lastDay =DateUtils.LatestTradeDay(DateTime.Now.AddDays(-1));
-           //StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo,stockDailyRepo,dateRepo, lastDay, "000905.SH");
-          //  myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000905.SH");
-           // myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000300.SH");
+            //StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo,stockDailyRepo,dateRepo, lastDay, "000905.SH");
+            //  myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000905.SH");
+            // myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000300.SH");
 
-           
+
 
             //OptionMonitor50ETF2019 optionMonitor = new OptionMonitor50ETF2019(infoRepo, dateRepo, stockDailyRepo, stockMinutelyRepo,optionDailyRepo,"2015-02-09".ToDateTime(), "2019-01-14".ToDateTime());
 
             //trendT0 myt0 = new trendT0(stockMinutelyRepo, stockDailyRepo, "000016.SH", "2016-02-01".ToDateTime(), "2019-01-14".ToDateTime());
 
 
-            DualTrust dt0 = new DualTrust(stockMinutelyRepo, stockDailyRepo, "000300.SH", "IF.CFE");
-            dt0.compute("2018-02-01".ToDateTime(), "2019-01-30".ToDateTime());
+            //DualTrust dt0 = new DualTrust(stockMinutelyRepo, stockDailyRepo, "000300.SH", "IF.CFE");
+            //dt0.compute("2018-02-01".ToDateTime(), "2019-01-30".ToDateTime());
+
+            DualTrust2 dt2 = new DualTrust2(stockMinutelyRepo, stockDailyRepo);
+            dt2.backtest("IF.CFE", "000300.SH", "2018-02-01".ToDateTime(), "2019-02-14".ToDateTime());
 
             //pairtradingDaily2 mypair = new pairtradingDaily2(stockDailyRepo,"600030.SH", "601688.SH");
             //mypair = new pairtradingDaily2(stockDailyRepo, "000333.SZ", "000651.SZ");
