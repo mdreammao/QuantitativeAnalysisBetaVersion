@@ -19,6 +19,8 @@ using QuantitativeAnalysis.Statistics;
 using static QuantitativeAnalysis.Utilities.DateTimeExtension;
 using QuantitativeAnalysis.Monitor.IndexRelated;
 using QuantitativeAnalysis.Monitor.DualTrust;
+using QuantitativeAnalysis.Monitor.StockIntraday.Volatility;
+using QuantitativeAnalysis.Monitor.StockIntraday.MovingAverage;
 
 namespace QuantitativeAnalysis
 {
@@ -74,8 +76,19 @@ namespace QuantitativeAnalysis
             //DualTrust dt0 = new DualTrust(stockMinutelyRepo, stockDailyRepo, "000300.SH", "IF.CFE");
             //dt0.compute("2018-02-01".ToDateTime(), "2019-01-30".ToDateTime());
 
-            DualTrust2 dt2 = new DualTrust2(stockMinutelyRepo, stockDailyRepo);
-            dt2.backtest("IF.CFE", "000300.SH", "2018-02-01".ToDateTime(), "2019-02-14".ToDateTime());
+            //DualTrust2 dt2 = new DualTrust2(stockMinutelyRepo, stockDailyRepo);
+            //dt2.backtest("IF.CFE", "000300.SH", "2018-02-01".ToDateTime(), "2019-02-14".ToDateTime());
+
+            //DualTrust3 dt3 = new DualTrust3(stockMinutelyRepo, stockDailyRepo);
+            //dt3.backtest("IF.CFE", "000300.SH", "2018-02-01".ToDateTime(), "2019-02-14".ToDateTime());
+
+
+            //StockWithVolatility1 stockVol = new  StockWithVolatility1(stockMinutelyRepo, stockDailyRepo);
+            //stockVol.backtest("IF.CFE", "000300.SH", "2018-02-01".ToDateTime(), "2019-02-19".ToDateTime());
+
+            MA1 ma1 = new MA1(stockMinutelyRepo, stockDailyRepo);
+            ma1.backtest("600000.SH", "2016-03-01".ToDateTime(), "2019-02-19".ToDateTime());
+
 
             //pairtradingDaily2 mypair = new pairtradingDaily2(stockDailyRepo,"600030.SH", "601688.SH");
             //mypair = new pairtradingDaily2(stockDailyRepo, "000333.SZ", "000651.SZ");

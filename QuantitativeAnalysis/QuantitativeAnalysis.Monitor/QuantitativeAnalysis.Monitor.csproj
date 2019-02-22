@@ -68,8 +68,11 @@
     <Compile Include="BasisStatistics.cs" />
     <Compile Include="DualTrust\DualTrust.cs" />
     <Compile Include="DualTrust\DualTrust2.cs" />
+    <Compile Include="DualTrust\DualTrust3.cs" />
     <Compile Include="EstimateStockBonus\StockIndexBonus.cs" />
     <Compile Include="IndexRelated\IndexAnalysis.cs" />
+    <Compile Include="StockIntraday\MovingAverage\MA1.cs" />
+    <Compile Include="StockIntraday\Volatility\StockWithVolatility1.cs" />
     <Compile Include="StockOptionFramework\OptionMonitor50ETF2019.cs" />
     <Compile Include="pairtradingDaily.cs" />
     <Compile Include="pairTradingDaily2.cs" />
