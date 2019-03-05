@@ -8,12 +8,19 @@ namespace QuantitativeAnalysis.Model
 {
     public class OneByOneTransaction
     {
+        public DateTime date { get; set; }
         public DateTime openTime { get; set; }
         public DateTime closeTime { get; set; }
+        public string code { get; set; }
+        public double maxOpenAmount { get; set; }
+        public double maxCloseAmount { get; set; }
         public double position { get; set; }
         public double openPrice { get; set; }
         public double closePrice { get; set; }
         public string closeStatus { get; set; }
+        public double yield { get; set; }
+        public double parameter { get; set; }
+
     }
 
     public class netvalueDaily

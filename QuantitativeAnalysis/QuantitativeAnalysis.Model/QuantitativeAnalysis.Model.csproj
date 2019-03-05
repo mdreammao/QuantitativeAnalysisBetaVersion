@@ -57,6 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BollingerBand.cs" />
+    <Compile Include="Bond.cs" />
     <Compile Include="CFEFutures.cs" />
     <Compile Include="ETFConsitituent.cs" />
     <Compile Include="IDateTimeInterval.cs" />

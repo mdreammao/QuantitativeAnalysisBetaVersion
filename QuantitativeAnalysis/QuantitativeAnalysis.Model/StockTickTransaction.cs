@@ -12,6 +12,8 @@ namespace QuantitativeAnalysis.Model
         public string Code { get; set; }
         public DateTime TransactionDateTime { get; set; }
         public double LastPrice { get; set; }
+        public double HighLimit { get; set; }
+        public double LowLimit { get; set; }
         public double Ask1 { get; set; }
         public double AskV1 { get; set; }
         public double Ask2 { get; set; }

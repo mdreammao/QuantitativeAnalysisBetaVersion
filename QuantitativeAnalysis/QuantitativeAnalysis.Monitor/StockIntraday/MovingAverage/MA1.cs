@@ -37,9 +37,10 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.MovingAverage
         private StockMinuteRepository stockMinutelyRepo;
         private SqlServerWriter sqlWriter;
         private SqlServerReader sqlReader;
-        private double slipRatio = 0.001;
-        private double feeRatioBuy = 0.0002;
-        private double feeRatioSell = 0.0012;
+        private double slipRatio = 0.0001;
+        private double feeRatioBuy = 0.0001;
+        private double feeRatioSell = 0.0001;
+        private double priceUnit = 0.001;
         private Dictionary<DateTime, List<StockTransaction>> underlyingKLine = new Dictionary<DateTime, List<StockTransaction>>();
         //记录ma的信息，根据每分钟k线的收盘复权数据计算
         private Dictionary<int, Dictionary<DateTime, List<double>>> MADic = new Dictionary<int, Dictionary<DateTime, List<double>>>();
@@ -70,7 +71,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.MovingAverage
                         maxSharpe = sharpe;
                         maxn1 = n1;
                         maxn2 = n2;
-                        Console.WriteLine("sharpe:{0}, n1:{1}, n2:{2}", sharpe, n1, n2);
+                        Console.WriteLine("sharpe:{0}, n1:{1}, n2:{2}", sharpe, n1, n2,0.008);
                     }
                 }
             }
@@ -193,10 +194,10 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.MovingAverage
             double lossStopPoints = lossStopRatio * underlying[0].Open;
             double slipBuy = 0;
             double slipSell = 0;
-            for (int i = 0; i < underlying.Count(); i++)
+            for (int i = 0; i < underlying.Count()-5; i++)
             {
-                slipBuy = Math.Max(slipRatio * underlying[i].Close, 0.01)+feeRatioBuy*underlying[i].Close;
-                slipSell = Math.Max(slipRatio * underlying[i].Close, 0.01) + feeRatioSell * underlying[i].Close;
+                slipBuy = Math.Max(slipRatio * underlying[i].Close, priceUnit)+feeRatioBuy*underlying[i].Close;
+                slipSell = Math.Max(slipRatio * underlying[i].Close, priceUnit) + feeRatioSell * underlying[i].Close;
                 if (position==0 && ma1[i]>ma2[i] && i<underlying.Count()-30) //ma1上穿ma2
                 {
                     openPrice = underlying[i+1].Open + slipBuy;
@@ -232,8 +233,8 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.MovingAverage
                     break;
                 }
             }
-            slipBuy = Math.Max(slipRatio * underlying[underlying.Count() - 5].Close, 0.01) + feeRatioBuy * underlying[underlying.Count() - 5].Close;
-            slipSell = Math.Max(slipRatio * underlying[underlying.Count() - 5].Close, 0.01) + feeRatioSell * underlying[underlying.Count() - 5].Close;
+            slipBuy = Math.Max(slipRatio * underlying[underlying.Count() - 5].Close, priceUnit) + feeRatioBuy * underlying[underlying.Count() - 5].Close;
+            slipSell = Math.Max(slipRatio * underlying[underlying.Count() - 5].Close, priceUnit) + feeRatioSell * underlying[underlying.Count() - 5].Close;
             if (position != 0)
             {
                 if (position == 1)

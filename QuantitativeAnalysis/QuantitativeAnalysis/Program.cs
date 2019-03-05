@@ -62,9 +62,18 @@ namespace QuantitativeAnalysis
             //indexAnalysis.differ("159901.OF", "000300.SH");
 
             DateTime lastDay =DateUtils.LatestTradeDay(DateTime.Now.AddDays(-1));
-            //StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo,stockDailyRepo,dateRepo, lastDay, "000905.SH");
-            //  myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000905.SH");
-            // myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000300.SH");
+
+
+            //Monitor.Bond.ConvertibleBond.Intraday1 bond = new Monitor.Bond.ConvertibleBond.Intraday1(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
+            //bond.backtest("2010-01-01".ToDateTime(), "2019-03-04".ToDateTime());
+
+
+
+
+
+            //StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000016.SH");
+            //myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000905.SH");
+            //myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000300.SH");
 
 
 
@@ -82,12 +91,20 @@ namespace QuantitativeAnalysis
             //DualTrust3 dt3 = new DualTrust3(stockMinutelyRepo, stockDailyRepo);
             //dt3.backtest("IF.CFE", "000300.SH", "2018-02-01".ToDateTime(), "2019-02-14".ToDateTime());
 
+            //Monitor.StockIntraday.DualTrust.DualTrust stockDt = new Monitor.StockIntraday.DualTrust.DualTrust(stockMinutelyRepo, stockDailyRepo);
+            //stockDt.backtest("510300.SH", "2016-03-01".ToDateTime(), "2019-02-19".ToDateTime());
+
+            //Monitor.StockIntraday.Volatility.StockWithVolatility2 stockVol = new Monitor.StockIntraday.Volatility.StockWithVolatility2(stockMinutelyRepo, stockDailyRepo,dateRepo);
+            //stockVol.backtest("510500.SH", "2016-03-01".ToDateTime(), "2019-02-19".ToDateTime());
 
             //StockWithVolatility1 stockVol = new  StockWithVolatility1(stockMinutelyRepo, stockDailyRepo);
             //stockVol.backtest("IF.CFE", "000300.SH", "2018-02-01".ToDateTime(), "2019-02-19".ToDateTime());
 
-            MA1 ma1 = new MA1(stockMinutelyRepo, stockDailyRepo);
-            ma1.backtest("600000.SH", "2016-03-01".ToDateTime(), "2019-02-19".ToDateTime());
+            //StockDataStore myStore = new StockDataStore(stockMinutelyRepo, stockDailyRepo, dateRepo, stockInfoRepo);
+            //myStore.getStockData("000300.SH", "2016-03-01".ToDateTime(), "2019-02-19".ToDateTime());
+
+            //MA1 ma1 = new MA1(stockMinutelyRepo, stockDailyRepo);
+            //ma1.backtest("510050.SH", "2016-03-01".ToDateTime(), "2019-02-19".ToDateTime());
 
 
             //pairtradingDaily2 mypair = new pairtradingDaily2(stockDailyRepo,"600030.SH", "601688.SH");

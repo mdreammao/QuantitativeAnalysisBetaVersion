@@ -98,7 +98,9 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                     BidV4 = array[19].ConvertTo<double>(),
                     BidV5 = array[20].ConvertTo<double>(),
                     Volume = array[21].ConvertTo<double>(),
-                    Amount = array[22].ConvertTo<double>()
+                    Amount = array[22].ConvertTo<double>(),
+                    HighLimit=array[23].ConvertTo<double>(),
+                    LowLimit=array[24].ConvertTo<double>()
                 };
                 ticks.Add(tick);
             }
@@ -110,7 +112,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             if(!ExistInRedis(code,date))
             {
                 var sqlStr = string.Format(@"SELECT convert(varchar(30),[tdatetime],121) as tdatetime ,[cp] ,[S1] ,[S2]  ,[S3] ,[S4] ,[S5]
-      ,[B1] ,[B2] ,[B3],[B4]  ,[B5] ,[SV1] ,[SV2] ,[SV3]  ,[SV4]  ,[SV5] ,[BV1] ,[BV2] ,[BV3],[BV4],[BV5],[ts]  ,[tt]
+      ,[B1] ,[B2] ,[B3],[B4]  ,[B5] ,[SV1] ,[SV2] ,[SV3]  ,[SV4]  ,[SV5] ,[BV1] ,[BV2] ,[BV3],[BV4],[BV5],[ts],[tt],[HighLimit],[LowLimit]
     FROM [StockTickTransaction{0}].[dbo].[{1}] where rtrim(stkcd)='{2}'", date.Year, date.ToString("yyyy-MM-dd"),code);
                 var dt = sqlReader.GetDataTable(sqlStr);
                 var key = string.Format(RedisKeyFormat, code.ToUpper(), date.ToString("yyyy-MM-dd"));
@@ -207,6 +209,8 @@ CREATE TABLE [StockTickTransaction{0}].[dbo].[{1}](
 	[BV5] [decimal](10, 0) NULL,
 	[ts] [decimal](20, 0) NULL,
 	[tt] [decimal](20, 3) NULL,
+    [HighLimit] [decimal](12, 4) NULL,
+    [LowLimit] [decimal](12, 4) NULL,
 	[LastUpdatedTime] [datetime] NULL
 ) ON [PRIMARY]
 ALTER TABLE [StockTickTransaction{0}].[dbo].[{1}] ADD  CONSTRAINT [DF_{1}_LastUpdatedTime]  DEFAULT (getdate()) FOR [LastUpdatedTime]

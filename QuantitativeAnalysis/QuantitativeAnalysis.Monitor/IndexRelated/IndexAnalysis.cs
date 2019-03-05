@@ -34,6 +34,7 @@ namespace QuantitativeAnalysis.Monitor.IndexRelated
         }
 
 
+
         public List<StockCode> differ(string etf,string index)
         {
             List<StockCode> list = new List<StockCode>();
