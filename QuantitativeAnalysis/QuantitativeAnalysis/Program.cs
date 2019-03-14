@@ -21,6 +21,7 @@ using QuantitativeAnalysis.Monitor.IndexRelated;
 using QuantitativeAnalysis.Monitor.DualTrust;
 using QuantitativeAnalysis.Monitor.StockIntraday.Volatility;
 using QuantitativeAnalysis.Monitor.StockIntraday.MovingAverage;
+using QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase;
 
 namespace QuantitativeAnalysis
 {
@@ -46,34 +47,52 @@ namespace QuantitativeAnalysis
             var stockDailyRepo = InstanceFactory.Get<StockDailyRepository>(conn_type, stockDailysource);
             var optionDailySource=new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockOptionDailyDataSource>());
             var optionDailyRepo= InstanceFactory.Get<StockOptionDailyRepository>(conn_type, optionDailySource);
+            //获取股票基本信息数据
             var infoRepo = InstanceFactory.Get<OptionInfoRepository>(conn_type);
             var stockInfoRepo = InstanceFactory.Get<StockInfoRepository>(conn_type);
-            //获取分钟线数据
+            var stockInfoDailysource = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockInfoDailyDataSource>());
+            var stockInfoDailyRepo = InstanceFactory.Get<StockInfoDailyRepository>(conn_type, stockInfoDailysource);
+
+            //获取分钟线数据(来源万德)
             var stockMinutelySource= new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockMinuteDataSource>());
             var stockMinutelyRepo= InstanceFactory.Get<StockMinuteRepository>(conn_type, stockMinutelySource);
+            //获取分钟数据(来源tick数据)
+            var stockMinutelyRepo2= InstanceFactory.Get<StockMinuteFromTickRepository>(conn_type,stockSource);
+
             //获取日期数据
             TransactionDateTimeRepository dateRepo = new TransactionDateTimeRepository(ConnectionType.Default);
             DateUtils.setTradeDays(dateRepo.GetStockTransactionDate("2007-01-01".ToDateTime(), "2019-12-31".ToDateTime()));
 
-            //StockTickToMinute myData = new StockTickToMinute(dateRepo,stockDailyRepo,stockMinutelyRepo,stockTickRepo, "2016-02-01".ToDateTime(), "2019-01-14".ToDateTime());
 
-            //IndexAnalysis indexAnalysis = new IndexAnalysis(dateRepo, "2019-02-11".ToDateTime());
-            //indexAnalysis.differ("510180.OF", "000300.SH");
-            //indexAnalysis.differ("159901.OF", "000300.SH");
+
+
+
+
 
             DateTime lastDay =DateUtils.LatestTradeDay(DateTime.Now.AddDays(-1));
 
+
+            priceCeilingMoving moving = new priceCeilingMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
+            moving.backtest("600000.SH", "2010-01-01".ToDateTime(), "2019-03-10".ToDateTime());
 
             //Monitor.Bond.ConvertibleBond.Intraday1 bond = new Monitor.Bond.ConvertibleBond.Intraday1(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
             //bond.backtest("2010-01-01".ToDateTime(), "2019-03-04".ToDateTime());
 
 
-
-
-
+            //该区域为跑参数或者数据
+            #region
+            //Monitor.Bond.ConvertibleBond.IntradayMonitor bond = new Monitor.Bond.ConvertibleBond.IntradayMonitor(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
             //StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000016.SH");
             //myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000905.SH");
             //myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000300.SH");
+            //IndexAnalysis indexAnalysis = new IndexAnalysis(dateRepo, "2019-02-11".ToDateTime());
+            //indexAnalysis.differ("510180.OF", "000300.SH");
+            //indexAnalysis.differ("159901.OF", "000300.SH");
+            //StockTickToMinute myStore = new StockTickToMinute(dateRepo, stockDailyRepo, stockMinutelyRepo2, stockTickRepo, stockInfoRepo);
+            //myStore.getStockMinuteFromSqlByIndex("000300.SH", "2010-01-01".ToDateTime(), "2019-03-10".ToDateTime());
+            #endregion
+
+
 
 
 
@@ -91,8 +110,12 @@ namespace QuantitativeAnalysis
             //DualTrust3 dt3 = new DualTrust3(stockMinutelyRepo, stockDailyRepo);
             //dt3.backtest("IF.CFE", "000300.SH", "2018-02-01".ToDateTime(), "2019-02-14".ToDateTime());
 
-            //Monitor.StockIntraday.DualTrust.DualTrust stockDt = new Monitor.StockIntraday.DualTrust.DualTrust(stockMinutelyRepo, stockDailyRepo);
-            //stockDt.backtest("510300.SH", "2016-03-01".ToDateTime(), "2019-02-19".ToDateTime());
+
+
+
+            //Monitor.StockIntraday.DualTrust.DualTrust2 stockDt = new Monitor.StockIntraday.DualTrust.DualTrust2(stockMinutelyRepo, stockDailyRepo, stockInfoRepo);
+            //stockDt.backtest("600519.SH", "2016-03-07".ToDateTime(), "2019-03-04".ToDateTime());
+            //stockDt.backtestByIndexCode("000016.SH", "2016-03-07".ToDateTime(), "2019-03-04".ToDateTime());
 
             //Monitor.StockIntraday.Volatility.StockWithVolatility2 stockVol = new Monitor.StockIntraday.Volatility.StockWithVolatility2(stockMinutelyRepo, stockDailyRepo,dateRepo);
             //stockVol.backtest("510500.SH", "2016-03-01".ToDateTime(), "2019-02-19".ToDateTime());

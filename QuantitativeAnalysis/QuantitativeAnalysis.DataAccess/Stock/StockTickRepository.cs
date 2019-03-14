@@ -33,25 +33,86 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             redisWriter = new RedisWriter();
             redisReader = new RedisReader();
         }
-        public List<StockTickTransaction> GetStockTransaction(string code, DateTime start, DateTime end)
+        public List<StockTickTransaction> GetStockTransaction(string code, DateTime start, DateTime end,bool record=true)
         {
             //logger.Info(string.Format("begin to fetch stock{0} tick data from {1} to {2}...", code, start, end));
+            List<StockTickTransaction> ticks = new List<StockTickTransaction>();
             code = code.ToUpper();
             if (end.Date >= DateTime.Now.Date)
                 throw new ArgumentException("结束时间只能小于当天时间");
-            //处理开始时间和结束时间
-            start = new DateTime(start.Year, start.Month, start.Day, 9, 30, 00);
-            end = new DateTime(end.Year, end.Month, end.Day, 15, 00, 00);
+            //处理开始时间和结束时间在交易时间段外取一些时间
+            start = new DateTime(start.Year, start.Month, start.Day, 9, 15, 00);
+            end = new DateTime(end.Year, end.Month, end.Day, 15,01, 00);
             var transDates = transDateRepo.GetStockTransactionDate(start, end);
             foreach(var date in transDates)
             {
-                LoadDataToSqlServerFromSourceIfNecessary(code, date);
-                LoadDataToRedisFromSqlServerIfNecessary(code, date);
+                LoadDataToSqlServerFromSourceIfNecessary(code, date,record);
+                if (record==true)
+                {
+                    LoadDataToRedisFromSqlServerIfNecessary(code, date);
+                }
+                else
+                {
+                    var ticksNow = FetchDataFromSource(code, date);
+                    ticks.AddRange(ticksNow);
+                }
+               
             }
-           // logger.Info(string.Format("completed fetching stock{0} tick data from {1} to {2}...", code, start, end));
-            var ticks = FetchDataFromRedis(code, transDates).Where(c=>c.TransactionDateTime>=start&&c.TransactionDateTime<=end).OrderBy(c=>c.TransactionDateTime).ToList();
+            // logger.Info(string.Format("completed fetching stock{0} tick data from {1} to {2}...", code, start, end));
+            if (record==true)
+            {
+                ticks = FetchDataFromRedis(code, transDates).Where(c => c.TransactionDateTime >= start && c.TransactionDateTime <= end).OrderBy(c => c.TransactionDateTime).ToList();
+            }
             return ticks;
         }
+
+        private List<StockTickTransaction> FetchDataFromSource(string code,DateTime date)
+        {
+            List<StockTickTransaction> list = new List<StockTickTransaction>();
+            var dt = dataSource.Get(code, new DateTime(date.Year, date.Month, date.Day, 9, 15, 0, 0), new DateTime(date.Year, date.Month, date.Day, 15, 1, 0, 0));
+            bool highLimitExists = false;
+            if (dt.Columns.Contains("HighLimit"))
+            {
+                highLimitExists = true;
+            }
+            foreach (DataRow dr in dt.Rows)
+            {
+                StockTickTransaction tick = new StockTickTransaction();
+                tick.Code = Convert.ToString(dr["stkcd"]);
+                tick.TransactionDateTime = Convert.ToDateTime(dr["tdatetime"]);
+                tick.LastPrice = Convert.ToDouble(dr["cp"]);
+                tick.Volume = Convert.ToDouble(dr["ts"]);
+                tick.Amount = Convert.ToDouble(dr["tt"]);
+                if (highLimitExists == true)
+                {
+                    tick.HighLimit = Convert.ToDouble(dr["HighLimit"]);
+                    tick.LowLimit = Convert.ToDouble(dr["LowLimit"]);
+                }
+                tick.Ask1 = Convert.ToDouble(dr["S1"]);
+                tick.Ask2 = Convert.ToDouble(dr["S2"]);
+                tick.Ask3 = Convert.ToDouble(dr["S3"]);
+                tick.Ask4 = Convert.ToDouble(dr["S4"]);
+                tick.Ask5 = Convert.ToDouble(dr["S5"]);
+                tick.AskV1 = Convert.ToDouble(dr["SV1"]);
+                tick.AskV2 = Convert.ToDouble(dr["SV2"]);
+                tick.AskV3 = Convert.ToDouble(dr["SV3"]);
+                tick.AskV4 = Convert.ToDouble(dr["SV4"]);
+                tick.AskV5 = Convert.ToDouble(dr["SV5"]);
+                tick.Bid1 = Convert.ToDouble(dr["B1"]);
+                tick.Bid2 = Convert.ToDouble(dr["B2"]);
+                tick.Bid3 = Convert.ToDouble(dr["B3"]);
+                tick.Bid4 = Convert.ToDouble(dr["B4"]);
+                tick.Bid5 = Convert.ToDouble(dr["B5"]);
+                tick.BidV1 = Convert.ToDouble(dr["BV1"]);
+                tick.BidV2 = Convert.ToDouble(dr["BV2"]);
+                tick.BidV3 = Convert.ToDouble(dr["BV3"]);
+                tick.BidV4 = Convert.ToDouble(dr["BV4"]);
+                tick.BidV5 = Convert.ToDouble(dr["BV5"]);
+                list.Add(tick);
+            }
+            return list;
+        }
+
 
         private List<StockTickTransaction> FetchDataFromRedis(string code, List<DateTime> transDates)
         {
@@ -147,13 +208,13 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             return entries;
         }
 
-        private void LoadDataToSqlServerFromSourceIfNecessary(string code, DateTime date, Infrastructure.ConnectionType type= Infrastructure.ConnectionType.Local)
+        private void LoadDataToSqlServerFromSourceIfNecessary(string code, DateTime date,bool record,Infrastructure.ConnectionType type= Infrastructure.ConnectionType.Local)
         {
             if (!ExistInSqlServer(code,date))
             {
                 CreateDBOrTableIfNecessary(date);
-                var dt = dataSource.Get(code, new DateTime(date.Year,date.Month,date.Day,9,30,0,0), new DateTime(date.Year,date.Month,date.Day,15,0,0,0));
-                if(dt.Rows.Count>0)
+                var dt = dataSource.Get(code, new DateTime(date.Year,date.Month,date.Day,9,15,0,0), new DateTime(date.Year,date.Month,date.Day,15,1,0,0));
+                if(dt.Rows.Count>0 && record==true)
                     sqlWriter.InsertBulk(dt, string.Format("[StockTickTransaction{0}].[dbo].[{1}]",date.Year,date.ToString("yyyy-MM-dd")));
             }
             else

@@ -26,7 +26,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
     using QuantitativeAnalysis.DataAccess.ETF;
 
 
-    public class Intraday1
+    public class IntradayMonitor
     {
         private TypedParameter conn_type = new TypedParameter(typeof(ConnectionType), ConnectionType.Default);
         private Logger logger = LogManager.GetCurrentClassLogger();
@@ -36,13 +36,13 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
         private Logger mylog = NLog.LogManager.GetCurrentClassLogger();
         private TransactionDateTimeRepository dateRepo;
         private StockDailyRepository stockDailyRepo;
-        private List<OneByOneTransaction> transactionData=new List<OneByOneTransaction>();
+        private List<OneByOneTransaction> transactionData = new List<OneByOneTransaction>();
         private StockMinuteRepository stockMinutelyRepo;
         private StockTickRepository tickRepo;
         private SqlServerWriter sqlWriter;
         private SqlServerReader sqlReader;
         private List<ConvertibleBondInfo> bondInfo;
-        private WindReader windReader=new WindReader();
+        private WindReader windReader = new WindReader();
         private double slipRatio = 0.0001;
         private double feeRatioBuy = 0.0001;
         private double feeRatioSell = 0.0001;
@@ -60,7 +60,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
 
 
 
-        public Intraday1(StockMinuteRepository stockMinutelyRepo, StockDailyRepository stockDailyRepo, StockTickRepository tickRepo, TransactionDateTimeRepository dateRepo)
+        public IntradayMonitor(StockMinuteRepository stockMinutelyRepo, StockDailyRepository stockDailyRepo, StockTickRepository tickRepo, TransactionDateTimeRepository dateRepo)
         {
             this.stockMinutelyRepo = stockMinutelyRepo;
             this.stockDailyRepo = stockDailyRepo;
@@ -68,42 +68,157 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             this.tickRepo = tickRepo;
             sqlWriter = new SqlServerWriter(ConnectionType.Server84);
             sqlReader = new SqlServerReader(ConnectionType.Local);
+            getMonitorData();
         }
 
-        public void backtest(DateTime startDate, DateTime endDate)
+        public void getMonitorData()
         {
-            dataPrepare(startDate, endDate);
-            this.transactionData = new List<OneByOneTransaction>();
-            foreach (var day in tradedays)
+            List<ConvertibleBondMonitor> recordList = new List<ConvertibleBondMonitor>();
+            DateTime endDate = DateTime.Now;
+            if (endDate.TimeOfDay<new TimeSpan(16,10,00))
             {
-                foreach (var info in bondInfo)
+                endDate = DateTimeExtension.DateUtils.LatestTradeDay(endDate.AddDays(-1));
+                endDate = endDate.Date;
+            }
+            DateTime startDate = endDate.AddDays(-60).Date;
+            //获取交易日信息
+            this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
+            //获取可转债信息
+            this.bondInfo = GetConvertibleBondInfos(endDate);
+            foreach (var item in bondInfo)//每个可转债进行遍历
+            {
+                DateTime startTime = startDate;
+                DateTime endTime = endDate;
+                if (startTime<item.startDate)
                 {
-                    if (day.Date >= info.startDate.Date && day.Date <= info.endDate.Date)
-                    {
-                        //var record = computeDailyWithRecordByMinute(day, info.code, info.stockCode, 0.01);
-                        var record = computeDailyWithRecordByTick(day, info.code, info.stockCode, 0.03);
-                        if (record.Count>0)
-                        {
-                            this.transactionData.AddRange(record);
-                        }
-                        
-                    }
+                    startTime = item.startDate;
+                }
+                if (item.startDate>endDate)
+                {
+                    continue;
+                }
+                //获取债券的信息
+                var bondInfo = getBondDailyInfo(item, endDate);
+                //获取股票的日线数据
+                var stockData=stockDailyRepo.GetStockTransaction(bondInfo.stockCode, startTime.AddDays(-30), endDate);
+                //获取债券的日线数据
+                var bondData= stockDailyRepo.GetStockTransaction(bondInfo.code, startTime, endDate);
+                //找到股票第一个不涨停股票的数据
+                var nonCeilingStockData = getStartDate(stockData);
+                var lastStockData = stockData[stockData.Count() - 1];
+                //找到可转债第一个不涨停的数据
+                var nonCeilingBondData = getBondDataByDate(bondData, nonCeilingStockData.DateTime);
+                //计算正股波动率
+                double volatility = getStockVolatility(stockData);
+                var nonCeilingOptionPrice = getEstimateOptionPrice(nonCeilingStockData.DateTime, bondInfo, volatility, nonCeilingStockData.Close*nonCeilingStockData.AdjFactor/lastStockData.AdjFactor);
+                double stockCeilPrice = Math.Round(lastStockData.Close * 1.1, 2);
+                var ceilingOptionPrice= getEstimateOptionPrice(nonCeilingStockData.DateTime, bondInfo, volatility, stockCeilPrice);
+                double estimateBondPrice = nonCeilingBondData.Close + 100 / bondInfo.conversionPrice * (ceilingOptionPrice - nonCeilingOptionPrice);
+                double delta = 1;
+                double estimateBondPrice2 = nonCeilingBondData.Close + (stockCeilPrice - nonCeilingStockData.Close) * delta * 100 / bondInfo.conversionPrice;
+                ConvertibleBondMonitor record = new ConvertibleBondMonitor();
+                record.ceilingStockPrice = stockCeilPrice;
+                record.code = bondInfo.code;
+                record.conversionPrice = bondInfo.conversionPrice;
+                record.estimateCeilingBondPrice = estimateBondPrice;
+                record.name = bondInfo.name;
+                record.nonCeilingBondPrice = nonCeilingBondData.Close;
+                record.nonCeilingStockPrice = nonCeilingStockData.Close;
+                record.stockCode = bondInfo.stockCode;
+                record.updateTime = endDate;
+                record.estimateCeilingBondPrice2 = estimateBondPrice2;
+                recordList.Add(record);
+            }
+            var dt = DataTableExtension.ToDataTable(recordList);
+            string dateStr = endDate.ToString("yyyy-MM-dd");
+            string str = string.Format("E:\\result\\bond\\convertibleBond{0}.csv", dateStr);
+            DataTableExtension.SaveCSV(dt, str);
+        }
+
+        private StockTransaction getBondDataByDate(List<StockTransaction> bondList,DateTime date)
+        {
+            StockTransaction bond = new StockTransaction();
+            foreach (var item in bondList)
+            {
+                if (item.DateTime.Date==date.Date)
+                {
+                    bond = item;
                 }
             }
-            var dt = DataTableExtension.ToDataTable(transactionData);
-            string name = string.Format("E:\\result\\bond\\convertibleBond2019030602.csv");
-            DataTableExtension.SaveCSV(dt, name);
+            return bond;
+        }
+
+        private double getEstimateOptionPrice(DateTime today,ConvertibleBondDailyInfo bondInfo,double volatility,double stockPrice)
+        {
+            double option = 0;
+            int days = DateTimeExtension.DateUtils.GetSpanOfTradeDays(today, bondInfo.endDate);
+            double strike = bondInfo.conversionPrice;
+            double duration = (double)days / 252.0;
+            option = ImpliedVolatilityExtension.ComputeOptionPrice(strike, duration, 0.04, 0, "认购", volatility, stockPrice);
+            return option;
+        }
+
+        private double getStockVolatility(List<StockTransaction> stockData)
+        {
+            double vol = 0;
+            List<double> close = new List<double>();
+            for (int i = 0; i < stockData.Count; i++)
+            {
+                close.Add(stockData[i].Close * stockData[i].AdjFactor);
+            }
+            vol=HistoricalVolatilityExtension.getHistoricalVolatilityByClosePrice(close);
+            return vol;
         }
 
 
-        private List<OneByOneTransaction> computeDailyWithRecordByTick(DateTime date,string bond,string stock,double stopLossRatio)
+        private StockTransaction getStartDate(List<StockTransaction> stockData)
+        {
+            StockTransaction data = new StockTransaction();
+            for (int i = stockData.Count()-1; i >0; i--)
+            {
+                if (stockData[i].Close*stockData[i].AdjFactor<1.099*stockData[i-1].Close*stockData[i-1].AdjFactor)
+                {
+                    data = stockData[i];
+                    break;
+                }
+            }
+            return data;
+        }
+
+        //public void backtest(DateTime startDate, DateTime endDate)
+        //{
+        //    dataPrepare(startDate, endDate);
+        //    this.transactionData = new List<OneByOneTransaction>();
+        //    foreach (var day in tradedays)
+        //    {
+        //        foreach (var info in bondInfo)
+        //        {
+        //            if (day.Date >= info.startDate.Date && day.Date <= info.endDate.Date)
+        //            {
+        //                //var record = computeDailyWithRecordByMinute(day, info.code, info.stockCode, 0.01);
+        //                var record = computeDailyWithRecordByTick(day, info.code, info.stockCode, 0.03);
+        //                if (record.Count > 0)
+        //                {
+        //                    this.transactionData.AddRange(record);
+        //                }
+
+        //            }
+        //        }
+        //    }
+        //    var dt = DataTableExtension.ToDataTable(transactionData);
+        //    string name = string.Format("E:\\result\\bond\\convertibleBond2019030602.csv");
+        //    DataTableExtension.SaveCSV(dt, name);
+        //}
+
+
+        private List<OneByOneTransaction> computeDailyWithRecordByTick(DateTime date, string bond, string stock, double stopLossRatio)
         {
             List<OneByOneTransaction> record = new List<OneByOneTransaction>();
-            if (tickData.ContainsKey(date)==false || tickData[date].ContainsKey(bond)==false || tickData[date].ContainsKey(stock)==false)
+            if (tickData.ContainsKey(date) == false || tickData[date].ContainsKey(bond) == false || tickData[date].ContainsKey(stock) == false)
             {
                 return record;
             }
-            
+
             double ceilPrice = getCeilingPrice(date, stock);
             double previousAmount = getPreviousAmount(date, stock);
             double previousBondPrice = getPreviousBondClose(date, bond);
@@ -112,9 +227,9 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             var bondDailyInfoNow = getBondDailyInfo(date, bond);
             double strike = bondDailyInfoNow.conversionPrice;
             double numbers = 100 / strike;
-            double delta = getOptionDelta(date,bond,stock);
+            double delta = getOptionDelta(date, bond, stock);
             double bondEstimatePrice = getEstimateBondPrice(date, bond, stock);
-            if (bondEstimatePrice<previousBondPrice)
+            if (bondEstimatePrice < previousBondPrice)
             {
                 previousBondPrice = bondEstimatePrice;
             }
@@ -146,20 +261,20 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             TimeSpan firstOpenTime = new TimeSpan(9, 30, 00);
             var recordNow = new OneByOneTransaction();
             int index = 0;
-            while (index<allData.Count()-1)
+            while (index < allData.Count() - 1)
             {
                 //正股涨停
-                if (allData[index].Code == stock && allData[index].AskV1 == 0 && allData[index].Bid1 == ceilPrice && allData[index+1].Code==bond &&allData[index+1].AskV1>0 && position==0 && allData[index].TransactionDateTime.TimeOfDay<lastOpenTime && allData[index].TransactionDateTime.TimeOfDay >= firstOpenTime)
+                if (allData[index].Code == stock && allData[index].AskV1 == 0 && allData[index].Bid1 == ceilPrice && allData[index + 1].Code == bond && allData[index + 1].AskV1 > 0 && position == 0 && allData[index].TransactionDateTime.TimeOfDay < lastOpenTime && allData[index].TransactionDateTime.TimeOfDay >= firstOpenTime)
                 {
                     double ceilAmount = allData[index].Bid1 * allData[index].BidV1;
-                    if (ceilAmount>previousAmount*0.2  && allData[index+1].LastPrice<previousBondPrice+delta*numbers*stockPriceChanged)
+                    if (ceilAmount > previousAmount * 0.2 && allData[index + 1].LastPrice < previousBondPrice + delta * numbers * stockPriceChanged)
                     {
-                        
+
                         recordNow = new OneByOneTransaction();
                         var bondDataNow = allData[index + 1];
                         maxOpenAmount = bondDataNow.Ask1 * bondDataNow.AskV1;
                         double bondVolume = bondDataNow.AskV1;
-                        if (maxOpenAmount>=500000 && (maxOpenAmount/ bondVolume)<300)
+                        if (maxOpenAmount >= 500000 && (maxOpenAmount / bondVolume) < 300)
                         {
                             position = 1;
                             openPrice = maxOpenAmount / bondVolume;
@@ -175,11 +290,11 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                     }
                 }
                 //涨停打开或者将要打开卖出可转债
-                if (position==1 && allData[index].Code == stock && (allData[index].Bid1 < ceilPrice || (allData[index].Bid1 == ceilPrice && allData[index].Bid1 * allData[index].BidV1<previousAmount*0.03)))
+                if (position == 1 && allData[index].Code == stock && (allData[index].Bid1 < ceilPrice || (allData[index].Bid1 == ceilPrice && allData[index].Bid1 * allData[index].BidV1 < previousAmount * 0.03)))
                 {
-                    for (int i = 1; i < allData.Count()-index; i++)
+                    for (int i = 1; i < allData.Count() - index; i++)
                     {
-                        if (allData[index+i].Code==bond)//找到bond对应的数据
+                        if (allData[index + i].Code == bond)//找到bond对应的数据
                         {
                             position = 0;
                             var bondDataNow = allData[index + i];
@@ -204,7 +319,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 }
 
                 //正股封涨停但是可转债跌幅过大，止损卖出
-                if (position == 1 && allData[index].Code == bond && allData[index].LastPrice < (1-stopLossRatio) * openPrice)
+                if (position == 1 && allData[index].Code == bond && allData[index].LastPrice < (1 - stopLossRatio) * openPrice)
                 {
                     position = 0;
                     var bondDataNow = allData[index];
@@ -222,11 +337,11 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                     recordNow.closeStatus = "涨停未打开但可转债下跌";
                     recordNow.yield = (recordNow.closePrice - recordNow.openPrice) / recordNow.openPrice;
                     record.Add(recordNow);
-                    index = index ++;
+                    index = index++;
                 }
 
                 //14点57分之后，强制平仓
-                if (position == 1 && allData[index].TransactionDateTime.TimeOfDay>=lastOpenTime)
+                if (position == 1 && allData[index].TransactionDateTime.TimeOfDay >= lastOpenTime)
                 {
                     for (int i = 1; i < allData.Count() - index; i++)
                     {
@@ -237,9 +352,9 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                             maxCloseAmount = bondDataNow.Bid1 * bondDataNow.BidV1;
                             double bondVolume = bondDataNow.BidV1;
                             closePrice = maxCloseAmount / bondVolume;
-                            if (bondVolume==0)
+                            if (bondVolume == 0)
                             {
-                                closePrice=bondDataNow.LastPrice;
+                                closePrice = bondDataNow.LastPrice;
                             }
                             closeTime = bondDataNow.TransactionDateTime;
                             recordNow.maxCloseAmount = maxCloseAmount;
@@ -259,7 +374,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
 
         }
 
-        private List<StockTickTransaction> getMergeData(List<StockTickTransaction> list1,List<StockTickTransaction> list2)
+        private List<StockTickTransaction> getMergeData(List<StockTickTransaction> list1, List<StockTickTransaction> list2)
         {
             List<StockTickTransaction> list = new List<StockTickTransaction>();
             foreach (var item in list1)
@@ -325,7 +440,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             return list.OrderBy(x => x.TransactionDateTime).ToList();
         }
 
-        private OneByOneTransaction computeDailyWithRecordByMinute(DateTime date, string bond, string stock,double stopLossRatio)
+        private OneByOneTransaction computeDailyWithRecordByMinute(DateTime date, string bond, string stock, double stopLossRatio)
         {
             OneByOneTransaction record = new OneByOneTransaction();
             if (minuteData.ContainsKey(date) == false || minuteData[date].ContainsKey(bond) == false || minuteData[date].ContainsKey(stock) == false)
@@ -343,10 +458,10 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             double maxOpenAmount = 0;
             double maxCloseAmount = 0;
             double longMaxPrice = 0;
-            string status="";
-            for (int i = 0; i < stockData.Count()-5; i++)
+            string status = "";
+            for (int i = 0; i < stockData.Count() - 5; i++)
             {
-                if (stockData[i].High==ceilPrice && position==0 && bondData[i+1].Volume>0)
+                if (stockData[i].High == ceilPrice && position == 0 && bondData[i + 1].Volume > 0)
                 {
                     position = 1;
                     openPrice = bondData[i + 1].Amount / bondData[i + 1].Volume;
@@ -354,10 +469,10 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                     openTime = stockData[i + 1].DateTime;
                     longMaxPrice = openPrice;
                 }
-                if (position==1 && (bondData[i].Close-longMaxPrice)/longMaxPrice<-stopLossRatio && stockData[i].Close<ceilPrice*0.995)
+                if (position == 1 && (bondData[i].Close - longMaxPrice) / longMaxPrice < -stopLossRatio && stockData[i].Close < ceilPrice * 0.995)
                 {
                     position = 0;
-                    if (bondData[i+1].Volume>0)
+                    if (bondData[i + 1].Volume > 0)
                     {
                         closePrice = bondData[i + 1].Amount / bondData[i + 1].Volume;
                     }
@@ -370,16 +485,16 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                     status = "追踪止损";
                     break;
                 }
-                else if (position==1 && bondData[i].Close>longMaxPrice)
+                else if (position == 1 && bondData[i].Close > longMaxPrice)
                 {
                     longMaxPrice = bondData[i].Close;
                 }
             }
             //收盘之前3分钟平仓
-            if (position==1)
+            if (position == 1)
             {
                 position = 0;
-                if (bondData[stockData.Count() - 3].Volume>0)
+                if (bondData[stockData.Count() - 3].Volume > 0)
                 {
                     closePrice = bondData[stockData.Count() - 3].Amount / bondData[stockData.Count() - 3].Volume;
                 }
@@ -391,7 +506,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 closeTime = bondData[stockData.Count() - 3].DateTime;
                 status = "收盘强平";
             }
-            
+
             record.openPrice = openPrice;
             record.openTime = openTime;
             record.closePrice = closePrice;
@@ -407,7 +522,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
         }
 
 
-        private double getOptionDelta(DateTime date,string BondCode,string stockCode)
+        private double getOptionDelta(DateTime date, string BondCode, string stockCode)
         {
             double delta = 0.5;
             var bondInfo = getBondDailyInfo(date, BondCode);
@@ -418,7 +533,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             double volatility = HistoricalVolatilityExtension.getHistoricalVolatilityByClosePrice(stockList);
 
             double strike = bondInfo.conversionPrice;
-            delta = ImpliedVolatilityExtension.ComputeOptionDelta(strike, duration, 0.04, 0,"认购", volatility, stockLastClose);
+            delta = ImpliedVolatilityExtension.ComputeOptionDelta(strike, duration, 0.04, 0, "认购", volatility, stockLastClose);
             return delta;
         }
 
@@ -431,9 +546,9 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             double stockStartPrice = 0;
             double bondStartPrice = 0;
             var stockLastClose = stockList[stockList.Count() - 1].Close;
-            for (int i = stockList.Count()-1; i >=0;  i--)
+            for (int i = stockList.Count() - 1; i >= 0; i--)
             {
-                if (stockList[i].Close<stockList[i-1].Close*1.09)//当前推第i天未涨停，利用该天作为基准
+                if (stockList[i].Close < stockList[i - 1].Close * 1.09)//当前推第i天未涨停，利用该天作为基准
                 {
                     stockStartPrice = stockList[i].Close;
                     bondStartPrice = getTodayBondClose(stockList[i].DateTime.Date, bondInfo.code);
@@ -441,7 +556,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 }
             }
             double delta = getOptionDelta(date, BondCode, stockCode);
-            if (stockStartPrice!=0 && bondStartPrice!=0)
+            if (stockStartPrice != 0 && bondStartPrice != 0)
             {
                 estimate = bondStartPrice + (100 / bondInfo.conversionPrice) * delta * (stockLastClose - stockStartPrice);
             }
@@ -472,7 +587,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             return list;
         }
 
-        private List<double> getPreviousStockCloseList(DateTime date,string code,int days=30)
+        private List<double> getPreviousStockCloseList(DateTime date, string code, int days = 30)
         {
             List<double> list = new List<double>();
             if (dailyData.ContainsKey(code) == false)
@@ -485,7 +600,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             {
                 if (data[i].DateTime == date)
                 {
-                    for (int j = Math.Max(0,i-days); j <= i-1; j++)
+                    for (int j = Math.Max(0, i - days); j <= i - 1; j++)
                     {
                         list.Add(data[j].Close);
                     }
@@ -538,10 +653,10 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             return closePrice;
         }
 
-        private ConvertibleBondDailyInfo getBondDailyInfo(DateTime date,string code)
+        private ConvertibleBondDailyInfo getBondDailyInfo(DateTime date, string code)
         {
             ConvertibleBondDailyInfo info = new ConvertibleBondDailyInfo();
-            if (bondDailyInfo.ContainsKey(code)==false)
+            if (bondDailyInfo.ContainsKey(code) == false)
             {
                 return info;
             }
@@ -549,7 +664,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             foreach (var item in data)
             {
                 info = item;
-                if (item.date.Date==date.Date)
+                if (item.date.Date == date.Date)
                 {
                     break;
                 }
@@ -557,7 +672,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             return info;
         }
 
-        private double getPreviousAmount(DateTime date,string code)
+        private double getPreviousAmount(DateTime date, string code)
         {
             double amount = 0;
             if (dailyData.ContainsKey(code) == false)
@@ -579,10 +694,10 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
         }
 
 
-        private double getCeilingPrice(DateTime date,string code)
+        private double getCeilingPrice(DateTime date, string code)
         {
             double price = 0;
-            if (dailyData.ContainsKey(code)==false)
+            if (dailyData.ContainsKey(code) == false)
             {
                 return price;
             }
@@ -590,7 +705,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
 
             for (int i = 1; i < data.Count(); i++)
             {
-                if (data[i].DateTime==date)
+                if (data[i].DateTime == date)
                 {
                     var dataToday = data[i];
                     var dataYesterday = data[i - 1];
@@ -614,9 +729,9 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 string name = Convert.ToString(dr["sec_name"]);
                 string[] strList = code.Split('.');
                 string market = strList[1];
-                if (market=="SH" || market=="SZ")
+                if (market == "SH" || market == "SZ")
                 {
-                    if (codeList.Contains(code)==false)
+                    if (codeList.Contains(code) == false)
                     {
                         try
                         {
@@ -626,7 +741,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                             {
                                 string stockCode = Convert.ToString(dr2["UNDERLYINGCODE"]);
                                 string stockMarket = stockCode.Split('.')[1];
-                                if (stockMarket=="SH" || stockMarket=="SZ")
+                                if (stockMarket == "SH" || stockMarket == "SZ")
                                 {
                                     DateTime startTime = Convert.ToDateTime(dr2["IPO_DATE"]);
                                     DateTime endTime = Convert.ToDateTime(dr2["DELIST_DATE"]);
@@ -636,7 +751,11 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                                     infoNow.startDate = startTime;
                                     infoNow.stockCode = stockCode;
                                     infoNow.name = name;
-                                    info.Add(infoNow);
+                                    if (infoNow.endDate>=date)
+                                    {
+                                        info.Add(infoNow);
+                                    }
+                                    
                                 }
                             }
                         }
@@ -647,7 +766,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                         }
 
 
-                        
+
                     }
                 }
             }
@@ -655,17 +774,48 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
 
         }
 
-        private string getConvetibleCodeByStockCode(string stock,DateTime date,List<ConvertibleBondInfo> info)
+        private string getConvetibleCodeByStockCode(string stock, DateTime date, List<ConvertibleBondInfo> info)
         {
             string bond = "";
             foreach (var item in info)
             {
-                if (item.stockCode==stock && date.Date>=item.startDate && date.Date<=item.endDate)
+                if (item.stockCode == stock && date.Date >= item.startDate && date.Date <= item.endDate)
                 {
                     bond = item.code;
                 }
             }
             return bond;
+        }
+
+        private ConvertibleBondDailyInfo getBondDailyInfo(ConvertibleBondInfo info,DateTime date)
+        {
+            ConvertibleBondDailyInfo data = new ConvertibleBondDailyInfo();
+            var tempDataTable = windReader.GetDailyDataTable(info.code, "clause_conversion2_swapshareprice,underlyingcode,clause_conversion_2_swapsharestartdate,clause_conversion_2_swapshareenddate", info.startDate, date);
+            List<ConvertibleBondDailyInfo> bondDaily = new List<ConvertibleBondDailyInfo>();
+            foreach (DataRow dt in tempDataTable.Rows)
+            {
+                ConvertibleBondDailyInfo bondDailyInfoNow = new ConvertibleBondDailyInfo();
+                bondDailyInfoNow.code = info.code;
+                bondDailyInfoNow.name = info.name;
+                bondDailyInfoNow.startDate = info.startDate;
+                bondDailyInfoNow.endDate = info.endDate;
+                bondDailyInfoNow.stockCode = info.stockCode;
+                bondDailyInfoNow.conversionPrice = Convert.ToDouble(dt["clause_conversion2_swapshareprice"]);
+                //bondDailyInfoNow.forceConvertDate = Convert.ToDateTime(dt["clause_conversion_2_forceconvertdate"]);
+                bondDailyInfoNow.conversionStartDate = Convert.ToDateTime(dt["clause_conversion_2_swapsharestartdate"]);
+                bondDailyInfoNow.conversionEndDate = Convert.ToDateTime(dt["clause_conversion_2_swapshareenddate"]);
+                bondDailyInfoNow.date = Convert.ToDateTime(dt["datetime"]);
+                bondDaily.Add(bondDailyInfoNow);
+            }
+            for (int i = bondDaily.Count()-1; i >=0; i--)
+            {
+                if (bondDaily[i].conversionPrice!=0)
+                {
+                    data = bondDaily[i];
+                    break;
+                }
+            }
+            return data;
         }
 
         private void dataPrepare(DateTime startDate, DateTime endDate)
@@ -676,7 +826,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             string bondCode;
             string underlyingCode;
             //获取可转债信息
-            this.bondInfo=GetConvertibleBondInfos(endDate);
+            this.bondInfo = GetConvertibleBondInfos(endDate);
             //获取日线数据
             try
             {
@@ -685,11 +835,11 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                     underlyingCode = info.stockCode;
                     DateTime startTime = startDate;
                     DateTime endTime = endDate;
-                    if (startTime<info.startDate)
+                    if (startTime < info.startDate)
                     {
                         startTime = info.startDate;
                     }
-                    if (endTime>info.endDate)
+                    if (endTime > info.endDate)
                     {
                         endTime = info.endDate;
                     }
@@ -698,15 +848,15 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                         var underlyingData = stockDailyRepo.GetStockTransaction(underlyingCode, startTime.AddDays(-10), endTime);
                         dailyData.Add(underlyingCode, underlyingData);
                         endTime = DateTimeExtension.DateUtils.PreviousTradeDay(info.endDate, 7);
-                        if (endTime>endDate.Date)
+                        if (endTime > endDate.Date)
                         {
                             endTime = endDate.Date;
                         }
-                        if (startDate>endTime)
+                        if (startDate > endTime)
                         {
                             startDate = endTime;
                         }
-                        var bondData = stockDailyRepo.GetStockTransaction(info.code, info.startDate,endTime);
+                        var bondData = stockDailyRepo.GetStockTransaction(info.code, info.startDate, endTime);
                         dailyData.Add(info.code, bondData);
                         var tempDataTable = windReader.GetDailyDataTable(info.code, "clause_conversion2_swapshareprice,underlyingcode,clause_conversion_2_swapsharestartdate,clause_conversion_2_swapshareenddate", info.startDate, endTime);
                         List<ConvertibleBondDailyInfo> bondDaily = new List<ConvertibleBondDailyInfo>();
@@ -746,7 +896,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 for (int i = 1; i < data.Count(); i++)
                 {
                     DateTime day = data[i].DateTime.Date;
-                    if (day<startDate)
+                    if (day < startDate)
                     {
                         continue;
                     }
@@ -759,7 +909,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                     //获取日内数据
                     try
                     {
-                        if (data[i].High >= 0.99*price && bondCode != "")
+                        if (data[i].High >= 0.99 * price && bondCode != "")
                         {
                             //获取分钟数据
                             //var data1 = stockMinutelyRepo.GetStockTransaction(bondCode, day, day);
@@ -802,7 +952,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                     }
 
 
-                    
+
                 }
             }
         }

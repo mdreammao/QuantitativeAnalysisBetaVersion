@@ -67,13 +67,17 @@
     <Compile Include="BasisFrontNext.cs" />
     <Compile Include="BasisStatistics.cs" />
     <Compile Include="Bond\ConvertibleBond\Intraday1.cs" />
+    <Compile Include="Bond\ConvertibleBond\IntradayMonitor.cs" />
     <Compile Include="DualTrust\DualTrust.cs" />
     <Compile Include="DualTrust\DualTrust2.cs" />
     <Compile Include="DualTrust\DualTrust3.cs" />
     <Compile Include="EstimateStockBonus\StockIndexBonus.cs" />
+    <Compile Include="StockIntraday\ExtremeCase\priceCeilingMoving.cs" />
+    <Compile Include="StockIntraday\ExtremeCase\priceUnusualMoving.cs" />
     <Compile Include="IndexRelated\IndexAnalysis.cs" />
     <Compile Include="IndexRelated\StockDataStore.cs" />
     <Compile Include="StockIntraday\DualTrust\DualTrust.cs" />
+    <Compile Include="StockIntraday\DualTrust\DualTrust2.cs" />
     <Compile Include="StockIntraday\MovingAverage\MA1.cs" />
     <Compile Include="StockIntraday\Volatility\StockWithVolatility2.cs" />
     <Compile Include="StockIntraday\Volatility\StockWithVolatility1.cs" />
@@ -92,6 +96,7 @@
     <Compile Include="myinfluxdb.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="STWAP.cs" />
+    <Compile Include="Example\T0Template.cs" />
     <Compile Include="TDstrategy.cs" />
     <Compile Include="TickDataToMinuteData\StockTickToMinute.cs" />
     <Compile Include="trendT0.cs" />

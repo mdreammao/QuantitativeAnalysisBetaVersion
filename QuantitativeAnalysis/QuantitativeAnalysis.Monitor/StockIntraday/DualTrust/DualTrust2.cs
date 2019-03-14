@@ -7,6 +7,7 @@
  * 其中HH是开盘前N分钟High的最高价，LC是开盘前N分钟Close的最低价，HC是开盘前N分钟N日Close的最高价，LL是开盘前N分钟N日Low的最低价。
  * 信号出发的指标为指数，交易当月股指期货。
  * 根据指数前N日的信息，计算出对应的指标，指导股指期货日内交易。
+ * 改版本加了修正，只有当前分钟成交量比前30分钟成交量均值大三倍，才会开仓。
  */
 using System;
 using System.Collections.Generic;
@@ -29,12 +30,13 @@ using QuantitativeAnalysis.DataAccess.ETF;
 
 namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
 {
-    public class DualTrust
+    public class DualTrust2
     {
         private TypedParameter conn_type = new TypedParameter(typeof(ConnectionType), ConnectionType.Default);
         private Logger logger = LogManager.GetCurrentClassLogger();
         private string underlyingCode;
         private string indexCode;
+        private WindReader windReader;
         private List<DateTime> tradedays = new List<DateTime>();
         private Logger mylog = NLog.LogManager.GetCurrentClassLogger();
         private TransactionDateTimeRepository dateRepo;
@@ -43,30 +45,54 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
         private StockMinuteRepository stockMinutelyRepo;
         private SqlServerWriter sqlWriter;
         private SqlServerReader sqlReader;
+        private StockInfoRepository stockInfoRepo;
         private Dictionary<DateTime, List<StockTransaction>> underlying = new Dictionary<DateTime, List<StockTransaction>>();
         private List<StockTransaction> underlyingAll = new List<StockTransaction>();
-        private double slipRatio = 0.0006;
+        private double slipRatio = 0.001;
         private double feeRatioBuy = 0.0001;
         private double feeRatioSell = 0.0011;
         private double priceUnit = 0.01;
-        private double loss = 0.03;
+        private double loss = 0.015;
+        //记录股票组合信息
+        Dictionary<string, StockIPOInfo> allStockDic = new Dictionary<string, StockIPOInfo>();
         //预处理计算N天的range值
         Dictionary<int, Dictionary<DateTime, double>> RangeDic = new Dictionary<int, Dictionary<DateTime, double>>();
         //预处理分钟线数据
         Dictionary<DateTime, List<StockTransaction>> underlyingKLine = new Dictionary<DateTime, List<StockTransaction>>();
 
-        public DualTrust(StockMinuteRepository stockMinutelyRepo, StockDailyRepository stockDailyRepo)
+        public DualTrust2(StockMinuteRepository stockMinutelyRepo, StockDailyRepository stockDailyRepo, StockInfoRepository stockInfoRepo)
         {
             this.stockMinutelyRepo = stockMinutelyRepo;
             this.stockDailyRepo = stockDailyRepo;
             dateRepo = new TransactionDateTimeRepository(ConnectionType.Default);
             sqlWriter = new SqlServerWriter(ConnectionType.Server84);
             sqlReader = new SqlServerReader(ConnectionType.Local);
+            this.windReader = new WindReader();
+            this.stockInfoRepo = stockInfoRepo;
+        }
+
+        public void backtestByIndexCode(string index, DateTime startDate, DateTime endDate)
+        {
+            allStockDic = getStockInfoList(index,endDate,endDate);
+            foreach (var item in allStockDic)
+            {
+                var stock = item.Value;
+                DateTime stockStart = startDate;
+                DateTime stockEnd = endDate;
+                if (stockStart<stock.IPODate)
+                {
+                    stockStart = stock.IPODate.AddDays(10);
+                }
+                backtest(stock.code, stockStart, stockEnd);
+            }
 
         }
 
-        public void backtest(string underlyingCode,DateTime startDate, DateTime endDate)
+        public void backtest(string underlyingCode, DateTime startDate, DateTime endDate)
         {
+            this.RangeDic = new Dictionary<int, Dictionary<DateTime, double>>();
+            this.underlyingAll = new List<StockTransaction>();
+            this.underlyingKLine = new Dictionary<DateTime, List<StockTransaction>>();
             dataPrepare(underlyingCode, startDate, endDate);
             //训练集训练参数
             int maxN = 0;
@@ -74,43 +100,47 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
             double maxK2 = 0;
             double maxSharpe = -10;
 
-            for (int n = 2; n <= 4; n++)
+            for (int n =2; n <= 6; n++)
             {
-                for (double k1 = 0.2; k1 < 1; k1 = k1 + 0.2)
+                for (double k1 = 0; k1 <= 2; k1 = k1 + 0.2)
                 {
-                    for (double k2 = 0.2; k2 < 1; k2 = k2 + 0.2)
+                    for (double k2 = 0; k2 <=2; k2 = k2 + 0.2)
                     {
-                        double sharpe = getParametersSharpe(startDate, endDate, n, k1, k2,loss);
+                        double sharpe = getParametersSharpe(startDate, endDate, n, k1, k2, loss);
                         if (sharpe > maxSharpe)
                         {
                             maxN = n;
                             maxK1 = k1;
                             maxK2 = k2;
                             maxSharpe = sharpe;
-                            //Console.WriteLine("sharpe:{0}, n:{1}, k1:{2}, k2:{3}", maxSharpe, maxN, maxK1, maxK2);
+                            //Console.WriteLine("rating:{0}, n:{1}, k1:{2}, k2:{3}", maxSharpe, maxN, maxK1, maxK2);
                         }
-                        Console.WriteLine("rating:{0}, n:{1}, k1:{2}, k2:{3}", sharpe, n, k1, k2);
+                        //Console.WriteLine("rating:{0}, n:{1}, k1:{2}, k2:{3}", sharpe, n, k1, k2);
                     }
                 }
             }
-            Console.WriteLine("rating:{0}, n:{1}, k1:{2}, k2:{3}", maxSharpe, maxN, maxK1, maxK2);
-            var yield = getYieldList(startDate, endDate, maxN, maxK1, maxK2,loss);
-            yield = getYieldList(startDate, endDate, maxN, maxK1, maxK2,loss);
-            double nv = 1;
-            for (int i = 0; i < yield.Count(); i++)
+            Console.WriteLine("code:{4}, rating:{0}, n:{1}, k1:{2}, k2:{3}", maxSharpe, maxN, maxK1, maxK2,underlyingCode);
+            if (maxSharpe>-10)
             {
-                nv = nv * (yield[i] + 1);
+                var yield = getYieldList(startDate, endDate, maxN, maxK1, maxK2, loss);
+                yield = getYieldList(startDate, endDate, maxN, maxK1, maxK2, loss);
+                double nv = 1;
+                for (int i = 0; i < yield.Count(); i++)
+                {
+                    nv = nv * (yield[i] + 1);
+                }
+                Console.WriteLine(nv);
+                this.transactionData = getTransactionData(startDate, endDate, maxN, maxK1, maxK2, loss);
+                var dt = DataTableExtension.ToDataTable(transactionData);
+                var codeStr = underlyingCode.Split('.');
+                string name = string.Format("E:\\result\\DualTrust\\{0}.csv", codeStr[0]);
+                DataTableExtension.SaveCSV(dt, name);
             }
-            Console.WriteLine(nv);
-            this.transactionData = getTransactionData(startDate, endDate, maxN, maxK1, maxK2,loss);
-            var dt = DataTableExtension.ToDataTable(transactionData);
-            var codeStr = underlyingCode.Split('.');
-            string name = string.Format("E:\\result\\DualTrust\\{0}.csv", codeStr[0]);
-            DataTableExtension.SaveCSV(dt, name);
-         }
+            
+        }
 
         //将计算用的数据准备好
-        private void dataPrepare(string underlyingCode,DateTime startDate, DateTime endDate, int N = 20)
+        private void dataPrepare(string underlyingCode, DateTime startDate, DateTime endDate, int N = 20)
         {
             //获取交易日信息
             this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
@@ -146,6 +176,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
                             LL = underlyingData[k].Low;
                         }
                     }
+                    double lastClose = underlyingData[i - 1].Close;
                     double rangeNow = Math.Max(HH - LC, HC - LL);
                     range.Add(underlyingData[i].DateTime, rangeNow);
 
@@ -202,7 +233,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
             range1 /= right;
             range2 /= bigWin;
             double rate = right / (double)num;
-            Console.WriteLine("num:{0}, winrate:{1}, range: total-{2}, open-{3}, right-{4}, bigwin-{5}", num, rate,range,range0,range1,range2);
+            Console.WriteLine("num:{0}, winrate:{1}, range: total-{2}, open-{3}, right-{4}, bigwin-{5}", num, rate, range, range0, range1, range2);
             return yieldList;
         }
 
@@ -217,7 +248,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
             }
             double sharpe = evaluateSharpe(yieldList);
             double returnAVG = yieldList.Sum() / yieldList.Count() * 252;
-            return sharpe+returnAVG*3;
+            return sharpe + returnAVG * 10;
         }
 
         private List<OneByOneTransaction> getTransactionData(DateTime startDate, DateTime endDate, int N, double K1, double K2, double lossStopRatio = 0.02)
@@ -236,80 +267,26 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
         //按照给定参数回测
         private double computeDaily(DateTime date, int N, double K1, double K2, double lossStopRatio)
         {
-            double yield = 0;
-            if ((RangeDic.ContainsKey(N) && RangeDic[N].ContainsKey(date) && underlyingKLine.ContainsKey(date) ) == false)
+            var record = computeDailyWithRecord(date, N, K1, K2, lossStopRatio);
+            return record.yield;
+        }
+
+        private double getVolmueScore(List<StockTransaction> data,int index)
+        {
+            double score = 0;
+            double volumeMean = 0;
+            int num = 0;
+            for (int i = Math.Max(index-30,0); i < index; i++)
             {
-                return yield;
+                num += 1;
+                volumeMean += data[i].Volume;
             }
-            double range = RangeDic[N][date];
-            var underlying = underlyingKLine[date];
-            double position = 0;
-            double positionflag = 0;
-            double openPrice = 0;
-            double closePrice = 0;
-            double longMaxPrice = 0;
-            double shortMinPrice = 99999;
-            double open = underlying[0].Open;
-            double lossStopPoints = lossStopRatio * open;
-            double slipBuy = 0;
-            double slipSell = 0;
-            for (int i = 1; i < underlying.Count() - 30; i++)
+            if (num>0)
             {
-                slipBuy = Math.Max(slipRatio * underlying[i].Open, priceUnit) + feeRatioBuy * underlying[i].Open;
-                slipSell = Math.Max(slipRatio * underlying[i].Open, priceUnit) + feeRatioSell * underlying[i].Open;
-                if (position == 0 && underlying[i].Open > open + K1 * range && underlying[i].Amount>0)
-                {
-                    openPrice = underlying[i].Open + slipBuy;
-                    longMaxPrice = openPrice;
-                    positionflag = 1;
-                    position = 1;
-                }
-                if (position == 0 && underlying[i].Open < open - K2 * range && underlying[i].Amount > 0)
-                {
-                    openPrice = underlying[i].Open - slipSell;
-                    shortMinPrice = openPrice;
-                    positionflag = -1;
-                    position = -1;
-                }
-                if (position == 1 && underlying[i].Open > longMaxPrice && underlying[i].Amount > 0)
-                {
-                    longMaxPrice = underlying[i].Open;
-                }
-                if (position == -1 && underlying[i].Open < shortMinPrice && underlying[i].Amount > 0)
-                {
-                    shortMinPrice = underlying[i].Open;
-                }
-                if (position == 1 && underlying[i].Open < longMaxPrice - lossStopPoints && underlying[i].Amount > 0)
-                {
-                    closePrice = underlying[i].Open - slipSell;
-                    position = 0;
-                    break;
-                }
-                if (position == -1 && underlying[i].Open > shortMinPrice + lossStopPoints && underlying[i].Amount > 0)
-                {
-                    closePrice = underlying[i].Open + slipBuy;
-                    position = 0;
-                    break;
-                }
+                volumeMean /= num;
+                score = data[index].Volume / volumeMean;
             }
-            if (position != 0)
-            {
-                if (position == 1)
-                {
-                    closePrice = underlying[underlying.Count() - 3].Open - slipSell;
-                    position = 0;
-                }
-                else if (position == -1)
-                {
-                    closePrice = underlying[underlying.Count() - 3].Open + slipBuy;
-                    position = 0;
-                }
-            }
-            if (positionflag != 0)
-            {
-                yield = (closePrice / openPrice - 1) * positionflag;
-            }
-            return yield;
+            return score;
         }
 
 
@@ -333,6 +310,10 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
             double longMaxPrice = 0;
             double shortMinPrice = 99999;
             double open = underlying[0].Open;
+            if (Math.Min(Math.Abs(K1),Math.Abs(K2))*range>0.04*open || open<=10)
+            {
+                return result;
+            }
             double lossStopPoints = lossStopRatio * open;
             double slipBuy = 0;
             double slipSell = 0;
@@ -340,7 +321,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
             {
                 slipBuy = Math.Max(slipRatio * underlying[i].Open, priceUnit) + feeRatioBuy * underlying[i].Open;
                 slipSell = Math.Max(slipRatio * underlying[i].Open, priceUnit) + feeRatioSell * underlying[i].Open;
-                if (position == 0 && underlying[i].Open > open + K1 * range && underlying[i].Amount > 0)
+                if (position == 0 && underlying[i].Open > open + K1 * range && underlying[i].Amount > 0 )
                 {
                     openPrice = underlying[i].Open + slipBuy;
                     longMaxPrice = openPrice;
@@ -350,7 +331,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
                     result.openPrice = openPrice;
                     result.position = 1;
                 }
-                if (position == 0 && underlying[i].Open < open - K2 * range && underlying[i].Amount > 0)
+                if (position == 0 && underlying[i].Open < open - K2 * range && underlying[i].Amount > 0 )
                 {
                     openPrice = underlying[i].Open - slipSell;
                     shortMinPrice = openPrice;
@@ -428,6 +409,65 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.DualTrust
             return sharpe;
         }
 
+        public Dictionary<string,StockIPOInfo> getStockInfoList(string index, DateTime startDate, DateTime endDate)
+        {
+            Dictionary<string, StockIPOInfo> allDic = new Dictionary<string, StockIPOInfo>();
+            this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
+            var dic = getStockList(tradedays, index);
+            foreach (var stock in dic)
+            {
+                if (stock.Value.IPODate > startDate)
+                {
+                    startDate = stock.Value.IPODate;
+                }
+                if (stock.Value.DelistDate < endDate)
+                {
+                    endDate = stock.Value.DelistDate;
+                }
+                if (allDic.ContainsKey(stock.Value.code)==false)
+                {
+                    allDic.Add(stock.Value.code, stock.Value);
+                }
+                //Console.WriteLine("code:{0} complete!", stock.Key);
+            }
+            return allDic;
+        }
+
+        private Dictionary<string, StockIPOInfo> getStockList(List<DateTime> days, string index)
+        {
+            Dictionary<string, StockIPOInfo> stockDic = new Dictionary<string, StockIPOInfo>();
+            var stockInfo = stockInfoRepo.GetStockListInfoFromSql();
+            foreach (var date in days)
+            {
+                var list = getIndexStocks(date, index);
+                foreach (var item in list)
+                {
+                    if (stockDic.ContainsKey(item) == false)
+                    {
+                        foreach (var stock in stockInfo)
+                        {
+                            if (stock.code == item)
+                            {
+                                stockDic.Add(item, stock);
+                            }
+                        }
+                    }
+                }
+
+            }
+            return stockDic;
+        }
+
+        private List<string> getIndexStocks(DateTime date, string index)
+        {
+            var rawData = windReader.GetDataSetTable("sectorconstituent", string.Format("date={0};windcode={1}", date.Date, index));
+            List<string> codeList = new List<string>();
+            foreach (DataRow dr in rawData.Rows)
+            {
+                codeList.Add(Convert.ToString(dr[1]));
+            }
+            return codeList;
+        }
         //回测结果的记录
 
     }

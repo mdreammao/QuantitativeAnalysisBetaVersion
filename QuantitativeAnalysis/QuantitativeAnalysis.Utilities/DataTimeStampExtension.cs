@@ -31,6 +31,23 @@ namespace QuantitativeAnalysis.Utilities
             return now;
         }
 
+        public static List<TimeSpan> GetStockMinuteTimeList()
+        {
+            List<TimeSpan> list = new List<TimeSpan>();
+            for (int i = 0; i < 120; i++)
+            {
+                var now = new TimeSpan(9,30,0);
+                now = now.Add(new TimeSpan(0, i, 0));
+                list.Add(now);
+            }
+            for (int i = 0; i < 120; i++)
+            {
+                var now = new TimeSpan(13, 0, 0);
+                now = now.Add(new TimeSpan(0, i, 0));
+                list.Add(now);
+            }
+            return list;
+        }
 
         public static TimeSpan GetStockSecondsTimeByIndex(int index)
         {

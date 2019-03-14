@@ -23,10 +23,27 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             var sqlStr = string.Format(@"SELECT [stkcd],convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')+' '+stuff(stuff(stuff(rtrim(ttime),3,0,':'),6,0,':'),9,0,'.')) as tdatetime
  ,[cp],[S1],[S2],[S3],[S4],[S5],[B1],[B2],[B3],[B4],[B5],[SV1],[SV2],[SV3],[SV4],[SV5],[BV1],[BV2],[BV3],[BV4],[BV5],[ts],[tt],[HighLimit],[LowLimit]
   FROM [WindFullMarket{0}].[dbo].[MarketData_{1}]
-  where ((ttime>=93000000 and ttime<=113000000) or (ttime>=130000000 and ttime<=150000000)) and convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')+' '+stuff(stuff(stuff(rtrim(ttime),3,0,':'),6,0,':'),9,0,'.')) >='{2}'
+  where ((ttime>=91500000 and ttime<=113000000) or (ttime>=130000000 and ttime<=150100000)) and convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')+' '+stuff(stuff(stuff(rtrim(ttime),3,0,':'),6,0,':'),9,0,'.')) >='{2}'
    and convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')+' '+stuff(stuff(stuff(rtrim(ttime),3,0,':'),6,0,':'),9,0,'.')) <='{3}'",
    begin.ToString("yyyyMM"), code.Replace('.', '_'), begin, end);
-           
+            if (begin.Date<=new DateTime(2011,07,31)) //公司数据库在2011年8月1日开始改变了ttime字段的格式
+            {
+                sqlStr = string.Format(@"SELECT [stkcd],convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')+' '+stuff(stuff(rtrim(ttime),3,0,':'),6,0,':')) as tdatetime
+ ,[cp],[S1],[S2],[S3],[S4],[S5],[B1],[B2],[B3],[B4],[B5],[SV1],[SV2],[SV3],[SV4],[SV5],[BV1],[BV2],[BV3],[BV4],[BV5],[ts],[tt]
+  FROM [WindFullMarket{0}].[dbo].[MarketData_{1}]
+  where ((ttime>=91500 and ttime<=113000) or (ttime>=130000 and ttime<=150100)) and convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')+' '+stuff(stuff(rtrim(ttime),3,0,':'),6,0,':')) >='{2}'
+   and convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')+' '+stuff(stuff(rtrim(ttime),3,0,':'),6,0,':')) <='{3}'",
+   begin.ToString("yyyyMM"), code.Replace('.', '_'), begin, end);
+            }
+            if (begin.Date >= new DateTime(2012, 03, 01) && begin.Date <= new DateTime(2012, 05, 31))
+            {
+                sqlStr = string.Format(@"SELECT [stkcd],convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')+' '+stuff(stuff(rtrim(substring(ttime,0,7)),3,0,':'),6,0,':')) as tdatetime
+ ,[cp],[S1],[S2],[S3],[S4],[S5],[B1],[B2],[B3],[B4],[B5],[SV1],[SV2],[SV3],[SV4],[SV5],[BV1],[BV2],[BV3],[BV4],[BV5],[ts],[tt],[HighLimit],[LowLimit]
+  FROM [WindFullMarket{0}].[dbo].[MarketData_{1}]
+  where ((substring(ttime,0,7)>=91500 and substring(ttime,0,7)<=113000) or (substring(ttime,0,7)>=130000 and substring(ttime,0,7)<=150100)) and convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')+' '+stuff(stuff(rtrim(substring(ttime,0,7)),3,0,':'),6,0,':')) >='{2}'
+   and convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')+' '+stuff(stuff(rtrim(substring(ttime,0,7)),3,0,':'),6,0,':')) <='{3}'",
+   begin.ToString("yyyyMM"), code.Replace('.', '_'), begin, end);
+            }
             return sqlReader.GetDataTable(sqlStr);
         }
 

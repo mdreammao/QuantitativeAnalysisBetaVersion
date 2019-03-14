@@ -74,6 +74,7 @@
     <Compile Include="Option\DefaultStockOptionDailyDataSource.cs" />
     <Compile Include="Option\DefaultStockOptionTickDataSource.cs" />
     <Compile Include="Option\OptionInfoRepository.cs" />
+    <Compile Include="Stock\DefaultStockInfoDailyDataSource.cs" />
     <Compile Include="Stock\DefaultStockTickDataSource.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="IDataSource.cs" />
@@ -90,7 +91,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Stock\DefaultStockDailyDataSource.cs" />
     <Compile Include="Stock\DefaultStockMinuteDataSource.cs" />
+    <Compile Include="Stock\StockInfoDailyRepository.cs" />
+    <Compile Include="Stock\StockInfoDailyStoreRepository.cs" />
     <Compile Include="Stock\StockInfoRepository.cs" />
+    <Compile Include="Stock\StockMinuteFromTickRepository.cs" />
     <Compile Include="Stock\StockMinuteRepository.cs" />
     <Compile Include="Option\StockOptionDailyRepository.cs" />
     <Compile Include="Stock\StockMinuteStoreRepository.cs" />

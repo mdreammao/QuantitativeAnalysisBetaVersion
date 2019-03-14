@@ -25,31 +25,84 @@ namespace QuantitativeAnalysis.Monitor.TickDataToMinuteData
         private Logger mylog = NLog.LogManager.GetCurrentClassLogger();
         private TransactionDateTimeRepository dateRepo;
         private StockTickRepository tickRepo;
+        private StockInfoRepository infoRepo;
         private List<StockTransaction> transferedData = new List<StockTransaction>();
         private StockDailyRepository stockDailyRepo;
-        private StockMinuteRepository stockMinutelyRepo;
+        private StockMinuteFromTickRepository stockMinutelyRepo;
         private List<DateTime> tradedays;
-        
+        private WindReader windReader=new WindReader();
 
-        public StockTickToMinute(TransactionDateTimeRepository dateRepo, StockDailyRepository stockDailyRepo, StockMinuteRepository stockMinutelyRepo,StockTickRepository tickRepo,DateTime startDate,DateTime endDate)
+
+        public StockTickToMinute(TransactionDateTimeRepository dateRepo, StockDailyRepository stockDailyRepo, StockMinuteFromTickRepository stockMinutelyRepo,StockTickRepository tickRepo,StockInfoRepository infoRepo)
         {
             this.tickRepo = tickRepo;
+            this.dateRepo = dateRepo;
             this.stockDailyRepo = stockDailyRepo;
             this.stockMinutelyRepo = stockMinutelyRepo;
-            this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
-            getStockTickData("510050.SH");
+            this.infoRepo = infoRepo;
+           
         }
 
-        private void getStockTickData(string code)
+        public void getStockMinuteFromSqlByIndex(string index, DateTime startDate, DateTime endDate)
         {
-            foreach (var date in tradedays)
+            var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
+            var dic = getStockList(tradedays, index);
+            foreach (var item in dic)
             {
-                var tick = tickRepo.GetStockTransaction(code, date, date);
-                var day = stockDailyRepo.GetStockTransaction("510050.SH", date, date);
-                double open = day[0].Open; 
-                var minute = tranferTickToMinuteDayByDay(code,date,open,tick);
-                var minute2 = stockMinutelyRepo.GetStockTransaction("510050.SH", date, date);
+                DateTime startTime = startDate;
+                DateTime endTime = endDate;
+                if (startTime<item.Value.IPODate)
+                {
+                    startTime = item.Value.IPODate;
+                }
+                if (endTime>item.Value.DelistDate)
+                {
+                    endTime = item.Value.DelistDate;
+                }
+                Console.WriteLine("stock:{0} start!", item.Value.code);
+                getStockMinuteData(item.Value.code, startTime, endTime);
             }
+        }
+
+        private Dictionary<string, StockIPOInfo> getStockList(List<DateTime> days, string index)
+        {
+            Dictionary<string, StockIPOInfo> stockDic = new Dictionary<string, StockIPOInfo>();
+            var stockInfo = infoRepo.GetStockListInfoFromSql();
+            for (int i = 0; i < days.Count; i=i+20)
+            {
+                var date = days[i];
+                var list = getIndexStocks(date, index);
+                foreach (var item in list)
+                {
+                    if (stockDic.ContainsKey(item) == false)
+                    {
+                        foreach (var stock in stockInfo)
+                        {
+                            if (stock.code == item)
+                            {
+                                stockDic.Add(item, stock);
+                            }
+                        }
+                    }
+                }
+            }
+            return stockDic;
+        }
+
+        private List<string> getIndexStocks(DateTime date, string index)
+        {
+            var rawData = windReader.GetDataSetTable("sectorconstituent", string.Format("date={0};windcode={1}", date.Date, index));
+            List<string> codeList = new List<string>();
+            foreach (DataRow dr in rawData.Rows)
+            {
+                codeList.Add(Convert.ToString(dr[1]));
+            }
+            return codeList;
+        }
+
+        private void getStockMinuteData(string code,DateTime startDate,DateTime endDate)
+        {
+            var tmp=stockMinutelyRepo.GetStockTransaction(code, startDate, endDate);
         }
 
         private List<StockTransaction> tranferTickToMinuteDayByDay(string code,DateTime date,double openData,List<StockTickTransaction> tickData)

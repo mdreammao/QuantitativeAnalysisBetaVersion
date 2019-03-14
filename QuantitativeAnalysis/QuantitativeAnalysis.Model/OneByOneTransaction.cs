@@ -20,7 +20,12 @@ namespace QuantitativeAnalysis.Model
         public string closeStatus { get; set; }
         public double yield { get; set; }
         public double parameter { get; set; }
+    }
 
+    public class OneByOneTransactionDaily : OneByOneTransaction
+    {
+        public double openAdjust { get; set; }
+        public double closeAdjust { get; set; }
     }
 
     public class netvalueDaily

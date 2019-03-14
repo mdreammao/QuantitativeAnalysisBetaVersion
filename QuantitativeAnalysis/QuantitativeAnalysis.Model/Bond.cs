@@ -28,4 +28,19 @@ namespace QuantitativeAnalysis.Model
         public DateTime conversionStartDate { get; set; }
         public DateTime conversionEndDate { get; set; }
     }
+
+    public class ConvertibleBondMonitor
+    {
+        public string code { get; set; }
+        public string name { get; set; }
+        public string stockCode { get; set; }
+        public DateTime updateTime { get; set; }
+        public double conversionPrice { get; set; }
+        public double nonCeilingStockPrice { get; set; }
+        public double nonCeilingBondPrice { get; set; }
+        public double ceilingStockPrice { get; set; }
+        public double estimateCeilingBondPrice { get; set; }
+        public double estimateCeilingBondPrice2 { get; set; }
+    }
+
 }
