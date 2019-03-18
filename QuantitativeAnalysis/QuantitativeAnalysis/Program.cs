@@ -22,6 +22,7 @@ using QuantitativeAnalysis.Monitor.DualTrust;
 using QuantitativeAnalysis.Monitor.StockIntraday.Volatility;
 using QuantitativeAnalysis.Monitor.StockIntraday.MovingAverage;
 using QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase;
+using QuantitativeAnalysis.Monitor.DataRecord;
 
 namespace QuantitativeAnalysis
 {
@@ -64,16 +65,14 @@ namespace QuantitativeAnalysis
             DateUtils.setTradeDays(dateRepo.GetStockTransactionDate("2007-01-01".ToDateTime(), "2019-12-31".ToDateTime()));
 
 
-
-
-
-
-
             DateTime lastDay =DateUtils.LatestTradeDay(DateTime.Now.AddDays(-1));
 
 
-            priceCeilingMoving moving = new priceCeilingMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
-            moving.backtest("600000.SH", "2010-01-01".ToDateTime(), "2019-03-10".ToDateTime());
+            priceCeilingMoving2 moving = new priceCeilingMoving2(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
+            //moving.backtest("600000.SH", "2010-01-01".ToDateTime(), "2019-03-10".ToDateTime());
+            //moving.backtestByIndexCode("000905.SH", "2010-01-01".ToDateTime(), "2019-03-09".ToDateTime());
+            // moving.backtest("000693.SZ", "2010-01-01".ToDateTime(), "2019-03-09".ToDateTime());
+             moving.backtestAllStock("2010-01-01".ToDateTime(), "2019-03-09".ToDateTime());
 
             //Monitor.Bond.ConvertibleBond.Intraday1 bond = new Monitor.Bond.ConvertibleBond.Intraday1(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
             //bond.backtest("2010-01-01".ToDateTime(), "2019-03-04".ToDateTime());
@@ -90,6 +89,9 @@ namespace QuantitativeAnalysis
             //indexAnalysis.differ("159901.OF", "000300.SH");
             //StockTickToMinute myStore = new StockTickToMinute(dateRepo, stockDailyRepo, stockMinutelyRepo2, stockTickRepo, stockInfoRepo);
             //myStore.getStockMinuteFromSqlByIndex("000300.SH", "2010-01-01".ToDateTime(), "2019-03-10".ToDateTime());
+            //DailyDataRecord dailyDataReocrd = new DailyDataRecord(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo, stockInfoRepo);
+            //dailyDataReocrd.getStockFromIndexDailyData("000300.SH");
+            //dailyDataReocrd.getStockDailyData("2010-01-01".ToDateTime(), "2019-03-10".ToDateTime());
             #endregion
 
 

@@ -21,7 +21,7 @@ using QuantitativeAnalysis.DataAccess.ETF;
 
 namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
 {
-    public class priceCeilingMoving
+    public class priceCeilingMoving2
     {
         private TypedParameter conn_type = new TypedParameter(typeof(ConnectionType), ConnectionType.Default);
         private Logger logger = LogManager.GetCurrentClassLogger();
@@ -53,7 +53,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
 
 
         //构造函数
-        public priceCeilingMoving(StockMinuteRepository stockMinutelyRepo, StockDailyRepository stockDailyRepo, StockTickRepository stockTickRepo, StockInfoRepository stockInfoRepo)
+        public priceCeilingMoving2(StockMinuteRepository stockMinutelyRepo, StockDailyRepository stockDailyRepo, StockTickRepository stockTickRepo, StockInfoRepository stockInfoRepo)
         {
             this.stockMinutelyRepo = stockMinutelyRepo;
             this.stockDailyRepo = stockDailyRepo;
@@ -78,7 +78,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     stockStart = stock.IPODate.AddDays(10);
                 }
-                if (stockEnd>stock.DelistDate)
+                if (stockEnd > stock.DelistDate)
                 {
                     stockEnd = stock.DelistDate;
                 }
@@ -86,13 +86,41 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 backtest(stock.code, stockStart, stockEnd);
             }
             var dt = DataTableExtension.ToDataTable(transactionData);
-            var codeStr =index.Split('.');
+            var codeStr = index.Split('.');
             string name = string.Format("E:\\result\\grabCeiling\\{0}.csv", codeStr[0]);
             DataTableExtension.SaveCSV(dt, name);
 
         }
 
-        public void backtest(string underlyingCode, DateTime startDate, DateTime endDate,double ceilRatio=0.08)
+        public void backtestAllStock(DateTime startDate, DateTime endDate)
+        {
+            allStockDic = getAllstockInfo(endDate, endDate);
+            foreach (var item in allStockDic)
+            {
+                var stock = item.Value;
+                DateTime stockStart = startDate;
+                DateTime stockEnd = endDate;
+                if (stockStart < stock.IPODate)
+                {
+                    stockStart = stock.IPODate;
+                }
+                if (stockEnd > stock.DelistDate)
+                {
+                    stockEnd = stock.DelistDate;
+                }
+                dataPrepare(stock.code, stockStart, stockEnd);
+                
+                //backtest(stock.code, stockStart, stockEnd);
+            }
+            var dt = DataTableExtension.ToDataTable(transactionData);
+            var codeStr = "all";
+            string name = string.Format("E:\\result\\grabCeiling\\{0}.csv", codeStr);
+            DataTableExtension.SaveCSV(dt, name);
+
+        }
+
+
+        public void backtest(string underlyingCode, DateTime startDate, DateTime endDate, double ceilRatio = 0.08)
         {
             dataPrepare(underlyingCode, startDate, endDate);
             OneByOneTransactionDaily trade = new OneByOneTransactionDaily();
@@ -104,17 +132,17 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 var yesterday = data[i - 1];
                 var today = data[i];
                 double preClose = yesterday.Close * yesterday.AdjFactor / today.AdjFactor;
-                if (today.High>preClose*ratio && today.Volume>0 && position==0)
+                if (today.High > preClose * ratio && today.Volume > 0 && position == 0)
                 {
                     var tickToday = tick[underlyingCode][today.DateTime.Date];
                     foreach (var tickNow in tickToday)
                     {
-                        if (tickNow.LastPrice >= preClose * ratio && position ==0)
+                        if (tickNow.LastPrice >= preClose * ratio && position == 0)
                         {
                             trade = new OneByOneTransactionDaily();
                             trade.openTime = tickNow.TransactionDateTime;
                             trade.openPrice = tickNow.Ask1;
-                            trade.maxOpenAmount = tickNow.AskV1*tickNow.Ask1;
+                            trade.maxOpenAmount = tickNow.AskV1 * tickNow.Ask1;
                             trade.position = 1;
                             position = 1;
                             trade.openAdjust = today.AdjFactor;
@@ -124,7 +152,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                     }
 
                 }
-                if (position==1 && trade.openTime<today.DateTime.Date && today.Open<preClose*1.09) //买入之后卖出
+                if (position == 1 && trade.openTime < today.DateTime.Date && today.Open < preClose * 1.09) //买入之后卖出
                 {
                     trade.closeTime = today.DateTime.Date + new TimeSpan(9, 30, 0);
                     trade.closeStatus = "股票未涨停平仓";
@@ -145,7 +173,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             //获取交易日信息
             this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
             //获取日线数据
-            var dayNow = stockDailyRepo.GetStockTransaction(underlyingCode, startDate.AddDays(-pushForwardDays), endDate);
+            var dayNow = stockDailyRepo.GetStockTransaction(underlyingCode, startDate, endDate);
             if (this.DailyKLine.ContainsKey(underlyingCode))
             {
                 var data = DailyKLine[underlyingCode];
@@ -160,15 +188,19 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             //从日线上观察波动剧烈的日期，并记录数据
             foreach (var item in DailyKLine[underlyingCode])
             {
+                if (item==null)
+                {
+                    continue;
+                }
                 if (item.High / item.Low - 1 > 0.05)
                 {
                     var today = item.DateTime.Date;
-                    if (myTradedays.Contains(today)==false)
+                    if (myTradedays.Contains(today) == false)
                     {
                         myTradedays.Add(item.DateTime.Date);
                     }
                     var nextDay = DateTimeExtension.DateUtils.NextTradeDay(item.DateTime.Date).Date;
-                    if (myTradedays.Contains(nextDay)==false)
+                    if (myTradedays.Contains(nextDay) == false)
                     {
                         myTradedays.Add(nextDay);
                     }
@@ -177,7 +209,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
 
             //getMinuteData(underlyingCode, myTradedays);
 
-           // getTickData(underlyingCode, myTradedays);
+            // getTickData(underlyingCode, myTradedays);
         }
 
         //获取分钟线数据
@@ -264,15 +296,37 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             return yieldList;
         }
 
-      
-
-    
 
 
+        private Dictionary<string,StockIPOInfo> getAllstockInfo(DateTime startDate, DateTime endDate)
+        {
+            Dictionary<string, StockIPOInfo> myInfo = new Dictionary<string, StockIPOInfo>();
+            var stockInfo = stockInfoRepo.GetStockListInfoFromSql();
+            foreach (var item in stockInfo)
+            {
+                DateTime startTime = startDate;
+                DateTime endTime = endDate;
+                if (item.IPODate>startTime)
+                {
+                    startTime = item.IPODate;
+                }
+                if (item.DelistDate<endTime)
+                {
+                    endTime = item.DelistDate;
+                }
+                if (startTime<=endTime)
+                {
+                    myInfo.Add(item.code, item);
+                }
+            }
+            return myInfo;
+        }
 
-       
 
-        public Dictionary<string, StockIPOInfo> getStockInfoList(string index, DateTime startDate, DateTime endDate)
+
+
+
+        private Dictionary<string, StockIPOInfo> getStockInfoList(string index, DateTime startDate, DateTime endDate)
         {
             Dictionary<string, StockIPOInfo> allDic = new Dictionary<string, StockIPOInfo>();
             this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);

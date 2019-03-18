@@ -98,7 +98,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
 
         private string GenerateSqlString(string code, List<KeyValuePair<DateTime, DateTime>> nonExistedDateIntervalnInRedis)
         {
-            var sqlStr = "select DATETIME,[OPEN],HIGH,LOW,[CLOSE],VOLUME,AMT,ADJFACTOR,TRADE_STATUS from [DailyTransaction].[dbo].[Stock] where Code='{0}' and {1};";
+            var sqlStr = "select DATETIME,[OPEN],HIGH,LOW,[CLOSE],VOLUME,AMT,ADJFACTOR,TRADE_STATUS from [DailyTransaction].[dbo].[Stock] where Code='{0}' and ({1});";
             var dateConditions = new StringBuilder();
             foreach (var pair in nonExistedDateIntervalnInRedis)
             {
@@ -127,8 +127,16 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             var nonExistedDateIntervalInSql = Computor.GetNoExistedInterval<DateTime>(tradingDates, existedDateInSql);
             foreach (var item in nonExistedDateIntervalInSql)
             {
-                var dt = dataSource.Get(code, item.Key, item.Value);
-                sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
+                if (item.Value<=new DateTime(2019,3,8))
+                {
+
+                }
+                else
+                {
+                    var dt = dataSource.Get(code, item.Key, item.Value);
+                    sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
+                }
+                
             }
         }
 

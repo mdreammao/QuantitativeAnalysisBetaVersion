@@ -197,15 +197,17 @@ currentTime.Year, currentTime.ToString("yyyy-MM"), code,dayStart,dayEnd);
                     double amount = amountNew - totalAmount;
                     totalAmount = amountNew;
                     totalVolume = volumeNew;
-                    StockMinuteTransaction KLine = new StockMinuteTransaction();
-                    KLine.Amount = amount;
-                    KLine.Volume = volume;
-                    KLine.Open = open;
-                    KLine.Close = close;
-                    KLine.High = high;
-                    KLine.Low = low;
-                    KLine.Code = code;
-                    KLine.DateTime = day.Date + timelist[timelist.Count() - 1];
+                    StockMinuteTransaction KLine = new StockMinuteTransaction
+                    {
+                        Amount = amount,
+                        Volume = volume,
+                        Open = open,
+                        Close = close,
+                        High = high,
+                        Low = low,
+                        Code = code,
+                        DateTime = day.Date + timelist[timelist.Count() - 1]
+                    };
                     minuteNow.Add(KLine);
                 }
                 else

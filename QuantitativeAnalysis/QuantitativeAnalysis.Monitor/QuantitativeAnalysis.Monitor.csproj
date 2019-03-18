@@ -68,11 +68,13 @@
     <Compile Include="BasisStatistics.cs" />
     <Compile Include="Bond\ConvertibleBond\Intraday1.cs" />
     <Compile Include="Bond\ConvertibleBond\IntradayMonitor.cs" />
+    <Compile Include="DataRecord\DailyDataRecord.cs" />
     <Compile Include="DualTrust\DualTrust.cs" />
     <Compile Include="DualTrust\DualTrust2.cs" />
     <Compile Include="DualTrust\DualTrust3.cs" />
     <Compile Include="EstimateStockBonus\StockIndexBonus.cs" />
     <Compile Include="StockIntraday\ExtremeCase\priceCeilingMoving.cs" />
+    <Compile Include="StockIntraday\ExtremeCase\priceCeilingMoving2.cs" />
     <Compile Include="StockIntraday\ExtremeCase\priceUnusualMoving.cs" />
     <Compile Include="IndexRelated\IndexAnalysis.cs" />
     <Compile Include="IndexRelated\StockDataStore.cs" />
