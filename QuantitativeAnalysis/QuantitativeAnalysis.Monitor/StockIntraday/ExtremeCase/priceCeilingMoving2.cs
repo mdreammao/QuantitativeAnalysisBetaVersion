@@ -108,9 +108,8 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     stockEnd = stock.DelistDate;
                 }
-                dataPrepare(stock.code, stockStart, stockEnd);
-                
-                //backtest(stock.code, stockStart, stockEnd);
+                //dataPrepare(stock.code, stockStart, stockEnd);
+                backtest(stock.code, stockStart, stockEnd);
             }
             var dt = DataTableExtension.ToDataTable(transactionData);
             var codeStr = "all";
@@ -121,6 +120,53 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
 
 
         public void backtest(string underlyingCode, DateTime startDate, DateTime endDate, double ceilRatio = 0.08)
+        {
+            dataPrepare(underlyingCode, startDate, endDate);
+            OneByOneTransactionDaily trade = new OneByOneTransactionDaily();
+            double ratio = 1 + ceilRatio;
+            double position = 0;
+            var data = DailyKLine[underlyingCode];
+            for (int i = 1; i < data.Count(); i++)
+            {
+                var yesterday = data[i - 1];
+                var today = data[i];
+                double preClose = yesterday.Close * yesterday.AdjFactor / today.AdjFactor;
+                if (today.High > preClose * ratio && today.Volume > 0 && position == 0)
+                {
+                    var tickToday = tick[underlyingCode][today.DateTime.Date];
+                    foreach (var tickNow in tickToday)
+                    {
+                        if (tickNow.LastPrice >= preClose * ratio && position == 0)
+                        {
+                            trade = new OneByOneTransactionDaily();
+                            trade.openTime = tickNow.TransactionDateTime;
+                            trade.openPrice = tickNow.Ask1;
+                            trade.maxOpenAmount = tickNow.AskV1 * tickNow.Ask1;
+                            trade.position = 1;
+                            position = 1;
+                            trade.openAdjust = today.AdjFactor;
+                            break;
+                        }
+
+                    }
+
+                }
+                if (position == 1 && trade.openTime < today.DateTime.Date && today.Open < preClose * 1.09) //买入之后卖出
+                {
+                    trade.closeTime = today.DateTime.Date + new TimeSpan(9, 30, 0);
+                    trade.closeStatus = "股票未涨停平仓";
+                    trade.closePrice = today.Open;
+                    trade.closeAdjust = today.AdjFactor;
+                    trade.yield = (trade.closePrice * trade.closeAdjust - trade.openPrice * trade.openAdjust) / (trade.openPrice * trade.openAdjust) * trade.maxOpenAmount;
+                    transactionData.Add(trade);
+                }
+
+            }
+
+
+        }
+
+        public void backtestByDailyData(string underlyingCode, DateTime startDate, DateTime endDate, double ceilRatio = 0.08)
         {
             dataPrepare(underlyingCode, startDate, endDate);
             OneByOneTransactionDaily trade = new OneByOneTransactionDaily();

@@ -23,6 +23,9 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         private SqlServerReader sqlReader;
         private RedisWriter redisWriter;
         private Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
+
+
         public StockMinuteFromTickRepository(ConnectionType type, IDataSource ds)
         {
             dateTimeRepo = new TransactionDateTimeRepository(type);
