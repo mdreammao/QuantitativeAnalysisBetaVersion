@@ -19,6 +19,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         private RedisReader redisReader;
         private SqlServerWriter sqlWriter;
         private SqlServerReader sqlReader;
+        private SqlServerReader sqlReader2;
         private RedisWriter redisWriter;
         private IDataSource dataSource;
         private Logger logger = NLog.LogManager.GetCurrentClassLogger();
@@ -27,6 +28,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             dateTimeRepo = new TransactionDateTimeRepository(type);
             sqlWriter = new SqlServerWriter(type);
             sqlReader = new SqlServerReader(type);
+            sqlReader2 = new SqlServerReader(type);
             redisReader = new RedisReader();
             redisWriter = new RedisWriter();
             dataSource = ds;

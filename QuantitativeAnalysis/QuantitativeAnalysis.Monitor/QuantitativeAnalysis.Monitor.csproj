@@ -49,6 +49,7 @@
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.12\lib\net45\NLog.dll</HintPath>
     </Reference>
+    <Reference Include="StackExchange.Redis, Version=1.2.4.0, Culture=neutral, PublicKeyToken=null" />
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
@@ -68,11 +69,14 @@
     <Compile Include="BasisStatistics.cs" />
     <Compile Include="Bond\ConvertibleBond\Intraday1.cs" />
     <Compile Include="Bond\ConvertibleBond\IntradayMonitor.cs" />
+    <Compile Include="DataRecord\DailyDataRecord.cs" />
+    <Compile Include="DataRecord\MinuteDataRecord.cs" />
     <Compile Include="DualTrust\DualTrust.cs" />
     <Compile Include="DualTrust\DualTrust2.cs" />
     <Compile Include="DualTrust\DualTrust3.cs" />
     <Compile Include="EstimateStockBonus\StockIndexBonus.cs" />
     <Compile Include="StockIntraday\ExtremeCase\priceCeilingMoving.cs" />
+    <Compile Include="StockIntraday\ExtremeCase\priceCeilingMoving2.cs" />
     <Compile Include="StockIntraday\ExtremeCase\priceUnusualMoving.cs" />
     <Compile Include="IndexRelated\IndexAnalysis.cs" />
     <Compile Include="IndexRelated\StockDataStore.cs" />

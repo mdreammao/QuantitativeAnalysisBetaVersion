@@ -32,11 +32,13 @@ namespace QuantitativeAnalysis.DataAccess
         public static DataTable ToDataTable(this WindData wData)
         {
             var dt = new DataTable();
+            dynamic source = ConvertToArray(wData.data);
             if (wData != null && wData.GetDataLength()>0)
             {
-                dt.Columns.AddRange(wData.GetDataColumns());
+                var columnTypes = wData.GetDataColumns();
+                dt.Columns.AddRange(columnTypes);
                 dt.BeginLoadData();
-                wData.GetRowData().ForEach(c => dt.LoadDataRow(c, false));
+                wData.GetRowData(columnTypes).ForEach(c => dt.LoadDataRow(c, false));
                 dt.EndLoadData();
             }
 
@@ -48,14 +50,57 @@ namespace QuantitativeAnalysis.DataAccess
             var colNames = wData.fieldList;
             var colLength = colNames.Length;
             dynamic arrayData = ConvertToArray(wData.data);
-            //dc[0] = new DataColumn(CodeColumnName, typeof(string));
-            //dc[1] = new DataColumn(DateTimeColumnName, typeof(DateTime));
             var dc = new DataColumn[colLength];
-            for (int i = 0; i < colLength; ++i)
+            bool success = true;
+            int k = 0;
+            try
             {
-                var re = arrayData[i];
-                dc[i] = new DataColumn(colNames[i], re.GetType());
+                while (k <= 10000)
+                {
+                    for (int i = k * colLength; i < (k + 1) * colLength; ++i)
+                    {
+                        success = true;
+                        var re = arrayData[i];
+                        if (re.GetType() == typeof(System.DBNull))
+                        {
+                            success = false;
+                            break;
+                        }
+                    }
+                    if (success == true)
+                    {
+                        for (int i = k * colLength; i < (k + 1) * colLength; ++i)
+                        {
+                            var re = arrayData[i];
+                            dc[i - k * colLength] = new DataColumn(colNames[i - k * colLength], re.GetType());
+                        }
+                        break;
+                    }
+                    k++;
+                }
             }
+            catch (Exception e)
+            {
+                if (success == false)
+                {
+                    Console.WriteLine("数据缺失，存在DBNULL类型！");
+                    for (int i = 0; i < colLength; ++i)
+                    {
+                        var re = arrayData[i];
+                        if (re.GetType() == typeof(System.DBNull))
+                        {
+                            dc[i] = new DataColumn(colNames[i], typeof(String));
+                        }
+                        else
+                        {
+                            dc[i] = new DataColumn(colNames[i], re.GetType());
+                        }
+                    }
+                }
+            }
+            
+           
+           
             return dc;
         }
 
@@ -72,7 +117,7 @@ namespace QuantitativeAnalysis.DataAccess
             else throw new Exception("未实现类型转换！");
             return arrayData;
         }
-        public static List<object[]> GetRowData(this WindData wData)
+        public static List<object[]> GetRowData(this WindData wData, DataColumn[] columnTypes)
         {
             var rows = new List<object[]>();
             dynamic source = ConvertToArray(wData.data);
@@ -82,7 +127,22 @@ namespace QuantitativeAnalysis.DataAccess
                 var row = new object[wData.GetFieldLength()];
                 for(int j = 0; j < wData.GetFieldLength(); ++j)
                 {
-                    row[j] = source[j + i * wData.GetFieldLength()];
+                    if (source[j + i * wData.GetFieldLength()].GetType()==typeof(System.DBNull))
+                    {
+                        if (columnTypes[j].DataType==typeof(String))
+                        {
+                            row[j] = "数据缺失";
+                        }
+                        else
+                        {
+                            row[j] = -1;
+                        }
+                    }
+                    else
+                    {
+                        row[j] = source[j + i * wData.GetFieldLength()];
+                    }
+                    
                 }
                 rows.Add(row);
             }
