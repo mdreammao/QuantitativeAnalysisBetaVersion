@@ -409,20 +409,19 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
             {
                 double epsThisYear = 0;
                 double epsLastYear = 0;
-                var rawData = windReader.GetDailyDataTable(code, "eps_ttm", lastYear, date);
-                int num = 0;
-                foreach (DataRow dr in rawData.Rows)
+                var rawData1 = windReader.GetDailyDataTable(code, "eps_ttm", lastYear, lastYear);
+                var rawData2= windReader.GetDailyDataTable(code, "eps_ttm", date,date);
+                foreach (DataRow dr in rawData1.Rows)
                 {
-                    num += 1;
-                    if (num==1)
-                    {
-                        epsThisYear = Convert.ToDouble(dr[2]);
-                    }
-                    else
-                    {
-                        epsLastYear = Convert.ToDouble(dr[2]);
-                    }
+                    epsLastYear = Convert.ToDouble(dr[2]);
+                    break;
                 }
+                foreach (DataRow dr in rawData2.Rows)
+                {
+                    epsThisYear = Convert.ToDouble(dr[2]);
+                    break;
+                }
+
                 if (epsThisYear<0)
                 {
                     epsDic.Add(code, -1000);
