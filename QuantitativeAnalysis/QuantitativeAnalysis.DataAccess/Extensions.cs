@@ -127,22 +127,39 @@ namespace QuantitativeAnalysis.DataAccess
                 var row = new object[wData.GetFieldLength()];
                 for(int j = 0; j < wData.GetFieldLength(); ++j)
                 {
-                    if (source[j + i * wData.GetFieldLength()].GetType()==typeof(System.DBNull))
+                    if (source[j + i * wData.GetFieldLength()]==null)
                     {
-                        if (columnTypes[j].DataType==typeof(String))
+                        if (columnTypes[j].DataType == typeof(String))
                         {
-                            row[j] = "数据缺失";
+                            row[j] = "";
                         }
-                        else
+                        else if (columnTypes[j].DataType == typeof(double))
                         {
-                            row[j] = -1;
+                            row[j] = 0;
+                        }
+                        else if (columnTypes[j].DataType == typeof(DateTime))
+                        {
+                            row[j] = new DateTime();
                         }
                     }
                     else
                     {
-                        row[j] = source[j + i * wData.GetFieldLength()];
+                        if (source[j + i * wData.GetFieldLength()].GetType() == typeof(System.DBNull))
+                        {
+                            if (columnTypes[j].DataType == typeof(String))
+                            {
+                                row[j] = "数据缺失";
+                            }
+                            else
+                            {
+                                row[j] = -1;
+                            }
+                        }
+                        else
+                        {
+                            row[j] = source[j + i * wData.GetFieldLength()];
+                        }
                     }
-                    
                 }
                 rows.Add(row);
             }

@@ -30,7 +30,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         private Logger mylog = NLog.LogManager.GetCurrentClassLogger();
         private TransactionDateTimeRepository dateRepo;
         private StockDailyRepository stockDailyRepo;
-        private List<OneByOneTransaction> transactionData;
+        private List<OneByOneTransaction> transactionData=new List<OneByOneTransaction>();
         private StockMinuteRepository stockMinutelyRepo;
         private StockTickRepository stockTickRepo;
         private SqlServerWriter sqlWriter;
@@ -69,6 +69,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         public void backtestByIndexCode(string index, DateTime startDate, DateTime endDate)
         {
             allStockDic = getStockInfoList(index, endDate, endDate);
+            int num = 0;
             foreach (var item in allStockDic)
             {
                 var stock = item.Value;
@@ -79,17 +80,80 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                     stockStart = stock.IPODate.AddDays(10);
                 }
                 backtest(stock.code, stockStart, stockEnd);
+                num += 1;
+                Console.WriteLine("完成 {0} of 500!", num);
             }
-
+            //存入交易信息
+            var dt = DataTableExtension.ToDataTable(transactionData);
+            var codeStr = index.Split('.');
+            string name = string.Format("E:\\result\\grabCeiling\\{0}.csv", codeStr[0]);
+            DataTableExtension.SaveCSV(dt, name);
         }
 
-        public void backtest(string underlyingCode, DateTime startDate, DateTime endDate)
+        public void backtest(string underlyingCode, DateTime startDate, DateTime endDate,double parameter=0.08)
         {
             dataPrepare(underlyingCode, startDate, endDate,0);
             var daily = DailyKLine[underlyingCode];
             var minutely = minutelyKLine[underlyingCode];
             //var ticks = tick[underlyingCode];
-            
+            for (int i = 1; i < daily.Count(); i++)
+            {
+                var today = daily[i];
+                var yesterday = daily[i - 1];
+                if (yesterday == null || today==null || today.TradeStatus!="交易")
+                {
+                    continue;
+                }
+                double preClose = yesterday.Close * today.AdjFactor / yesterday.AdjFactor;
+                if (today.High>preClose*(1+parameter))
+                {
+                    var minuteToday = minutely[today.DateTime.Date];
+                    double position = 0;
+                    OneByOneTransaction trade = new OneByOneTransaction();
+                    for (int j = 0; j < minuteToday.Count(); j++)
+                    {
+                        if (minuteToday[j].Open>preClose * (1 + parameter) && position==0 && minuteToday[j].Open<preClose * (1 + parameter+0.005) && j<= minuteToday.Count()-10) //股票价格达到8%买入
+                        {
+                            
+                            position = 1;
+                            double volume = minuteToday[j].Volume * 0.05;
+                            if (volume>0)
+                            {
+                                double price = minuteToday[j].Amount / minuteToday[j].Volume;
+                                trade = new OneByOneTransaction();
+                                trade.code = underlyingCode;
+                                trade.date = today.DateTime.Date;
+                                trade.openTime = minuteToday[j].DateTime;
+                                trade.openPrice = price;
+                                trade.position = position;
+                                trade.maxOpenAmount = volume*price;
+                                trade.parameter = parameter;
+                            }
+                            
+                        }
+                        else
+                        {
+                            //止损或者收盘强制平仓
+                            if ((position == 1 && minuteToday[j].Open<trade.openPrice*0.98 && minuteToday[j].Volume>0) || (j>=minuteToday.Count-3 &&position==1))
+                            {
+                                position = 0;
+                                double volume = minuteToday[j].Volume * 0.05;
+                                double price = minuteToday[j].Close;
+                                if (volume>0)
+                                {
+                                    price= minuteToday[j].Amount / minuteToday[j].Volume;
+                                }
+                                trade.closePrice = price;
+                                trade.closeTime = minuteToday[j].DateTime;
+                                trade.maxCloseAmount = volume*price;
+                                trade.yield = (trade.closePrice - trade.openPrice) / trade.openPrice * trade.maxOpenAmount;
+                                transactionData.Add(trade);
+                            }
+                        }
+                        
+                    }
+                }
+            }
 
 
         }
@@ -113,17 +177,38 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             //选取需要获取数据的交易日
             List<DateTime> myTradedays = new List<DateTime>();
             //从日线上观察波动剧烈的日期，并记录数据
-            foreach (var item in DailyKLine[underlyingCode])
+            for (int i = 1; i < DailyKLine[underlyingCode].Count; i++)
             {
-                if (item.High/item.Low-1>0.05)
+
+                var yesterday = DailyKLine[underlyingCode][i - 1];
+                var item = DailyKLine[underlyingCode][i];
+                if (yesterday==null || item==null)
                 {
-                    if (myTradedays.Contains(item.DateTime.Date)==false)
+                    continue;
+                }
+                double priceClose = yesterday.Close * item.AdjFactor / yesterday.AdjFactor;
+                if (item.High>priceClose*1.05)
+                {
+                    if (myTradedays.Contains(item.DateTime.Date) == false)
                     {
                         myTradedays.Add(item.DateTime.Date);
                     }
                     myTradedays.Add(DateTimeExtension.DateUtils.NextTradeDay(item.DateTime.Date));
                 }
             }
+
+
+            //foreach (var item in DailyKLine[underlyingCode])
+            //{
+            //    if (item.High/item.Low-1>0.05)
+            //    {
+            //        if (myTradedays.Contains(item.DateTime.Date) == false)
+            //        {
+            //            myTradedays.Add(item.DateTime.Date);
+            //        }
+            //        myTradedays.Add(DateTimeExtension.DateUtils.NextTradeDay(item.DateTime.Date));
+            //    }
+            //}
 
             getMinuteData(underlyingCode, myTradedays);
 

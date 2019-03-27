@@ -56,7 +56,7 @@ where DateTime>='{2}' and DateTime<='{3}'",
                 catch (Exception e)
                 {
 
-                    Console.WriteLine(e.Message);
+                    //Console.WriteLine(e.Message);
                 }
             }
             return stocks;

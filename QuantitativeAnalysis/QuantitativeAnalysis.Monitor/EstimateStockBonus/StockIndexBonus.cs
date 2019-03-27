@@ -28,6 +28,7 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
         private TransactionDateTimeRepository dateRepo;
         private WindReader windReader;
         private StockDailyRepository stockDailyRepo;
+        private List<StockIPOInfo> stockInfo;
 
         public StockIndexBonus(StockInfoRepository stockInfoRepo, StockDailyRepository stockDailyRepo,TransactionDateTimeRepository dateRepo,DateTime date,string index)
         {
@@ -38,6 +39,7 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
             this.dateRepo = dateRepo;
             this.stockDailyRepo = stockDailyRepo;
             this.windReader = new WindReader();
+            this.stockInfo = stockInfoRepo.GetStockListInfoFromSql();
             var list=getIndexBonus(date,index,indexInfoList);
             storeResults(list);
         }
@@ -298,11 +300,18 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                             estimate.secName = item.name;
                             estimate.dividend = item.dividend;
                             estimate.dividendDate = item.planDate;
-                            if (item.planDate <= lastYearEnd)
+                            if (item.dateConfirm == true)
                             {
-                                estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
+                                estimate.status = "去年分红2次;分红预案明确;预案时间明确";
                             }
-                            estimate.status = "去年分红2次;分红预案明确";
+                            else
+                            {
+                                if (item.planDate <= lastYearEnd)
+                                {
+                                    estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
+                                }
+                                estimate.status = "去年分红2次;分红预案明确;预案时间未明确";
+                            }
                             estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
                             estimateList.Add(estimate);
                             thisyear += 1;
@@ -317,11 +326,18 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                             estimate.secName = item.name;
                             estimate.dividend = item.dividend;
                             estimate.dividendDate = item.planDate;
-                            if (item.planDate <= lastYearEnd)
+                            if (item.dateConfirm == true)
                             {
-                                estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
+                                estimate.status = "去年分红2次;分红预案明确;预案时间明确";
                             }
-                            estimate.status = "去年分红2次;分红预案明确";
+                            else
+                            {
+                                if (item.planDate <= lastYearEnd)
+                                {
+                                    estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
+                                }
+                                estimate.status = "去年分红2次;分红预案明确;预案时间未明确";
+                            }
                             estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
                             estimateList.Add(estimate);
                             thisyear += 1;
@@ -409,8 +425,20 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
             {
                 double epsThisYear = 0;
                 double epsLastYear = 0;
-                var rawData1 = windReader.GetDailyDataTable(code, "eps_ttm", lastYear, lastYear);
-                var rawData2= windReader.GetDailyDataTable(code, "eps_ttm", date,date);
+                DateTime lastYearNow = lastYear;
+                foreach (var item in stockInfo)
+                {
+                    if (item.code == code)
+                    {
+                        if (lastYear<item.IPODate)
+                        {
+                            lastYearNow = item.IPODate;
+                        }
+                    }
+                }
+                var info = stockInfo.Select(x => x.code == code);
+                var rawData1 = windReader.GetDailyDataTable(code, "eps_ttm", lastYearNow, lastYearNow.AddDays(0));
+                var rawData2= windReader.GetDailyDataTable(code, "eps_ttm", date.AddDays(0),date);
                 foreach (DataRow dr in rawData1.Rows)
                 {
                     epsLastYear = Convert.ToDouble(dr[2]);
@@ -450,6 +478,7 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                 DateTime reportDate = Convert.ToDateTime(dr[2]);
                 string status = Convert.ToString(dr[3]);
                 double dividend = 0;
+                bool dateConfirm = false;
                 if (dr[4]!=DBNull.Value)
                 {
                     dividend=Convert.ToDouble(dr[4]);
@@ -457,7 +486,8 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                 DateTime planDate = new DateTime();
                 if (dr[5]!=DBNull.Value)
                 {
-                    planDate = Convert.ToDateTime(planDate);
+                    planDate = Convert.ToDateTime(dr[5]);
+                    dateConfirm = true;
                 }
                 if (codeList.Contains(code) && reportDate>=lastYearEnd && dividend>0)
                 {
@@ -467,6 +497,15 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                     plan.dividend = dividend;
                     plan.name = name;
                     plan.reportDate = reportDate;
+                    if (dateConfirm==true)
+                    {
+                        plan.planDate = planDate;
+                        plan.dateConfirm = true;
+                    }
+                    else
+                    {
+                        plan.dateConfirm = false;
+                    }
                     if (planDic.ContainsKey(code))
                     {
                         planDic[code].Add(plan);

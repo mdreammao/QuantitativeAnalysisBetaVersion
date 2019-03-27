@@ -74,7 +74,8 @@ namespace QuantitativeAnalysis
             // moving.backtest("000693.SZ", "2010-01-01".ToDateTime(), "2019-03-09".ToDateTime());
             // moving.backtestAllStock("2010-01-01".ToDateTime(), "2019-03-08".ToDateTime());
             priceUnusualMoving moving2 = new priceUnusualMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
-            moving2.backtest("000002.SZ", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
+            moving2.backtestByIndexCode("000905.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
+            //moving2.backtest("600000.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
 
 
 
