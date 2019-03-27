@@ -77,7 +77,6 @@ namespace QuantitativeAnalysis.Model
         public string status { get; set; }
         public double dividend { get; set; }
         public DateTime planDate { get; set; }
-        public bool dateConfirm { get; set; }
     }
 
     public class StockBonusEstimate

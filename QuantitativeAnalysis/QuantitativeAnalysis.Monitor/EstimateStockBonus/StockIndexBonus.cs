@@ -187,6 +187,10 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                         estimate.dividendDate = item.exDividendDate;
                         estimate.status = "去年无分红;分红公告明确";
                         estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
+                        if (estimate.dividendDate<=now)
+                        {
+                            estimate.status += "已分红";
+                        }
                         estimateList.Add(estimate);
                     }
                     //分红无公告的，按分红预案统计
@@ -198,18 +202,9 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                             estimate.code = item.code;
                             estimate.secName = item.name;
                             estimate.dividend = item.dividend;
-                            estimate.dividendDate = item.planDate;
-                            estimate.status = "去年无分红;分红预案明确";
-                            if (estimate.dividendDate.Year==date.Year)
-                            {
-                                estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
-                            }
-                            else
-                            {
-                                estimate.status = ";分红日期未知";
-                                estimate.dividendDate = new DateTime(date.Year, 12, 31);
-                                estimate.shareRegisterDate = new DateTime(date.Year, 12, 31);
-                            }
+                            estimate.status = "去年无分红;分红预案明确;分红日期未知";
+                            estimate.dividendDate = new DateTime(date.Year, 12, 31);
+                            estimate.shareRegisterDate = new DateTime(date.Year, 12, 31);
                             estimateList.Add(estimate);
                         }
                     }
@@ -228,6 +223,10 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                         estimate.dividendDate = item.exDividendDate;
                         estimate.status = "去年分红1次;分红公告明确";
                         estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
+                        if (estimate.dividendDate <= now)
+                        {
+                            estimate.status += "已分红";
+                        }
                         estimateList.Add(estimate);
                     }
                     //有分红公告分红1次的和分红预案比较是否有遗漏的，分红两次的不需要比较
@@ -244,13 +243,15 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                             estimate.code = item.code;
                             estimate.secName = item.name;
                             estimate.dividend = item.dividend;
-                            estimate.dividendDate = item.planDate;
-                            if (item.planDate<=lastYearEnd)
-                            {
-                                estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
-                            }
-                            estimate.status = "去年分红1次;分红预案明确";
+                             estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
+                            estimate.status = "去年分红1次;分红预案明确;分红日期未知";
                             estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
+                            if (estimate.dividendDate < now)
+                            {
+                                estimate.dividendDate = new DateTime(date.Year, 12, 31);
+                                estimate.status = estimate.status + ";对应日期已过分红日期未知";
+                                estimate.shareRegisterDate = new DateTime(date.Year, 12, 31);
+                            }
                             estimateList.Add(estimate);
                         }
                     }
@@ -288,6 +289,10 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                         estimate.dividendDate = item.exDividendDate;
                         estimate.status = "去年分红2次;分红公告明确";
                         estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
+                        if (estimate.dividendDate <= now)
+                        {
+                            estimate.status += "已分红";
+                        }
                         estimateList.Add(estimate);
                         thisyear += 1;
                     }
@@ -299,20 +304,31 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                             estimate.code = item.code;
                             estimate.secName = item.name;
                             estimate.dividend = item.dividend;
-                            estimate.dividendDate = item.planDate;
-                            if (item.dateConfirm == true)
+                            estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
+                            estimate.status = "去年分红2次;分红预案明确;分红时间未知";
+                            if (thisyear==0)
                             {
-                                estimate.status = "去年分红2次;分红预案明确;预案时间明确";
+                                estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
+                                if (estimate.dividendDate<now)
+                                {
+                                    estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[1].exDividendDate.AddYears(+1));
+                                    estimate.status = estimate.status + ":去年对应的第1次分红日期已过";
+                                }
+                                estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
+
                             }
                             else
                             {
-                                if (item.planDate <= lastYearEnd)
-                                {
-                                    estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
-                                }
-                                estimate.status = "去年分红2次;分红预案明确;预案时间未明确";
+                                estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[1].exDividendDate.AddYears(+1));
+                                estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
+                                
                             }
-                            estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
+                            if (estimate.dividendDate < now)
+                            {
+                                estimate.dividendDate = new DateTime(date.Year, 12, 31);
+                                estimate.status = estimate.status + ";对应日期已过分红日期未知";
+                                estimate.shareRegisterDate = new DateTime(date.Year, 12, 31);
+                            }
                             estimateList.Add(estimate);
                             thisyear += 1;
                         }
@@ -325,20 +341,15 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                             estimate.code = item.code;
                             estimate.secName = item.name;
                             estimate.dividend = item.dividend;
-                            estimate.dividendDate = item.planDate;
-                            if (item.dateConfirm == true)
-                            {
-                                estimate.status = "去年分红2次;分红预案明确;预案时间明确";
-                            }
-                            else
-                            {
-                                if (item.planDate <= lastYearEnd)
-                                {
-                                    estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
-                                }
-                                estimate.status = "去年分红2次;分红预案明确;预案时间未明确";
-                            }
+                            estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
+                            estimate.status = "去年分红2次;分红预案明确;分红时间未明确";
                             estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
+                            if (estimate.dividendDate < now)
+                            {
+                                estimate.dividendDate = new DateTime(date.Year, 12, 31);
+                                estimate.status = estimate.status + ";对应日期已过分红日期未知";
+                                estimate.shareRegisterDate = new DateTime(date.Year, 12, 31);
+                            }
                             estimateList.Add(estimate);
                             thisyear += 1;
                         }
@@ -358,6 +369,12 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                         estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
                         estimate.status = "去年分红2次;按eps估计第1次分红";
                         estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
+                        if (estimate.dividendDate < now)
+                        {
+                            estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[1].exDividendDate.AddYears(+1));
+                            estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
+                            estimate.status = estimate.status + ":去年对应的第1次分红日期已过";
+                        }
                         if (estimate.dividendDate < now)
                         {
                             estimate.dividendDate = new DateTime(date.Year, 12, 31);
@@ -437,8 +454,8 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                     }
                 }
                 var info = stockInfo.Select(x => x.code == code);
-                var rawData1 = windReader.GetDailyDataTable(code, "eps_ttm", lastYearNow, lastYearNow.AddDays(0));
-                var rawData2= windReader.GetDailyDataTable(code, "eps_ttm", date.AddDays(0),date);
+                var rawData1 = windReader.GetDailyDataTable(code, "eps_ttm", lastYearNow, lastYearNow);
+                var rawData2= windReader.GetDailyDataTable(code, "eps_ttm", date,date);
                 foreach (DataRow dr in rawData1.Rows)
                 {
                     epsLastYear = Convert.ToDouble(dr[2]);
@@ -478,7 +495,6 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                 DateTime reportDate = Convert.ToDateTime(dr[2]);
                 string status = Convert.ToString(dr[3]);
                 double dividend = 0;
-                bool dateConfirm = false;
                 if (dr[4]!=DBNull.Value)
                 {
                     dividend=Convert.ToDouble(dr[4]);
@@ -487,7 +503,6 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                 if (dr[5]!=DBNull.Value)
                 {
                     planDate = Convert.ToDateTime(dr[5]);
-                    dateConfirm = true;
                 }
                 if (codeList.Contains(code) && reportDate>=lastYearEnd && dividend>0)
                 {
@@ -497,15 +512,7 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                     plan.dividend = dividend;
                     plan.name = name;
                     plan.reportDate = reportDate;
-                    if (dateConfirm==true)
-                    {
-                        plan.planDate = planDate;
-                        plan.dateConfirm = true;
-                    }
-                    else
-                    {
-                        plan.dateConfirm = false;
-                    }
+                    plan.planDate = planDate;
                     if (planDic.ContainsKey(code))
                     {
                         planDic[code].Add(plan);
