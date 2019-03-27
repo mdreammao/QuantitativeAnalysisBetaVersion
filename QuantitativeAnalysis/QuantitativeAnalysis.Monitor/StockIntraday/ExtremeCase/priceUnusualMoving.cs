@@ -85,49 +85,12 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
 
         public void backtest(string underlyingCode, DateTime startDate, DateTime endDate)
         {
-            dataPrepare(underlyingCode, startDate, endDate);
-            //训练集训练参数
-            int maxN = 0;
-            double maxK1 = 0;
-            double maxK2 = 0;
-            double maxSharpe = -10;
+            dataPrepare(underlyingCode, startDate, endDate,0);
+            var daily = DailyKLine[underlyingCode];
+            var minutely = minutelyKLine[underlyingCode];
+            //var ticks = tick[underlyingCode];
+            
 
-            for (int n = 2; n <= 6; n++)
-            {
-                for (double k1 = 0; k1 <= 2; k1 = k1 + 0.2)
-                {
-                    for (double k2 = 0; k2 <= 2; k2 = k2 + 0.2)
-                    {
-                        double sharpe = getParametersSharpe(startDate, endDate, n, k1, k2, loss);
-                        if (sharpe > maxSharpe)
-                        {
-                            maxN = n;
-                            maxK1 = k1;
-                            maxK2 = k2;
-                            maxSharpe = sharpe;
-                            //Console.WriteLine("rating:{0}, n:{1}, k1:{2}, k2:{3}", maxSharpe, maxN, maxK1, maxK2);
-                        }
-                        //Console.WriteLine("rating:{0}, n:{1}, k1:{2}, k2:{3}", sharpe, n, k1, k2);
-                    }
-                }
-            }
-            Console.WriteLine("code:{4}, rating:{0}, n:{1}, k1:{2}, k2:{3}", maxSharpe, maxN, maxK1, maxK2, underlyingCode);
-            if (maxSharpe > -10)
-            {
-                var yield = getYieldList(startDate, endDate, maxN, maxK1, maxK2, loss);
-                yield = getYieldList(startDate, endDate, maxN, maxK1, maxK2, loss);
-                double nv = 1;
-                for (int i = 0; i < yield.Count(); i++)
-                {
-                    nv = nv * (yield[i] + 1);
-                }
-                Console.WriteLine(nv);
-                this.transactionData = getTransactionData(startDate, endDate, maxN, maxK1, maxK2, loss);
-                var dt = DataTableExtension.ToDataTable(transactionData);
-                var codeStr = underlyingCode.Split('.');
-                string name = string.Format("E:\\result\\DualTrust\\{0}.csv", codeStr[0]);
-                DataTableExtension.SaveCSV(dt, name);
-            }
 
         }
 
@@ -154,13 +117,17 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             {
                 if (item.High/item.Low-1>0.05)
                 {
-                    myTradedays.Add(item.DateTime.Date);
+                    if (myTradedays.Contains(item.DateTime.Date)==false)
+                    {
+                        myTradedays.Add(item.DateTime.Date);
+                    }
+                    myTradedays.Add(DateTimeExtension.DateUtils.NextTradeDay(item.DateTime.Date));
                 }
             }
 
             getMinuteData(underlyingCode, myTradedays);
 
-            getTickData(underlyingCode, myTradedays);
+            //getTickData(underlyingCode, myTradedays);
         }
 
         //获取分钟线数据
@@ -172,7 +139,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     try
                     {
-                        var minuteNow = stockMinutelyRepo.GetStockTransaction(underlyingCode, date, date);
+                        var minuteNow = stockMinutelyRepo.GetStockTransactionFromLocalSqlByCode(underlyingCode, date, date);
                         Dictionary<DateTime, List<StockTransaction>> data = new Dictionary<DateTime, List<StockTransaction>>();
                         data.Add(date, minuteNow);
                         minutelyKLine.Add(underlyingCode, data);
@@ -187,7 +154,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     try
                     {
-                        var minuteNow = stockMinutelyRepo.GetStockTransaction(underlyingCode, date, date);
+                        var minuteNow = stockMinutelyRepo.GetStockTransactionFromLocalSqlByCode(underlyingCode, date, date);
                         var data = minutelyKLine[underlyingCode];
                         data.Add(date, minuteNow);
                     }
@@ -197,8 +164,6 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                         Console.WriteLine(e.Message);
                     }
                 }
-
-
             }
         }
 
@@ -224,7 +189,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                         Console.WriteLine(e.Message);
                     }
                 }
-                else if (minutelyKLine[underlyingCode].ContainsKey(date) == false)
+                else if (tick[underlyingCode].ContainsKey(date) == false)
                 {
                     try
                     {
@@ -328,7 +293,9 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         {
             Dictionary<string, StockIPOInfo> allDic = new Dictionary<string, StockIPOInfo>();
             this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
-            var dic = getStockList(tradedays, index);
+            List<DateTime> lastDate = new List<DateTime>();
+            lastDate.Add(tradedays.Last());
+            var dic = getStockList(lastDate, index);
             foreach (var stock in dic)
             {
                 if (stock.Value.IPODate > startDate)

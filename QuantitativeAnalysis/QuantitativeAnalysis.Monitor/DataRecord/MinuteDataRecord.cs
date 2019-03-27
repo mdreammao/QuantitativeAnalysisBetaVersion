@@ -67,12 +67,13 @@ namespace QuantitativeAnalysis.Monitor.DataRecord
                     endTime = item.DelistDate;
                 }
                 num += 1;
-                if (num>=2342)
+                if (num>=0)
                 {
-                    BulkLoadStockMinuteToSqlFromSql(item.code, startTime, endTime);
+                    //BulkLoadStockMinuteToSqlFromSql(item.code, startTime, endTime);
+                    BulkLoadStockMinuteOrerByCode(item.code, startTime, endTime);
                 }
                
-                Console.WriteLine("code({3} of 3700):{0} dailyData form {1} to {2} complete! ", item.code, startTime, endTime,num);
+                Console.WriteLine("code({3} of 3704):{0} dailyData form {1} to {2} complete! ", item.code, startTime, endTime,num);
             }
         }
 
@@ -102,6 +103,26 @@ namespace QuantitativeAnalysis.Monitor.DataRecord
         }
         
       
+        public void BulkLoadStockMinuteOrerByCode(string code,DateTime startDate,DateTime endDate)
+        {
+            IdentifyOrCreateDBAndTableByCode(code);
+            var existsLastestTime = GetLatestTimeFromSql(code);
+            DateTime start = DateUtils.NextTradeDay(existsLastestTime.Date);
+            //取出数据
+            try
+            {
+                var originalData = getDataFromSql(code, start, endDate);
+                //存入数据
+               WriteToSqlByCode(originalData,code);
+            }
+            catch (Exception e)
+            {
+
+                Console.WriteLine(e.Message);
+            }
+        }
+
+
 
         /// <summary>
         /// 从sql源中取出数据并存入本地数据库
@@ -152,6 +173,56 @@ namespace QuantitativeAnalysis.Monitor.DataRecord
                 //Console.WriteLine("data of date:{0} complete!", item.Key);
             }
         }
+
+
+
+
+        private void IdentifyOrCreateDBAndTableByCode(string code)
+        {
+            var sqlLocation = ConfigurationManager.AppSettings["SqlServerLocation"];
+            code = code.ToUpper();
+            string code1 = code.Split('.')[0];
+            string code2 = code.Split('.')[1];
+            var sqlScript = string.Format(@"USE [master]
+if db_id('StockMinuteTransaction') is null
+begin
+CREATE DATABASE [StockMinuteTransaction]
+ CONTAINMENT = NONE
+ ON  PRIMARY 
+( NAME = N'StockMinuteTransaction', FILENAME = N'{2}\StockMinuteTransaction.mdf' , SIZE = 5120KB , MAXSIZE = UNLIMITED, FILEGROWTH = 1024KB )
+ LOG ON 
+( NAME = N'StockMinuteTransaction_log', FILENAME = N'{2}\StockMinuteTransaction_log.ldf' , SIZE = 2048KB , MAXSIZE = 2048GB , FILEGROWTH = 10%)
+ALTER DATABASE [StockMinuteTransaction] SET COMPATIBILITY_LEVEL = 120
+IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
+begin
+EXEC [StockMinuteTransaction].[dbo].[sp_fulltext_database] @action = 'enable'
+end
+end
+go
+if object_id('[StockMinuteTransaction].[dbo].[{0}_{1}]') is null
+begin
+CREATE TABLE [StockMinuteTransaction].[dbo].[{0}_{1}](
+	[Code] [varchar](20) NOT NULL,
+	[DateTime] [datetime] NOT NULL,
+	[open] [decimal](12, 4) NULL,
+	[high] [decimal](12, 4) NULL,
+	[low] [decimal](12, 4) NULL,
+	[close] [decimal](12, 4) NULL,
+	[volume] [decimal](20, 4) NULL,
+	[amount] [decimal](20, 4) NULL,
+	[UpdatedDateTime] [datetime] NULL,
+ CONSTRAINT [PK_{0}_{1}] PRIMARY KEY CLUSTERED 
+(
+	[Code] ASC,
+	[DateTime] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+SET ANSI_PADDING OFF
+ALTER TABLE [StockMinuteTransaction].[dbo].[{0}_{1}] ADD  CONSTRAINT [DF_{0}_{1}_UpdatedDateTime]  DEFAULT (getdate()) FOR [UpdatedDateTime]
+end ", code1, code2,sqlLocation);
+            sqlWriter.ExecuteSqlScript(sqlScript);
+        }
+
 
         /// <summary>
         /// 创建数据库及数据表
@@ -216,7 +287,17 @@ end ", dateTime.Year, sqlLocation, dateTime.ToString("yyyy-MM"));
             return latest;
         }
 
-
+        private DateTime GetLatestTimeFromSql(string code)
+        {
+            DateTime latest = default(DateTime);
+            code = code.ToUpper();
+            string code1 = code.Split('.')[0];
+            string code2 = code.Split('.')[1];
+            var sqlStr = string.Format(@"SELECT max([DateTime])
+  FROM [StockMinuteTransaction].[dbo].[{0}_{1}]", code1,code2);
+            latest = sqlReaderLocal.ExecuteScriptScalar<DateTime>(sqlStr);
+            return latest;
+        }
 
         /// <summary>
         /// 找到当年SQL数据对应标的的最后一条数据的时间。为了插入新的数据做准备。
@@ -342,7 +423,12 @@ end",firstDate,firstYear,firstMonth,endYear,endMonth,code.ToUpper());
             }
         }
 
-
+        private void WriteToSqlByCode(DataTable dataTable,string code)
+        {
+            IdentifyOrCreateDBAndTableByCode(code);
+            string table = string.Format("[StockMinuteTransaction].dbo.[{0}_{1}]", code.ToUpper().Split('.')[0], code.ToUpper().Split('.')[1]);
+            sqlWriter.InsertBulk(dataTable,table);
+        }
 
         private Dictionary<int,List<DateTime>> splitDateMonthly(DateTime startDate,DateTime endDate)
         {

@@ -33,6 +33,85 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             redisWriter = new RedisWriter();
             dataSource = ds;
         }
+
+
+        public List<StockTransaction> GetStockTransactionFromLocalSqlByCode(string code, DateTime start, DateTime end)
+        {
+            var stocks = new List<StockTransaction>();
+            var tradingDates = dateTimeRepo.GetStockTransactionDate(start.Date, end.Date == DateTime.Now.Date ? end.Date.AddDays(-1) : end.Date);
+            Dictionary<DateTime, DateTime> dateSpan = SplitDateTimeMonthly(start, end);
+            foreach (var item in dateSpan)
+            {
+                DateTime startTime = item.Key.Date;
+                DateTime endTime = item.Value.Date.AddHours(16);
+                try
+                {
+                    var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction].[dbo].[{0}_{1}] 
+where DateTime>='{2}' and DateTime<='{3}'",
+    code.ToUpper().Split('.')[0],code.ToUpper().Split('.')[1],startTime, endTime);
+                    var dt = sqlReader.GetDataTable(sqlStr);
+                    var list = datatableToList(dt);
+                    stocks.AddRange(list);
+                }
+                catch (Exception e)
+                {
+
+                    Console.WriteLine(e.Message);
+                }
+            }
+            return stocks;
+        }
+
+
+        public List<StockTransaction> GetStockTransactionByLocalSql(string code, DateTime start, DateTime end)
+        {
+            var stocks = new List<StockTransaction>();
+            var tradingDates = dateTimeRepo.GetStockTransactionDate(start.Date, end.Date == DateTime.Now.Date ? end.Date.AddDays(-1) : end.Date);
+            Dictionary<DateTime, DateTime> dateSpan = SplitDateTimeMonthly(start, end);
+            foreach (var item in dateSpan)
+            {
+                DateTime startTime = item.Key.Date;
+                DateTime endTime = item.Value.Date.AddHours(16);
+                try
+                {
+                    var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction{0}].[dbo].[Transaction{1}] order by [DateTime]
+where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
+    item.Key.Year, item.Key.ToString("yyyy-MM"), code, startTime,endTime);
+                    var dt = sqlReader.GetDataTable(sqlStr);
+                    var list = datatableToList(dt);
+                    stocks.AddRange(list);
+                }
+                catch (Exception e)
+                {
+
+                    Console.WriteLine(e.Message);
+                }
+            }
+            return stocks;
+        }
+
+
+        private List<StockTransaction> datatableToList(DataTable dt)
+        {
+            List<StockTransaction> data = new List<StockTransaction>();
+            foreach (DataRow dr in dt.Rows)
+            {
+                StockTransaction stock = new StockTransaction();
+                stock.Code = Convert.ToString(dr["Code"]);
+                stock.DateTime = Convert.ToDateTime(dr["DateTime"]);
+                stock.Open = Convert.ToDouble(dr["open"]);
+                stock.High = Convert.ToDouble(dr["high"]);
+                stock.Low = Convert.ToDouble(dr["low"]);
+                stock.Close = Convert.ToDouble(dr["close"]);
+                stock.Amount = Convert.ToDouble(dr["amount"]);
+                stock.Volume = Convert.ToDouble(dr["volume"]);
+                stock.Level = StockTransactionLevel.Minute;
+                data.Add(stock);
+            }
+            return data;
+        }
+
+
         public List<StockTransaction> GetStockTransaction(string code, DateTime start, DateTime end)
         {
             //logger.Info(string.Format("begin to fetch stock{0} minute data from {1} to {2}...", code, start, end));
@@ -45,6 +124,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                 StockTransaction stock = FetchStockMinuteTransFromRedis(code, currentTime);
                 if (stock == null)
                 {
+                    //从万德客户端API获取分钟数据
                     BulkLoadStockMinuteToSqlFromSource(code, currentTime);
                     BulkLoadStockMinuteToRedisFromSql(code, currentTime);
                     stock = FetchStockMinuteTransFromRedis(code, currentTime);
@@ -59,7 +139,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         private void BulkLoadStockMinuteToRedisFromSql(string code, DateTime currentTime)
         {
             DateTime latestTime = GetLatestTimeFromRedis(code, currentTime);
-            var start = latestTime == default(DateTime) ? new DateTime(currentTime.Year, 1, 1) : latestTime.AddMinutes(1);
+            var start = latestTime == default(DateTime) ? new DateTime(currentTime.Year, currentTime.Month, 1) : latestTime.AddMinutes(1);
             var end = GetEndTime(currentTime);
             if (start < end)
             {
