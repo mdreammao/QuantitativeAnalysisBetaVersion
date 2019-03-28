@@ -35,6 +35,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         private StockTickRepository stockTickRepo;
         private SqlServerWriter sqlWriter;
         private SqlServerReader sqlReader;
+        private string index;
         private StockInfoRepository stockInfoRepo;
         private List<StockTransaction> underlyingAll = new List<StockTransaction>();
         private double slipRatio = 0.001;
@@ -68,6 +69,8 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         //获取指数成分股列表
         public void backtestByIndexCode(string index, DateTime startDate, DateTime endDate)
         {
+            this.index = index;
+            dataPrepare(index, startDate, endDate);
             allStockDic = getStockInfoList(index, endDate, endDate);
             int num = 0;
             foreach (var item in allStockDic)
@@ -94,12 +97,15 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         {
             dataPrepare(underlyingCode, startDate, endDate,0);
             var daily = DailyKLine[underlyingCode];
+            var indexDaily = DailyKLine[index];
             var minutely = minutelyKLine[underlyingCode];
             //var ticks = tick[underlyingCode];
             for (int i = 1; i < daily.Count(); i++)
             {
                 var today = daily[i];
                 var yesterday = daily[i - 1];
+                var indexToday = indexDaily[i];
+                var indexYesterday = indexDaily[i - 1];
                 if (yesterday == null || today==null || today.TradeStatus!="交易")
                 {
                     continue;
@@ -108,11 +114,12 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 if (today.High>preClose*(1+parameter))
                 {
                     var minuteToday = minutely[today.DateTime.Date];
+                    var indexMinuteToday = minutelyKLine[index][today.DateTime.Date];
                     double position = 0;
                     OneByOneTransaction trade = new OneByOneTransaction();
                     for (int j = 0; j < minuteToday.Count(); j++)
                     {
-                        if (minuteToday[j].Open>preClose * (1 + parameter) && position==0 && minuteToday[j].Open<preClose * (1 + parameter+0.005) && j<= minuteToday.Count()-10) //股票价格达到8%买入
+                        if (minuteToday[j].Open>preClose * (1 + parameter) && position==0 && minuteToday[j].Open<preClose * (1 + parameter+0.005) && j<= minuteToday.Count()-10 && indexMinuteToday[j].Open>indexYesterday.Close) //股票价格达到8%买入
                         {
                             
                             position = 1;
@@ -159,7 +166,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         }
 
         //将计算用的数据准备好
-        private void dataPrepare(string underlyingCode, DateTime startDate, DateTime endDate,int pushForwardDays=30)
+        private void dataPrepare(string underlyingCode, DateTime startDate, DateTime endDate,int pushForwardDays=0)
         {
             //获取交易日信息
             this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);

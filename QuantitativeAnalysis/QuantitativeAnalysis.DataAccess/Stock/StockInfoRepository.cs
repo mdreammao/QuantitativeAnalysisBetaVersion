@@ -118,7 +118,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                     continue;
                 }
                 DateTime startDate = item.IPODate.Date;
-                DateTime endDate = DateTime.Now.Date;
+                DateTime endDate = DateTime.Now.Date.AddYears(1);
                 bool needToUpdate = false;
                 if (item.DelistDate != null && item.DelistDate < DateTime.Now.Date)
                 {
