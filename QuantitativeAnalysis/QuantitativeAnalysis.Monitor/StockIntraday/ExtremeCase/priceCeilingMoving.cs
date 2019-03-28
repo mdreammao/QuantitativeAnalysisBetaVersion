@@ -82,6 +82,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     stockEnd = stock.DelistDate;
                 }
+                //dataPrepare(stock.code, stockStart, stockEnd);
                 backtest(stock.code, stockStart, stockEnd);
             }
             var dt = DataTableExtension.ToDataTable(transactionData);
@@ -200,7 +201,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
 
             //getMinuteData(underlyingCode, myTradedays);
 
-            //getTickData(underlyingCode, myTradedays);
+            getTickData(underlyingCode, myTradedays);
         }
 
         //获取分钟线数据

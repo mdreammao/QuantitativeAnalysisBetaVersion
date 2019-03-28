@@ -68,11 +68,8 @@ namespace QuantitativeAnalysis
             DateTime lastDay =DateUtils.LatestTradeDay(DateTime.Now.AddDays(-1));
 
 
-            //priceCeilingMoving2 moving = new priceCeilingMoving2(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
-            //moving.backtest("600000.SH", "2010-01-01".ToDateTime(), "2019-03-10".ToDateTime());
-            //moving.backtestByIndexCode("000905.SH", "2010-01-01".ToDateTime(), "2019-03-09".ToDateTime());
-            // moving.backtest("000693.SZ", "2010-01-01".ToDateTime(), "2019-03-09".ToDateTime());
-            // moving.backtestAllStock("2010-01-01".ToDateTime(), "2019-03-08".ToDateTime());
+            priceCeilingMoving moving = new priceCeilingMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
+            moving.backtest("600000.SH", "2010-01-01".ToDateTime(), "2019-03-10".ToDateTime());
 
             //Monitor.Bond.ConvertibleBond.Intraday1 bond = new Monitor.Bond.ConvertibleBond.Intraday1(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
             //bond.backtest("2010-01-01".ToDateTime(), "2019-03-04".ToDateTime());
@@ -85,17 +82,14 @@ namespace QuantitativeAnalysis
             recordMinute.getStockMinutelyData("2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
             //recordMinute.BulkLoadStockMinuteToSqlFromSql("000001.SH", "2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
             //Monitor.Bond.ConvertibleBond.IntradayMonitor bond = new Monitor.Bond.ConvertibleBond.IntradayMonitor(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
-            //StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000016.SH");
-            //myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000905.SH");
-            //myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000300.SH");
+            StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000016.SH");
+            myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000905.SH");
+            myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000300.SH");
             //IndexAnalysis indexAnalysis = new IndexAnalysis(dateRepo, "2019-02-11".ToDateTime());
             //indexAnalysis.differ("510180.OF", "000300.SH");
             //indexAnalysis.differ("159901.OF", "000300.SH");
             //StockTickToMinute myStore = new StockTickToMinute(dateRepo, stockDailyRepo, stockMinutelyRepo2, stockTickRepo, stockInfoRepo);
             //myStore.getStockMinuteFromSqlByIndex("000300.SH", "2010-01-01".ToDateTime(), "2019-03-10".ToDateTime());
-            //DailyDataRecord dailyDataReocrd = new DailyDataRecord(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo, stockInfoRepo);
-            //dailyDataReocrd.getStockFromIndexDailyData("000300.SH");
-            //dailyDataReocrd.getStockDailyData("2010-01-01".ToDateTime(), "2019-03-10".ToDateTime());
             #endregion
 
 
