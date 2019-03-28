@@ -73,8 +73,8 @@ namespace QuantitativeAnalysis
             //moving.backtestByIndexCode("000905.SH", "2010-01-01".ToDateTime(), "2019-03-09".ToDateTime());
             // moving.backtest("000693.SZ", "2010-01-01".ToDateTime(), "2019-03-09".ToDateTime());
             // moving.backtestAllStock("2010-01-01".ToDateTime(), "2019-03-08".ToDateTime());
-            priceUnusualMoving moving2 = new priceUnusualMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
-            moving2.backtestByIndexCode("000905.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
+            //priceUnusualMoving moving2 = new priceUnusualMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
+            //moving2.backtestByIndexCode("000905.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
             //moving2.backtest("600000.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
 
 
@@ -91,9 +91,12 @@ namespace QuantitativeAnalysis
             //recordMinute.deleteOldDataAll("2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
             //recordMinute. BulkLoadStockMinuteOrerByCode("399001.SZ", "2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
             //Monitor.Bond.ConvertibleBond.IntradayMonitor bond = new Monitor.Bond.ConvertibleBond.IntradayMonitor(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
-            //StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000016.SH");
-            //myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000905.SH");
-            //myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay, "000300.SH");
+            
+            StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay);
+            myBonus.getBonusByIndex("000016.SH");
+            myBonus.getBonusByIndex("000300.SH");
+            myBonus.getBonusByIndex("000905.SH");
+
             //IndexAnalysis indexAnalysis = new IndexAnalysis(dateRepo, "2019-02-11".ToDateTime());
             //indexAnalysis.differ("510180.OF", "000300.SH");
             //indexAnalysis.differ("159901.OF", "000300.SH");
