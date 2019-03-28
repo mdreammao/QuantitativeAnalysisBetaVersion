@@ -405,12 +405,13 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
         {
             Dictionary<string, double> epsDic = new Dictionary<string, double>();
             DateTime lastYear = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(date.AddYears(-1));
+            DateTime thisYear= DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(date);
             foreach (var code in codeList)
             {
                 double epsThisYear = 0;
                 double epsLastYear = 0;
                 var rawData1 = windReader.GetDailyDataTable(code, "eps_ttm", lastYear, lastYear);
-                var rawData2= windReader.GetDailyDataTable(code, "eps_ttm", date,date);
+                var rawData2= windReader.GetDailyDataTable(code, "eps_ttm", thisYear,thisYear);
                 foreach (DataRow dr in rawData1.Rows)
                 {
                     epsLastYear = Convert.ToDouble(dr[2]);
