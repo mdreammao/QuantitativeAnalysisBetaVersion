@@ -79,9 +79,16 @@ namespace QuantitativeAnalysis
 
 
 
-
             //Monitor.Bond.ConvertibleBond.Intraday1 bond = new Monitor.Bond.ConvertibleBond.Intraday1(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
             //bond.backtest("2010-01-01".ToDateTime(), "2019-03-04".ToDateTime());
+
+
+            //该区域为测试influxdb数据库
+            #region
+            //InfluxdbRecord influxdb0 = new InfluxdbRecord(stockMinutelyRepo, stockDailyRepo, dateRepo, stockInfoRepo);
+            //influxdb0.test();
+            #endregion
+
 
 
             //该区域为跑参数或者数据

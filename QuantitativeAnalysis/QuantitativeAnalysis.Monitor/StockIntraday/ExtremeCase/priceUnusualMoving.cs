@@ -224,7 +224,8 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     try
                     {
-                        var minuteNow = stockMinutelyRepo.GetStockTransactionFromLocalSqlByCode(underlyingCode, date, date);
+                       // var minuteNow = stockMinutelyRepo.GetStockTransactionFromLocalSqlByCode(underlyingCode, date, date);
+                        var minuteNow = stockMinutelyRepo.GetStockTransactionFromLocalSqlByCodeWithRedis(underlyingCode, date, date);
                         Dictionary<DateTime, List<StockTransaction>> data = new Dictionary<DateTime, List<StockTransaction>>();
                         data.Add(date, minuteNow);
                         minutelyKLine.Add(underlyingCode, data);
@@ -239,13 +240,13 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     try
                     {
-                        var minuteNow = stockMinutelyRepo.GetStockTransactionFromLocalSqlByCode(underlyingCode, date, date);
+                       // var minuteNow = stockMinutelyRepo.GetStockTransactionFromLocalSqlByCode(underlyingCode, date, date);
+                        var minuteNow = stockMinutelyRepo.GetStockTransactionFromLocalSqlByCodeWithRedis(underlyingCode, date, date);
                         var data = minutelyKLine[underlyingCode];
                         data.Add(date, minuteNow);
                     }
                     catch (Exception e)
                     {
-
                         Console.WriteLine(e.Message);
                     }
                 }

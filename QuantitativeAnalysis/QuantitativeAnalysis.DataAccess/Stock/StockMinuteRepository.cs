@@ -16,6 +16,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public class StockMinuteRepository : IStockRepository
     {
+        private readonly string RedisKeyFormat = "{0}-{1}-{2}";
         private TransactionDateTimeRepository dateTimeRepo;
         private RedisReader redisReader;
         private SqlServerWriter sqlWriter;
@@ -40,25 +41,85 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             var stocks = new List<StockTransaction>();
             DateTime startTime = start.Date;
             DateTime endTime = end.AddHours(15);
+            code = code.ToUpper();
+            if (end.Date >= DateTime.Now.Date)
+                throw new ArgumentException("结束时间只能小于当天时间");
             var tradingDates = dateTimeRepo.GetStockTransactionDate(start.Date, end.Date == DateTime.Now.Date ? end.Date.AddDays(-1) : end.Date);
-            var timeInterval = new StockMinuteInterval(startTime, endTime, tradingDates);
-            while (timeInterval.MoveNext())
+            foreach (var date in tradingDates)
             {
-                var currentTime = timeInterval.Current;
-                StockTransaction stock = FetchStockMinuteTransFromRedis(code, currentTime);
-                if (stock == null)
-                {
-                    //从本地sql获取分钟数据
-                    BulkLoadStockMinuteToRedisFromLocalSql(code, currentTime);
-                    stock = FetchStockMinuteTransFromRedis(code, currentTime);
-                }
-                stocks.Add(stock);
+                LoadDataToRedisFromSqlServerIfNecessary(code, date);
             }
+            stocks = FetchDataFromRedis(code, tradingDates).Where(c => c.DateTime >= start && c.DateTime <= end).OrderBy(c => c.DateTime).ToList();
             return stocks;
         }
 
+        private List<StockTransaction> FetchDataFromRedis(string code, List<DateTime> transDates)
+        {
+            var minuteList = new List<StockTransaction>();
+            foreach (var date in transDates)
+            {
+                var key = string.Format(RedisKeyFormat, code.ToUpper(), "Minute",date.ToString("yyyy-MM-dd"));
+                var hashEntries = redisReader.HGetAll(key);
+                var minutes = ConvertToMinutes(code, hashEntries);
+                minuteList.AddRange(minutes);
+            }
+            return minuteList;
+        }
+
+        private List<StockTransaction> ConvertToMinutes(string code, HashEntry[] hashEntries)
+        {
+            var minutes = new List<StockTransaction>();
+            for (int i = 0; i < hashEntries.Length; i++)
+            {
+                var array = hashEntries[i].Value.ToString().Split(',');
+                var minute = new StockTransaction()
+                {
+                    Code = code,
+                    DateTime = array[0].ConvertTo<DateTime>(),
+                    Open = array[1].ConvertTo<double>(),
+                    High = array[2].ConvertTo<double>(),
+                    Low = array[3].ConvertTo<double>(),
+                    Close = array[4].ConvertTo<double>(),
+                    Volume = array[5].ConvertTo<double>(),
+                    Amount = array[6].ConvertTo<double>(),
+                };
+                minutes.Add(minute);
+            }
+            return minutes;
+        }
 
 
+        private void LoadDataToRedisFromSqlServerIfNecessary(string code, DateTime date)
+        {
+            if (!ExistInRedis(code, date))
+            {
+                DateTime startTime = date.Date;
+                DateTime endTime = date.AddHours(15);
+                var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction].[dbo].[{0}_{1}] 
+where DateTime>='{2}' and DateTime<='{3}'",
+code.ToUpper().Split('.')[0], code.ToUpper().Split('.')[1], startTime, endTime);
+
+                try
+                {
+                    var dt = sqlReader.GetDataTable(sqlStr);
+                    var key = string.Format(RedisKeyFormat, code.ToUpper(), "Minute", date.ToString("yyyy-MM-dd"));
+                    BulkWriteToRedis(key, dt);
+                }
+                catch (Exception e)
+                {
+
+                }
+
+                
+            }
+        }
+
+
+        private bool ExistInRedis(string code, DateTime date)
+        {
+            var key = string.Format(RedisKeyFormat, code.ToUpper(), "Minute", date.ToString("yyyy-MM-dd"));
+            return redisReader.ContainsKey(key);
+        }
 
         public List<StockTransaction> GetStockTransactionFromLocalSqlByCode(string code, DateTime start, DateTime end)
         {
@@ -99,7 +160,7 @@ code.ToUpper().Split('.')[0], code.ToUpper().Split('.')[1], startTime, endTime);
             {
                 var array = dt.Rows[i].ItemArray;
                 var values = string.Join(",", array.Skip(1));
-                entries[i] = new HashEntry(dt.Rows[i]["tdatetime"].ToString(), values);
+                entries[i] = new HashEntry(dt.Rows[i]["DateTime"].ToString(), values);
             }
             return entries;
         }
