@@ -49,7 +49,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             {
                 LoadDataToRedisFromSqlServerIfNecessary(code, date);
             }
-            stocks = FetchDataFromRedis(code, tradingDates).Where(c => c.DateTime >= start && c.DateTime <= end).OrderBy(c => c.DateTime).ToList();
+            stocks = FetchDataFromRedis(code, tradingDates).Where(c => c.DateTime >= startTime && c.DateTime <= endTime).OrderBy(c => c.DateTime).ToList();
             return stocks;
         }
 

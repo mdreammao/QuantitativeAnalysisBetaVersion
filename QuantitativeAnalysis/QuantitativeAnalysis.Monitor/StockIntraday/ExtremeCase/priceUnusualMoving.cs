@@ -70,7 +70,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         public void backtestByIndexCode(string index, DateTime startDate, DateTime endDate)
         {
             this.index = index;
-            dataPrepare(index, startDate, endDate);
+            dataPrepareAll(index, startDate, endDate);
             allStockDic = getStockInfoList(index, endDate, endDate);
             int num = 0;
             foreach (var item in allStockDic)
@@ -106,7 +106,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 var yesterday = daily[i - 1];
                 var indexToday = indexDaily[i];
                 var indexYesterday = indexDaily[i - 1];
-                if (yesterday == null || today==null || today.TradeStatus!="交易")
+                if (yesterday == null || today==null || indexYesterday==null ||today.TradeStatus!="交易")
                 {
                     continue;
                 }
@@ -115,6 +115,10 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     var minuteToday = minutely[today.DateTime.Date];
                     var indexMinuteToday = minutelyKLine[index][today.DateTime.Date];
+                    if (indexMinuteToday.Count==0 || minuteToday.Count==0)
+                    {
+                        continue;
+                    }
                     double position = 0;
                     OneByOneTransaction trade = new OneByOneTransaction();
                     for (int j = 0; j < minuteToday.Count(); j++)
@@ -165,6 +169,32 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
 
         }
 
+        private void dataPrepareAll(string underlyingCode,DateTime startDate,DateTime endDate)
+        {
+            //获取交易日信息
+            this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
+            //获取日线数据
+            var dayNow = stockDailyRepo.GetStockTransaction(underlyingCode, startDate, endDate);
+            if (this.DailyKLine.ContainsKey(underlyingCode))
+            {
+                var data = DailyKLine[underlyingCode];
+                data = dayNow;
+            }
+            else
+            {
+                DailyKLine.Add(underlyingCode, dayNow);
+            }
+            //选取需要获取数据的交易日
+            List<DateTime> myTradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
+            
+
+            getMinuteData(underlyingCode, myTradedays);
+
+            //getTickData(underlyingCode, myTradedays);
+        }
+
+
+
         //将计算用的数据准备好
         private void dataPrepare(string underlyingCode, DateTime startDate, DateTime endDate,int pushForwardDays=0)
         {
@@ -203,20 +233,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                     myTradedays.Add(DateTimeExtension.DateUtils.NextTradeDay(item.DateTime.Date));
                 }
             }
-
-
-            //foreach (var item in DailyKLine[underlyingCode])
-            //{
-            //    if (item.High/item.Low-1>0.05)
-            //    {
-            //        if (myTradedays.Contains(item.DateTime.Date) == false)
-            //        {
-            //            myTradedays.Add(item.DateTime.Date);
-            //        }
-            //        myTradedays.Add(DateTimeExtension.DateUtils.NextTradeDay(item.DateTime.Date));
-            //    }
-            //}
-
+            
             getMinuteData(underlyingCode, myTradedays);
 
             //getTickData(underlyingCode, myTradedays);
