@@ -30,7 +30,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         private Logger mylog = NLog.LogManager.GetCurrentClassLogger();
         private TransactionDateTimeRepository dateRepo;
         private StockDailyRepository stockDailyRepo;
-        private List<OneByOneTransaction> transactionData;
+        private List<OneByOneTransaction> transactionData=new List<OneByOneTransaction>();
         private StockMinuteRepository stockMinutelyRepo;
         private StockTickRepository stockTickRepo;
         private SqlServerWriter sqlWriter;
@@ -69,6 +69,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         public void backtestByIndexCode(string index, DateTime startDate, DateTime endDate)
         {
             allStockDic = getStockInfoList(index, endDate, endDate);
+            int num = 0;
             foreach (var item in allStockDic)
             {
                 var stock = item.Value;
@@ -79,55 +80,81 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                     stockStart = stock.IPODate.AddDays(10);
                 }
                 backtest(stock.code, stockStart, stockEnd);
+                num += 1;
+                Console.WriteLine("完成 {0} of 500!", num);
             }
-
+            //存入交易信息
+            var dt = DataTableExtension.ToDataTable(transactionData);
+            var codeStr = index.Split('.');
+            string name = string.Format("E:\\result\\grabCeiling\\{0}.csv", codeStr[0]);
+            DataTableExtension.SaveCSV(dt, name);
         }
 
-        public void backtest(string underlyingCode, DateTime startDate, DateTime endDate)
+        public void backtest(string underlyingCode, DateTime startDate, DateTime endDate,double parameter=0.08)
         {
-            dataPrepare(underlyingCode, startDate, endDate);
-            //训练集训练参数
-            int maxN = 0;
-            double maxK1 = 0;
-            double maxK2 = 0;
-            double maxSharpe = -10;
-
-            for (int n = 2; n <= 6; n++)
+            dataPrepare(underlyingCode, startDate, endDate,0);
+            var daily = DailyKLine[underlyingCode];
+            var minutely = minutelyKLine[underlyingCode];
+            //var ticks = tick[underlyingCode];
+            for (int i = 1; i < daily.Count(); i++)
             {
-                for (double k1 = 0; k1 <= 2; k1 = k1 + 0.2)
+                var today = daily[i];
+                var yesterday = daily[i - 1];
+                if (yesterday == null || today==null || today.TradeStatus!="交易")
                 {
-                    for (double k2 = 0; k2 <= 2; k2 = k2 + 0.2)
+                    continue;
+                }
+                double preClose = yesterday.Close * today.AdjFactor / yesterday.AdjFactor;
+                if (today.High>preClose*(1+parameter))
+                {
+                    var minuteToday = minutely[today.DateTime.Date];
+                    double position = 0;
+                    OneByOneTransaction trade = new OneByOneTransaction();
+                    for (int j = 0; j < minuteToday.Count(); j++)
                     {
-                        double sharpe = getParametersSharpe(startDate, endDate, n, k1, k2, loss);
-                        if (sharpe > maxSharpe)
+                        if (minuteToday[j].Open>preClose * (1 + parameter) && position==0 && minuteToday[j].Open<preClose * (1 + parameter+0.005) && j<= minuteToday.Count()-10) //股票价格达到8%买入
                         {
-                            maxN = n;
-                            maxK1 = k1;
-                            maxK2 = k2;
-                            maxSharpe = sharpe;
-                            //Console.WriteLine("rating:{0}, n:{1}, k1:{2}, k2:{3}", maxSharpe, maxN, maxK1, maxK2);
+                            
+                            position = 1;
+                            double volume = minuteToday[j].Volume * 0.05;
+                            if (volume>0)
+                            {
+                                double price = minuteToday[j].Amount / minuteToday[j].Volume;
+                                trade = new OneByOneTransaction();
+                                trade.code = underlyingCode;
+                                trade.date = today.DateTime.Date;
+                                trade.openTime = minuteToday[j].DateTime;
+                                trade.openPrice = price;
+                                trade.position = position;
+                                trade.maxOpenAmount = volume*price;
+                                trade.parameter = parameter;
+                            }
+                            
                         }
-                        //Console.WriteLine("rating:{0}, n:{1}, k1:{2}, k2:{3}", sharpe, n, k1, k2);
+                        else
+                        {
+                            //止损或者收盘强制平仓
+                            if ((position == 1 && minuteToday[j].Open<trade.openPrice*0.98 && minuteToday[j].Volume>0) || (j>=minuteToday.Count-3 &&position==1))
+                            {
+                                position = 0;
+                                double volume = minuteToday[j].Volume * 0.05;
+                                double price = minuteToday[j].Close;
+                                if (volume>0)
+                                {
+                                    price= minuteToday[j].Amount / minuteToday[j].Volume;
+                                }
+                                trade.closePrice = price;
+                                trade.closeTime = minuteToday[j].DateTime;
+                                trade.maxCloseAmount = volume*price;
+                                trade.yield = (trade.closePrice - trade.openPrice) / trade.openPrice * trade.maxOpenAmount;
+                                transactionData.Add(trade);
+                            }
+                        }
+                        
                     }
                 }
             }
-            Console.WriteLine("code:{4}, rating:{0}, n:{1}, k1:{2}, k2:{3}", maxSharpe, maxN, maxK1, maxK2, underlyingCode);
-            if (maxSharpe > -10)
-            {
-                var yield = getYieldList(startDate, endDate, maxN, maxK1, maxK2, loss);
-                yield = getYieldList(startDate, endDate, maxN, maxK1, maxK2, loss);
-                double nv = 1;
-                for (int i = 0; i < yield.Count(); i++)
-                {
-                    nv = nv * (yield[i] + 1);
-                }
-                Console.WriteLine(nv);
-                this.transactionData = getTransactionData(startDate, endDate, maxN, maxK1, maxK2, loss);
-                var dt = DataTableExtension.ToDataTable(transactionData);
-                var codeStr = underlyingCode.Split('.');
-                string name = string.Format("E:\\result\\DualTrust\\{0}.csv", codeStr[0]);
-                DataTableExtension.SaveCSV(dt, name);
-            }
+
 
         }
 
@@ -150,17 +177,42 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             //选取需要获取数据的交易日
             List<DateTime> myTradedays = new List<DateTime>();
             //从日线上观察波动剧烈的日期，并记录数据
-            foreach (var item in DailyKLine[underlyingCode])
+            for (int i = 1; i < DailyKLine[underlyingCode].Count; i++)
             {
-                if (item.High/item.Low-1>0.05)
+
+                var yesterday = DailyKLine[underlyingCode][i - 1];
+                var item = DailyKLine[underlyingCode][i];
+                if (yesterday==null || item==null)
                 {
-                    myTradedays.Add(item.DateTime.Date);
+                    continue;
+                }
+                double priceClose = yesterday.Close * item.AdjFactor / yesterday.AdjFactor;
+                if (item.High>priceClose*1.05)
+                {
+                    if (myTradedays.Contains(item.DateTime.Date) == false)
+                    {
+                        myTradedays.Add(item.DateTime.Date);
+                    }
+                    myTradedays.Add(DateTimeExtension.DateUtils.NextTradeDay(item.DateTime.Date));
                 }
             }
 
+
+            //foreach (var item in DailyKLine[underlyingCode])
+            //{
+            //    if (item.High/item.Low-1>0.05)
+            //    {
+            //        if (myTradedays.Contains(item.DateTime.Date) == false)
+            //        {
+            //            myTradedays.Add(item.DateTime.Date);
+            //        }
+            //        myTradedays.Add(DateTimeExtension.DateUtils.NextTradeDay(item.DateTime.Date));
+            //    }
+            //}
+
             getMinuteData(underlyingCode, myTradedays);
 
-            getTickData(underlyingCode, myTradedays);
+            //getTickData(underlyingCode, myTradedays);
         }
 
         //获取分钟线数据
@@ -172,7 +224,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     try
                     {
-                        var minuteNow = stockMinutelyRepo.GetStockTransaction(underlyingCode, date, date);
+                        var minuteNow = stockMinutelyRepo.GetStockTransactionFromLocalSqlByCode(underlyingCode, date, date);
                         Dictionary<DateTime, List<StockTransaction>> data = new Dictionary<DateTime, List<StockTransaction>>();
                         data.Add(date, minuteNow);
                         minutelyKLine.Add(underlyingCode, data);
@@ -187,7 +239,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     try
                     {
-                        var minuteNow = stockMinutelyRepo.GetStockTransaction(underlyingCode, date, date);
+                        var minuteNow = stockMinutelyRepo.GetStockTransactionFromLocalSqlByCode(underlyingCode, date, date);
                         var data = minutelyKLine[underlyingCode];
                         data.Add(date, minuteNow);
                     }
@@ -197,8 +249,6 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                         Console.WriteLine(e.Message);
                     }
                 }
-
-
             }
         }
 
@@ -224,7 +274,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                         Console.WriteLine(e.Message);
                     }
                 }
-                else if (minutelyKLine[underlyingCode].ContainsKey(date) == false)
+                else if (tick[underlyingCode].ContainsKey(date) == false)
                 {
                     try
                     {
@@ -328,7 +378,9 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         {
             Dictionary<string, StockIPOInfo> allDic = new Dictionary<string, StockIPOInfo>();
             this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
-            var dic = getStockList(tradedays, index);
+            List<DateTime> lastDate = new List<DateTime>();
+            lastDate.Add(tradedays.Last());
+            var dic = getStockList(lastDate, index);
             foreach (var stock in dic)
             {
                 if (stock.Value.IPODate > startDate)
