@@ -23,27 +23,35 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
     public class StockIndexBonus
     {
         private DateTime date;
-        private string index;
         private StockInfoRepository stockInfoRepo;
         private TransactionDateTimeRepository dateRepo;
         private WindReader windReader;
         private StockDailyRepository stockDailyRepo;
         private List<StockIPOInfo> stockInfo;
 
-        public StockIndexBonus(StockInfoRepository stockInfoRepo, StockDailyRepository stockDailyRepo,TransactionDateTimeRepository dateRepo,DateTime date,string index)
+        public StockIndexBonus(StockInfoRepository stockInfoRepo, StockDailyRepository stockDailyRepo,TransactionDateTimeRepository dateRepo,DateTime date)
         {
             this.date =DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(date);
-            this.index = index;
-            var indexInfoList=getDocumentFromFtp();
+            
             this.stockInfoRepo = stockInfoRepo;
             this.dateRepo = dateRepo;
             this.stockDailyRepo = stockDailyRepo;
             this.windReader = new WindReader();
             this.stockInfo = stockInfoRepo.GetStockListInfoFromSql();
-            var list=getIndexBonus(date,index,indexInfoList);
-            storeResults(list);
         }
-
+        
+        public void getBonusByIndex(string index)
+        {
+            var indexInfoList=getDocumentFromFtp(index);
+            List<string> codeList = new List<string>();
+            foreach (var item in indexInfoList)
+            {
+                codeList.Add(item.code);
+            }
+            stockInfoRepo.UpdateStockBonusDataFromWind(codeList);
+            var list=getIndexBonus(date,index,indexInfoList);
+            storeResults(list,index);
+        }
 
         private string getFileName(string index,DateTime date,string name,string type)
         {
@@ -65,7 +73,7 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
 
 
        
-        private List<indexStockInfo> getDocumentFromFtp()
+        private List<indexStockInfo> getDocumentFromFtp(string index)
         {
             FtpHelper ftp = new FtpHelper("192.168.38.213", "index", "dfzq1234");
             List<indexStockInfo> list = new List<indexStockInfo>();
@@ -111,7 +119,7 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
             return list;
         }
 
-        private void storeResults(List<StockBonusEstimate> list)
+        private void storeResults(List<StockBonusEstimate> list,string index)
         {
             var dt = DataTableExtension.ToDataTable(list);
             dt.Columns["code"].ColumnName = "代码";
@@ -243,7 +251,7 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
                             estimate.code = item.code;
                             estimate.secName = item.name;
                             estimate.dividend = item.dividend;
-                             estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
+                            estimate.dividendDate = DateTimeExtension.DateUtils.PreviousOrCurrentTradeDay(bonusLastYear[0].exDividendDate.AddYears(+1));
                             estimate.status = "去年分红1次;分红预案明确;分红日期未知";
                             estimate.shareRegisterDate = DateTimeExtension.DateUtils.LatestTradeDay(estimate.dividendDate.AddDays(-1));
                             if (estimate.dividendDate < now)

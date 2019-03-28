@@ -104,9 +104,94 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             return stockInfos;
         }
 
+        public DataTable UpdateStockBonusDataFromWind(List<string> stockCode)
+        {
+            var list = GetStockListInfoFromSql();
+            var dt = CreateBonusDataTable();
+            var updateDt = CreateBonusDataTable();
+            var bonusList = GetStockBonusListFromSql();
+            int number = 0;
+            foreach (var item in list)
+            {
+                if (stockCode.Contains(item.code)==false)
+                {
+                    continue;
+                }
+                DateTime startDate = item.IPODate.Date;
+                DateTime endDate = DateTime.Now.Date;
+                bool needToUpdate = false;
+                if (item.DelistDate != null && item.DelistDate < DateTime.Now.Date)
+                {
+                    endDate = item.DelistDate;
+                }
+                var bonusLatest = GetLatestStockBonusByCodeFromSql(bonusList, item.code);
+                if (bonusLatest.code == null)
+                {
+                    needToUpdate = true;
+                }
+                else
+                {
+                    DateTime updateTime = bonusLatest.updateTime;
+                    double lastUpdateDays = (DateTime.Now.Date - updateTime.Date).TotalDays;
+
+                    double lastDividendDays = (DateTime.Now.Date - bonusLatest.exDividendDate.Date).TotalDays;
+                    if (lastUpdateDays >= 1 && item.DelistDate > DateTime.Now.Date)
+                    {
+                        needToUpdate = true;
+                    }
+                    if (item.DelistDate <= DateTime.Now.Date && updateTime <= item.DelistDate)
+                    {
+                        needToUpdate = true;
+                    }
+                    startDate = bonusLatest.exDividendDate.AddDays(1);
+                    if (startDate < updateTime)
+                    {
+                        startDate = updateTime;
+                    }
+                }
+                if (endDate < startDate)
+                {
+                    endDate = startDate;
+                }
+                if (needToUpdate == true)
+                {
+                    var rawData = windReader.GetDataSet("corporationaction", string.Format("startdate={1};enddate={2};windcode={0}", item.code, startDate, endDate));
+                    if (rawData.codeList != null)
+                    {
+                        int num = rawData.codeList.Length;
+                        int column = rawData.fieldList.Length;
+                        var bonus = (object[])rawData.data;
+
+                        for (int i = 0; i < num; i++)
+                        {
+                            int index = i * column;
+                            if (bonus[index + 4] == null)
+                            {
+                                continue;
+                            }
+                            dt.Rows.Add(new object[] { bonus[index], bonus[index + 1], bonus[index + 2], bonus[index + 3], bonus[index + 4], bonus[index + 5], bonus[index + 6], bonus[index + 7], bonus[index + 8], bonus[index + 9], bonus[index + 10], DateTime.Now });
+                        }
+                        number += num;
+                    }
+                    else
+                    {
+                        //if (bonusLatest.code != null)
+                        //{
+                        //    updateDt.Rows.Add(new object[] { bonusLatest.exDividendDate, bonusLatest.code, bonusLatest.secName, bonusLatest.cashPayoutRatio, bonusLatest.stockSplitRatio, bonusLatest.stockDividendRatio, bonusLatest.seoRatio, bonusLatest.seoPrice, bonusLatest.rightsIssuePrice, bonusLatest.rightsIssueRatio, bonusLatest.exDividendNote, DateTime.Now });
+                        //}
+
+                    }
+                }
+                //Console.WriteLine("update numbers:{0}", number);
+            }
+            InsertStockBonusDataToSql(dt);
+            return dt;
+        }
+
+
 
         //更新所有A股历史分红信息,每次更新需要更新表的更新时间
-        public DataTable UpdateStockBonusDataFromWind()
+        public DataTable UpdateAllStockBonusDataFromWind()
         {
             UpdateStockInfoToNow();
             var list = GetStockListInfoFromSql();
@@ -178,16 +263,15 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                     }
                     else
                     {
-                        if (bonusLatest.code != null)
-                        {
-                            updateDt.Rows.Add(new object[] { bonusLatest.exDividendDate, bonusLatest.code, bonusLatest.secName, bonusLatest.cashPayoutRatio, bonusLatest.stockSplitRatio, bonusLatest.stockDividendRatio, bonusLatest.seoRatio, bonusLatest.seoPrice, bonusLatest.rightsIssuePrice, bonusLatest.rightsIssueRatio, bonusLatest.exDividendNote, DateTime.Now });
-                        }
+                        //if (bonusLatest.code == null)
+                        //{
+                        //    updateDt.Rows.Add(new object[] { bonusLatest.exDividendDate, bonusLatest.code, bonusLatest.secName, bonusLatest.cashPayoutRatio, bonusLatest.stockSplitRatio, bonusLatest.stockDividendRatio, bonusLatest.seoRatio, bonusLatest.seoPrice, bonusLatest.rightsIssuePrice, bonusLatest.rightsIssueRatio, bonusLatest.exDividendNote, DateTime.Now });
+                        //}
 
                     }
                 }
                 Console.WriteLine("update numbers:{0}", number);
             }
-            ModifyStockBonusDataToSql(updateDt);
             InsertStockBonusDataToSql(dt);
             return dt;
         }
@@ -247,32 +331,32 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         }
 
 
-        //先删除再添加
-        private void ModifyStockBonusDataToSql(DataTable dt)
-        {
-            try
-            {
-                CreateStockBonusInfoInDB();
-            }
-            catch
-            {
-                logger.Warn("[Common].[dbo].[StockBonusInfo] create failed!");
-            }
-            foreach (DataRow dr in dt.Rows)
-            {
-                for (int i = 3; i <= 9; i++)
-                {
-                    if (dr[i] == DBNull.Value)
-                    {
-                        dr[i] = 0;
-                    }
-                }
+        ////先删除再添加
+        //private void ModifyStockBonusDataToSql(DataTable dt)
+        //{
+        //    try
+        //    {
+        //        CreateStockBonusInfoInDB();
+        //    }
+        //    catch
+        //    {
+        //        logger.Warn("[Common].[dbo].[StockBonusInfo] create failed!");
+        //    }
+        //    foreach (DataRow dr in dt.Rows)
+        //    {
+        //        for (int i = 3; i <= 9; i++)
+        //        {
+        //            if (dr[i] == DBNull.Value)
+        //            {
+        //                dr[i] = 0;
+        //            }
+        //        }
 
 
-            }
+        //    }
 
-            sqlWriter.InsertBulk(dt, "[Common].[dbo].[StockBonusInfo]");
-        }
+        //    sqlWriter.InsertBulk(dt, "[Common].[dbo].[StockBonusInfo]");
+        //}
 
         private void InsertStockBonusDataToSql(DataTable dt)
         {
