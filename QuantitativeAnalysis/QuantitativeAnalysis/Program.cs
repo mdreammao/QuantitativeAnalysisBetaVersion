@@ -74,13 +74,13 @@ namespace QuantitativeAnalysis
             // moving.backtest("000693.SZ", "2010-01-01".ToDateTime(), "2019-03-09".ToDateTime());
             // moving.backtestAllStock("2010-01-01".ToDateTime(), "2019-03-08".ToDateTime());
             //var tmp=stockMinutelyRepo.GetStockTransactionFromLocalSqlByCodeWithRedis("000905.SH", "2018-10-18".ToDateTime(), "2018-10-18".ToDateTime());
-            priceUnusualMoving moving2 = new priceUnusualMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
-            moving2.backtestByIndexCode("000905.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
+            //priceUnusualMoving moving2 = new priceUnusualMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
+            //moving2.backtestByIndexCode("000905.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
             //moving2.backtest("600000.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
             
 
-            //Monitor.Bond.ConvertibleBond.Intraday1 bond = new Monitor.Bond.ConvertibleBond.Intraday1(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
-            //bond.backtest("2010-01-01".ToDateTime(), "2019-03-04".ToDateTime());
+            Monitor.Bond.ConvertibleBond.Intraday1 bond = new Monitor.Bond.ConvertibleBond.Intraday1(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
+            bond.backtest("2010-01-01".ToDateTime(), "2019-03-28".ToDateTime());
 
 
             //该区域为测试influxdb数据库
