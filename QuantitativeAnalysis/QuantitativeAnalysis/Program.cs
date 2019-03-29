@@ -93,8 +93,8 @@ namespace QuantitativeAnalysis
 
             //该区域为跑参数或者数据
             #region
-            //MinuteDataRecord recordMinute = new MinuteDataRecord(stockMinutelyRepo, stockDailyRepo, dateRepo, stockInfoRepo,ConnectionType.Local2017);
-            // recordMinute.getStockMinutelyData("2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
+            MinuteDataRecord recordMinute = new MinuteDataRecord(stockMinutelyRepo, stockDailyRepo, dateRepo, stockInfoRepo,ConnectionType.Local2017);
+            recordMinute.getStockMinutelyData("2007-01-01".ToDateTime(), "2019-03-27".ToDateTime());
             //recordMinute.deleteOldDataAll("2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
             //recordMinute. BulkLoadStockMinuteOrerByCode("399001.SZ", "2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
             //Monitor.Bond.ConvertibleBond.IntradayMonitor bond = new Monitor.Bond.ConvertibleBond.IntradayMonitor(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
