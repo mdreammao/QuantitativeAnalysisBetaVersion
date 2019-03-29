@@ -91,7 +91,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 }
             }
             var dt = DataTableExtension.ToDataTable(transactionData);
-            string name = string.Format("E:\\result\\bond\\convertibleBond2019030602.csv");
+            string name = string.Format("E:\\result\\bond\\convertibleBond20190328.csv");
             DataTableExtension.SaveCSV(dt, name);
         }
 
@@ -708,6 +708,10 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                         }
                         var bondData = stockDailyRepo.GetStockTransaction(info.code, info.startDate,endTime);
                         dailyData.Add(info.code, bondData);
+                        if (info.startDate>endTime)
+                        {
+                            continue;
+                        }
                         var tempDataTable = windReader.GetDailyDataTable(info.code, "clause_conversion2_swapshareprice,underlyingcode,clause_conversion_2_swapsharestartdate,clause_conversion_2_swapshareenddate", info.startDate, endTime);
                         List<ConvertibleBondDailyInfo> bondDaily = new List<ConvertibleBondDailyInfo>();
                         foreach (DataRow dt in tempDataTable.Rows)
@@ -729,10 +733,9 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-
-                throw;
+                Console.WriteLine(e.Message);
             }
 
 
@@ -746,7 +749,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 for (int i = 1; i < data.Count(); i++)
                 {
                     DateTime day = data[i].DateTime.Date;
-                    if (day<startDate)
+                    if (day<startDate || data[i]==null )
                     {
                         continue;
                     }

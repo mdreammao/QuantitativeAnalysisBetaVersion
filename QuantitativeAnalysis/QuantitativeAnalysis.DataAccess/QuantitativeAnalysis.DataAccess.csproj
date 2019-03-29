@@ -101,6 +101,7 @@
     <Compile Include="Option\DefaultStockOptionDailyDataSource.cs" />
     <Compile Include="Option\DefaultStockOptionTickDataSource.cs" />
     <Compile Include="Option\OptionInfoRepository.cs" />
+    <Compile Include="Stock\BondInfoRepository.cs" />
     <Compile Include="Stock\DefaultStockInfoDailyDataSource.cs" />
     <Compile Include="Stock\DefaultStockTickDataSource.cs" />
     <Compile Include="Extensions.cs" />

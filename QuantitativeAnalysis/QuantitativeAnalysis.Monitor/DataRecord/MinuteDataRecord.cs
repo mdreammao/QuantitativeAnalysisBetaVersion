@@ -38,7 +38,7 @@ namespace QuantitativeAnalysis.Monitor.DataRecord
         private WindReader windReader = new WindReader();
 
 
-        public MinuteDataRecord(StockMinuteRepository stockMinutelyRepo, StockDailyRepository stockDailyRepo, TransactionDateTimeRepository dateRepo, StockInfoRepository stockInfoRepo, ConnectionType type= ConnectionType.Local2017)
+        public MinuteDataRecord(StockMinuteRepository stockMinutelyRepo, StockDailyRepository stockDailyRepo, TransactionDateTimeRepository dateRepo, StockInfoRepository stockInfoRepo, ConnectionType type= ConnectionType.Server170)
         {
             this.stockMinutelyRepo = stockMinutelyRepo;
             this.stockDailyRepo = stockDailyRepo;
@@ -403,7 +403,7 @@ end",firstDate,firstYear,firstMonth,endYear,endMonth,code.ToUpper());
       ,[Close] as [close]
       ,[Volume] as [volume]
       ,[Amount] as [amount]
-  FROM [1MinuteLine].[dbo].[Min1_{0}_{1}] where tdate>={2} and tdate<={3} order by [DateTime]",
+  FROM [MinuteLine].[dbo].[Min1_{0}_{1}] where tdate>={2} and tdate<={3} order by [DateTime]",
         code.Split('.')[0], code.Split('.')[1],startDate.ToString("yyyyMMdd"), endDate.ToString("yyyyMMdd"));
             dt = sqlReaderSource.GetDataTable(sqlStr);
             return dt;
