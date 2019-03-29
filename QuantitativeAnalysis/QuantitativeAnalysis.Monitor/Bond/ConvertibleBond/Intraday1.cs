@@ -91,7 +91,8 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 }
             }
             var dt = DataTableExtension.ToDataTable(transactionData);
-            string name = string.Format("E:\\result\\bond\\convertibleBond20190328.csv");
+            var nowStr = DateTime.Now.ToString("yyyyMMddhhmm");
+            string name = string.Format("E:\\result\\bond\\convertibleBond{0}.csv",nowStr);
             DataTableExtension.SaveCSV(dt, name);
         }
 
@@ -163,7 +164,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                         {
                             position = 1;
                             openPrice = maxOpenAmount / bondVolume;
-                            maxOpenAmount = Math.Min(maxOpenAmount, 1000000);
+                            maxOpenAmount = Math.Min(maxOpenAmount, 100000);
                             openTime = bondDataNow.TransactionDateTime;
                             recordNow.code = bond;
                             recordNow.maxOpenAmount = maxOpenAmount;
@@ -246,7 +247,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                             recordNow.closePrice = closePrice;
                             recordNow.closeTime = closeTime;
                             recordNow.closeStatus = "收盘强平";
-                            recordNow.yield = (recordNow.closePrice - recordNow.openPrice) / recordNow.openPrice;
+                            recordNow.yield =recordNow.maxOpenAmount*(recordNow.closePrice - recordNow.openPrice) / recordNow.openPrice;
                             record.Add(recordNow);
                             index = index + i;
                             break;
@@ -749,7 +750,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 for (int i = 1; i < data.Count(); i++)
                 {
                     DateTime day = data[i].DateTime.Date;
-                    if (day<startDate || data[i]==null )
+                    if (data[i] == null || day < startDate)
                     {
                         continue;
                     }

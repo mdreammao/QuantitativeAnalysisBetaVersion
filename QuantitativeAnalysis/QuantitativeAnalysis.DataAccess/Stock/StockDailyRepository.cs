@@ -22,6 +22,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         private RedisReader redisReader = new RedisReader();
         private RedisWriter redisWriter = new RedisWriter();
         private SqlServerReader sqlReader;
+        private SqlServerReader sqlReader170;
         private SqlServerWriter sqlWriter;
         private TransactionDateTimeRepository dateRepo;
         private IDataSource dataSource;
@@ -31,6 +32,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             sqlReader = new SqlServerReader(type);
             sqlWriter = new SqlServerWriter(type);
             dateRepo = new TransactionDateTimeRepository(type);
+            sqlReader170 = new SqlServerReader(Infrastructure.ConnectionType.Server170);
             this.dataSource = dataSource;
         }
 
@@ -127,9 +129,12 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             var nonExistedDateIntervalInSql = Computor.GetNoExistedInterval<DateTime>(tradingDates, existedDateInSql);
             foreach (var item in nonExistedDateIntervalInSql)
             {
-                if (item.Value<=new DateTime(2019,3,8))
+                if (item.Value<=new DateTime(2019,3,28))
                 {
-
+                    //var dt = GetStockDailyTransactionFromSqlServer170(code, item.Key, item.Value);
+                    //sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
+                    //var dt = dataSource.Get(code, item.Key, item.Value);
+                    //sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
                 }
                 else
                 {
@@ -138,6 +143,23 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                 }
                 
             }
+        }
+
+
+        private DataTable GetStockDailyTransactionFromSqlServer170(string code, DateTime begin, DateTime end)
+        {
+            var sqlStr = string.Format(@"SELECT [stkcd] as [Code]
+	  ,convert(datetime,stuff(stuff(rtrim(tdate),5,0,'-'),8,0,'-')) as [DateTime] 
+      ,[Open] as [open]
+      ,[High] as [high]
+      ,[Low] as [low]
+      ,[Close] as [close]
+      ,[Volume] as [volume]
+      ,[Amount] as [amount]
+  FROM [DayLine].[dbo].[DailyData] where tdate>={2} and tdate<={3} order by [DateTime]",
+        code.Split('.')[0], code.Split('.')[1], begin.ToString("yyyyMMdd"), end.ToString("yyyyMMdd"));
+            var res = sqlReader170.GetDataTable(sqlStr);
+            return res;
         }
 
         private List<DateTime> GetExistedDateInSql(string code, DateTime start, DateTime end)
