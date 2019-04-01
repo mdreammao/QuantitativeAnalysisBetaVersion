@@ -17,9 +17,18 @@ namespace QuantitativeAnalysis.DataAccess.Infrastructure
             {
                 if (!instance.isconnected())
                 {
-                    int code = instance.start();
-                    if (code != 0)
-                        throw new Exception(string.Format("不能打开Wind，错误代码：{0},{1}", code, instance.getErrorMsg(code)));
+                    try
+                    {
+                        int code = instance.start();
+                        if (code != 0)
+                            throw new Exception(string.Format("不能打开Wind，错误代码：{0},{1}", code, instance.getErrorMsg(code)));
+                    }
+                    catch (Exception e)
+                    {
+
+                        Console.WriteLine(string.Format("不能打开Wind，错误代码：{0}", e.Message));
+                    }
+                    
                 }
                 return instance;
             }
