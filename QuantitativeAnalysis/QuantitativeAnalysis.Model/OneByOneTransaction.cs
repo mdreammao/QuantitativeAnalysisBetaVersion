@@ -22,6 +22,15 @@ namespace QuantitativeAnalysis.Model
         public double parameter { get; set; }
     }
 
+    public class GrabCeilingTransaction: OneByOneTransaction
+    {
+        public double fiveMinutesIncreaseBefore { get; set; }
+        public double fiveMinutesIncreaseAfter { get; set; }
+        public double oneMinuteIncreaseAfter { get; set; }
+        public double limitPrice { get; set; }
+    }
+
+
     public class OneByOneTransactionDaily : OneByOneTransaction
     {
         public double openAdjust { get; set; }

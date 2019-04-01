@@ -114,6 +114,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             double strike = bondDailyInfoNow.conversionPrice;
             double numbers = 100 / strike;
             double delta = getOptionDelta(date,bond,stock);
+            delta =delta+0.2;
             double bondEstimatePrice = getEstimateBondPrice(date, bond, stock);
             if (bondEstimatePrice<previousBondPrice)
             {
@@ -143,7 +144,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
             double maxCloseAmount = 0;
             double longMaxPrice = 0;
             string status = "";
-            TimeSpan lastOpenTime = new TimeSpan(14, 57, 00);
+            TimeSpan lastOpenTime = new TimeSpan(14, 55, 00);
             TimeSpan firstOpenTime = new TimeSpan(9, 30, 00);
             var recordNow = new OneByOneTransaction();
             int index = 0;
@@ -160,11 +161,10 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                         var bondDataNow = allData[index + 1];
                         maxOpenAmount = bondDataNow.Ask1 * bondDataNow.AskV1;
                         double bondVolume = bondDataNow.AskV1;
-                        if (maxOpenAmount>=500000 && (maxOpenAmount/ bondVolume)<300)
+                        if (maxOpenAmount>=10000 && (maxOpenAmount/ bondVolume)<1000)
                         {
                             position = 1;
                             openPrice = maxOpenAmount / bondVolume;
-                            maxOpenAmount = Math.Min(maxOpenAmount, 100000);
                             openTime = bondDataNow.TransactionDateTime;
                             recordNow.code = bond;
                             recordNow.maxOpenAmount = maxOpenAmount;
@@ -247,7 +247,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                             recordNow.closePrice = closePrice;
                             recordNow.closeTime = closeTime;
                             recordNow.closeStatus = "收盘强平";
-                            recordNow.yield =recordNow.maxOpenAmount*(recordNow.closePrice - recordNow.openPrice) / recordNow.openPrice;
+                            recordNow.yield =(recordNow.closePrice - recordNow.openPrice) / recordNow.openPrice;
                             record.Add(recordNow);
                             index = index + i;
                             break;
@@ -749,11 +749,12 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 Console.WriteLine(num);
                 for (int i = 1; i < data.Count(); i++)
                 {
-                    DateTime day = data[i].DateTime.Date;
-                    if (data[i] == null || day < startDate)
+                    if (data[i] == null || data[i].DateTime.Date < startDate)
                     {
                         continue;
                     }
+                    DateTime day = data[i].DateTime.Date;
+                    
                     //获取其对应的可转债
                     bondCode = getConvetibleCodeByStockCode(code, day, bondInfo);
                     //判断是否涨停

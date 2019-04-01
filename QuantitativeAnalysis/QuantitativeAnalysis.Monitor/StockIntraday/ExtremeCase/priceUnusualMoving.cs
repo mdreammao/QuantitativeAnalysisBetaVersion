@@ -30,7 +30,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
         private Logger mylog = NLog.LogManager.GetCurrentClassLogger();
         private TransactionDateTimeRepository dateRepo;
         private StockDailyRepository stockDailyRepo;
-        private List<OneByOneTransaction> transactionData=new List<OneByOneTransaction>();
+        private List<GrabCeilingTransaction> transactionData=new List<GrabCeilingTransaction>();
         private StockMinuteRepository stockMinutelyRepo;
         private StockTickRepository stockTickRepo;
         private SqlServerWriter sqlWriter;
@@ -82,7 +82,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 {
                     stockStart = stock.IPODate.AddDays(10);
                 }
-                backtest(stock.code, stockStart, stockEnd);
+                backtestOpposite(stock.code, stockStart, stockEnd);
                 num += 1;
                 Console.WriteLine("完成 {0} of 500!", num);
             }
@@ -93,6 +93,131 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             string name = string.Format("E:\\result\\grabCeiling\\{0}_{1}.csv", codeStr[0],now);
             DataTableExtension.SaveCSV(dt, name);
         }
+
+
+        public void backtestOpposite(string underlyingCode, DateTime startDate, DateTime endDate, double parameter = 0.08)
+        {
+            dataPrepare(underlyingCode, startDate, endDate, 0);
+            //string index = "000905.SH";
+            //dataPrepareAll(index, startDate, endDate);
+            var daily = DailyKLine[underlyingCode];
+            var indexDaily = DailyKLine[index];
+            var minutely = minutelyKLine[underlyingCode];
+            //var ticks = tick[underlyingCode];
+            for (int i = 1; i < daily.Count()-1; i++)
+            {
+                var today = daily[i];
+                var yesterday = daily[i - 1];
+                var tomorrow = daily[i + 1];
+                var indexToday = indexDaily[i];
+                var indexYesterday = indexDaily[i - 1];
+                if (yesterday == null || today == null || indexYesterday == null || today.TradeStatus != "交易")
+                {
+                    continue;
+                }
+                double preClose = yesterday.Close * today.AdjFactor / yesterday.AdjFactor;
+                double limitPrice = Math.Round(preClose * 1.1, 2);
+                if (today.High > preClose * (1 + parameter))
+                {
+                    var minuteToday = minutely[today.DateTime.Date];
+                    foreach (var item in minuteToday)
+                    {
+                        if (item.Volume > 0 && item.Amount == 0)
+                        {
+                            item.Amount = item.Volume * item.Close;
+                        }
+                    }
+                    var indexMinuteToday = minutelyKLine[index][today.DateTime.Date];
+                    if (indexMinuteToday.Count == 0 || minuteToday.Count == 0)
+                    {
+                        continue;
+                    }
+                    double position = 0;
+                    double openIndex = 0;
+                    GrabCeilingTransaction trade = new GrabCeilingTransaction();
+                    for (int j = 5; j < minuteToday.Count(); j++)
+                    {
+                        if (minuteToday[j].Open > preClose * (1 + parameter) && position == 0 && minuteToday[j].Open < preClose * (1 + parameter+0.01) && j <= minuteToday.Count() - 10 && indexMinuteToday[j].Open > indexYesterday.Close*0.9) //股票价格达到8%
+                        {
+                            double volume = minuteToday[j].Volume * 0.05;
+                            if (volume > 0)
+                            {
+                                position = -1;
+                                // double price = minuteToday[j].Amount / minuteToday[j].Volume;
+                                double price = minuteToday[j].Open * (1 - feeRatioSell);
+                                trade = new GrabCeilingTransaction();
+                                trade.code = underlyingCode;
+                                trade.date = today.DateTime.Date;
+                                trade.openTime = minuteToday[j].DateTime;
+                                trade.openPrice = price;
+                                trade.position = position;
+                                trade.maxOpenAmount = Math.Min(volume * price, 100000);
+                                trade.parameter = parameter;
+                                openIndex = j;
+                                trade.limitPrice = limitPrice;
+                                trade.fiveMinutesIncreaseBefore = minuteToday[j].Open / minuteToday[j - 5].Open - 1;
+                                trade.fiveMinutesIncreaseAfter = minuteToday[j + 5].Open / minuteToday[j].Open - 1;
+                                trade.oneMinuteIncreaseAfter = minuteToday[j + 1].Open / minuteToday[j].Open - 1;
+                            }
+                        }
+                        else if (position == -1)
+                        {
+                            //止损或者收盘强制平仓
+
+                            if ((j >= minuteToday.Count - 5) || (j > openIndex + 60))
+                            {
+                                position = 0;
+                                double volume = minuteToday[j].Volume * 0.05;
+                                double price = minuteToday[j].Close;
+                                if (volume > 0)
+                                {
+                                    //price= minuteToday[j].Amount / minuteToday[j].Volume;
+                                    price = minuteToday[j].Open * (1 + feeRatioBuy);
+                                }
+                                trade.closePrice = price;
+                                trade.closeTime = minuteToday[j].DateTime;
+                                if (minuteToday[j].Open==limitPrice)
+                                {
+                                    trade.closePrice = tomorrow.Open * (1 + feeRatioBuy);
+                                    trade.closeTime = tomorrow.DateTime.AddHours(9).AddMinutes(30);
+                                }
+                                trade.maxCloseAmount = Math.Min(volume * price, 100000);
+                                trade.yield = -(trade.closePrice - trade.openPrice) / trade.openPrice;
+                                transactionData.Add(trade);
+                                break;
+                            }
+                            if (minuteToday[j].Open > trade.openPrice && minuteToday[j].Volume > 0)
+                            {
+                                position = 0;
+                                double volume = minuteToday[j].Volume * 0.05;
+                                double price = minuteToday[j].Close;
+                                if (volume > 0)
+                                {
+                                    //price= minuteToday[j].Amount / minuteToday[j].Volume;
+                                    price = minuteToday[j].Low * (1 + feeRatioBuy);
+                                }
+                                trade.closePrice = price;
+                                trade.closeTime = minuteToday[j].DateTime;
+                                if (minuteToday[j].Open == limitPrice)
+                                {
+                                    trade.closePrice = tomorrow.Open * (1 + feeRatioBuy);
+                                    trade.closeTime = tomorrow.DateTime.AddHours(9).AddMinutes(30);
+                                }
+                                trade.maxCloseAmount = Math.Min(volume * price, 100000);
+                                trade.yield = -(trade.closePrice - trade.openPrice) / trade.openPrice;
+                                transactionData.Add(trade);
+                                break;
+                            }
+                        }
+
+                    }
+                }
+            }
+
+
+        }
+
+
 
         public void backtest(string underlyingCode, DateTime startDate, DateTime endDate,double parameter=0.08)
         {
@@ -114,6 +239,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                     continue;
                 }
                 double preClose = yesterday.Close * today.AdjFactor / yesterday.AdjFactor;
+                double limitPrice = Math.Round(preClose * 1.1, 2);
                 if (today.High>preClose*(1+parameter))
                 {
                     var minuteToday = minutely[today.DateTime.Date];
@@ -131,10 +257,10 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                     }
                     double position = 0;
                     double openIndex = 0;
-                    OneByOneTransaction trade = new OneByOneTransaction();
-                    for (int j = 0; j < minuteToday.Count(); j++)
+                    GrabCeilingTransaction trade = new GrabCeilingTransaction();
+                    for (int j = 5; j < minuteToday.Count(); j++)
                     {
-                        if (minuteToday[j].Open>preClose * (1 + parameter) && position==0 && minuteToday[j].Open<preClose * (1 + parameter+0.005) && j<= minuteToday.Count()-10 && indexMinuteToday[j].Open>indexYesterday.Close) //股票价格达到8%买入
+                        if (minuteToday[j].Open>preClose * (1 + parameter) && position==0 && minuteToday[j].Open< limitPrice*0.995 && j<= minuteToday.Count()-10 && indexMinuteToday[j].Open>indexYesterday.Close) //股票价格达到8%且五分钟涨幅不超过4%时候买入
                         {
                             double volume =minuteToday[j].Volume * 0.05;
                             if (volume>0)
@@ -142,7 +268,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                                 position = 1;
                                 // double price = minuteToday[j].Amount / minuteToday[j].Volume;
                                 double price = minuteToday[j].Open * (1 + feeRatioBuy);
-                                trade = new OneByOneTransaction();
+                                trade = new GrabCeilingTransaction();
                                 trade.code = underlyingCode;
                                 trade.date = today.DateTime.Date;
                                 trade.openTime = minuteToday[j].DateTime;
@@ -151,13 +277,16 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                                 trade.maxOpenAmount =Math.Min(volume*price,100000);
                                 trade.parameter = parameter;
                                 openIndex = j;
+                                trade.fiveMinutesIncreaseBefore = minuteToday[j].Open / minuteToday[j - 5].Open - 1;
+                                trade.fiveMinutesIncreaseAfter = minuteToday[j + 5].Open / minuteToday[j].Open - 1;
+                                trade.oneMinuteIncreaseAfter = minuteToday[j + 1].Open / minuteToday[j].Open - 1;
                             }
                         }
                         else if (position==1)
                         {
                             //止损或者收盘强制平仓
 
-                            if ((minuteToday[j].Open<trade.openPrice*0.99 && minuteToday[j].Volume>0) || (j>=minuteToday.Count-5) || (j>openIndex+20))
+                            if ((minuteToday[j].Open<trade.openPrice*0.9 && minuteToday[j].Volume>0) || (j>=minuteToday.Count-5) || (j>openIndex+20))
                             {
                                 position = 0;
                                 double volume = minuteToday[j].Volume * 0.05;
@@ -172,6 +301,24 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                                 trade.maxCloseAmount =Math.Min(volume*price,100000);
                                 trade.yield = (trade.closePrice - trade.openPrice) / trade.openPrice * trade.maxOpenAmount;
                                 transactionData.Add(trade);
+                                break;
+                            }
+                            if (minuteToday[j].Low < trade.openPrice * 0.995 && minuteToday[j].Volume > 0)
+                            {
+                                position = 0;
+                                double volume = minuteToday[j].Volume * 0.05;
+                                double price = minuteToday[j].Close;
+                                if (volume > 0)
+                                {
+                                    //price= minuteToday[j].Amount / minuteToday[j].Volume;
+                                    price = minuteToday[j].Low * (1 - feeRatioSell);
+                                }
+                                trade.closePrice = price;
+                                trade.closeTime = minuteToday[j].DateTime;
+                                trade.maxCloseAmount = Math.Min(volume * price, 100000);
+                                trade.yield = (trade.closePrice - trade.openPrice) / trade.openPrice * trade.maxOpenAmount;
+                                transactionData.Add(trade);
+                                break;
                             }
                         }
                         
@@ -349,10 +496,10 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             return sharpe + returnAVG * 10;
         }
 
-        private List<OneByOneTransaction> getTransactionData(DateTime startDate, DateTime endDate, int N, double K1, double K2, double lossStopRatio = 0.02)
+        private List<GrabCeilingTransaction> getTransactionData(DateTime startDate, DateTime endDate, int N, double K1, double K2, double lossStopRatio = 0.02)
         {
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
-            List<OneByOneTransaction> list = new List<OneByOneTransaction>();
+            List<GrabCeilingTransaction> list = new List<GrabCeilingTransaction>();
             foreach (var date in tradedays)
             {
                 var transaction = computeDailyWithRecord(date, N, K1, K2, lossStopRatio);
@@ -389,9 +536,9 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
 
 
         //按照给定参数回测
-        private OneByOneTransaction computeDailyWithRecord(DateTime date, int N, double K1, double K2, double lossStopRatio)
+        private GrabCeilingTransaction computeDailyWithRecord(DateTime date, int N, double K1, double K2, double lossStopRatio)
         {
-            OneByOneTransaction result = new OneByOneTransaction();
+            GrabCeilingTransaction result = new GrabCeilingTransaction();
 
                 
 
