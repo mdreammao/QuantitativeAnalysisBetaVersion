@@ -77,10 +77,10 @@ namespace QuantitativeAnalysis
             //priceUnusualMoving moving2 = new priceUnusualMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
             //moving2.backtestByIndexCode("000905.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
             //moving2.backtest("600000.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
-            
 
-            Monitor.Bond.ConvertibleBond.Intraday1 bond = new Monitor.Bond.ConvertibleBond.Intraday1(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
-            bond.backtest("2010-01-01".ToDateTime(), "2019-03-28".ToDateTime());
+
+            //Monitor.Bond.ConvertibleBond.Intraday1 bond = new Monitor.Bond.ConvertibleBond.Intraday1(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
+            //bond.backtest("2010-01-01".ToDateTime(), "2019-03-28".ToDateTime());
 
 
             //该区域为测试influxdb数据库
@@ -93,16 +93,16 @@ namespace QuantitativeAnalysis
 
             //该区域为跑参数或者数据
             #region
-            MinuteDataRecord recordMinute = new MinuteDataRecord(stockMinutelyRepo, stockDailyRepo, dateRepo, stockInfoRepo,ConnectionType.Local2017);
-            recordMinute.getStockMinutelyData("2007-01-01".ToDateTime(), "2019-03-27".ToDateTime());
+            //MinuteDataRecord recordMinute = new MinuteDataRecord(stockMinutelyRepo, stockDailyRepo, dateRepo, stockInfoRepo,ConnectionType.Server170);
+            //recordMinute.getStockMinutelyData("2007-01-01".ToDateTime(), "2019-03-27".ToDateTime());
             //recordMinute.deleteOldDataAll("2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
             //recordMinute. BulkLoadStockMinuteOrerByCode("399001.SZ", "2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
             //Monitor.Bond.ConvertibleBond.IntradayMonitor bond = new Monitor.Bond.ConvertibleBond.IntradayMonitor(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
 
-            //StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay);
-            //myBonus.getBonusByIndex("000016.SH");
-            //myBonus.getBonusByIndex("000300.SH");
-            //myBonus.getBonusByIndex("000905.SH");
+            StockIndexBonus myBonus = new StockIndexBonus(stockInfoRepo, stockDailyRepo, dateRepo, lastDay);
+            myBonus.getBonusByIndex("000016.SH");
+            myBonus.getBonusByIndex("000300.SH");
+            myBonus.getBonusByIndex("000905.SH");
 
             //IndexAnalysis indexAnalysis = new IndexAnalysis(dateRepo, "2019-02-11".ToDateTime());
             //indexAnalysis.differ("510180.OF", "000300.SH");
