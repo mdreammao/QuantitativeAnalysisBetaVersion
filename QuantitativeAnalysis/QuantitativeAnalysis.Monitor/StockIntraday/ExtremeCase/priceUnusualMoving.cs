@@ -84,7 +84,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                 }
                 backtestOpposite(stock.code, stockStart, stockEnd);
                 num += 1;
-                Console.WriteLine("完成 {0} of 500!", num);
+                Console.WriteLine("完成 {0} of 300!", num);
             }
             //存入交易信息
             var dt = DataTableExtension.ToDataTable(transactionData);
@@ -104,11 +104,12 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             var indexDaily = DailyKLine[index];
             var minutely = minutelyKLine[underlyingCode];
             //var ticks = tick[underlyingCode];
-            for (int i = 1; i < daily.Count()-1; i++)
+            for (int i = 1; i < daily.Count()-2; i++)
             {
                 var today = daily[i];
                 var yesterday = daily[i - 1];
                 var tomorrow = daily[i + 1];
+                var tomorrow2 = daily[i + 2];
                 var indexToday = indexDaily[i];
                 var indexYesterday = indexDaily[i - 1];
                 if (yesterday == null || today == null || indexYesterday == null || today.TradeStatus != "交易")
@@ -145,6 +146,14 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                                 position = -1;
                                 // double price = minuteToday[j].Amount / minuteToday[j].Volume;
                                 double price = minuteToday[j].Open * (1 - feeRatioSell);
+                                if (minuteToday[j].Amount > 0)
+                                {
+                                    price = minuteToday[j].Amount / minuteToday[j].Volume * (1 - feeRatioSell);
+                                }
+                                else
+                                {
+                                    price = minuteToday[j].Open * (1 - feeRatioSell);
+                                }
                                 trade = new GrabCeilingTransaction();
                                 trade.code = underlyingCode;
                                 trade.date = today.DateTime.Date;
@@ -164,22 +173,38 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                         {
                             //止损或者收盘强制平仓
 
-                            if ((j >= minuteToday.Count - 5) || (j > openIndex + 60))
+                            if ((j >= minuteToday.Count - 5) || (j > openIndex + 60) || (j > openIndex + 20 && trade.openPrice<minuteToday[j].Open))
                             {
                                 position = 0;
                                 double volume = minuteToday[j].Volume * 0.05;
                                 double price = minuteToday[j].Close;
                                 if (volume > 0)
                                 {
-                                    //price= minuteToday[j].Amount / minuteToday[j].Volume;
-                                    price = minuteToday[j].Open * (1 + feeRatioBuy);
+                                    if (minuteToday[j].Amount>0)
+                                    {
+                                        price= minuteToday[j].Amount / minuteToday[j].Volume * (1 + feeRatioBuy);
+                                    }
+                                    else
+                                    {
+                                        price = minuteToday[j].Open * (1 + feeRatioBuy);
+                                    }
+                                    
                                 }
                                 trade.closePrice = price;
                                 trade.closeTime = minuteToday[j].DateTime;
                                 if (minuteToday[j].Open==limitPrice)
                                 {
-                                    trade.closePrice = tomorrow.Open * (1 + feeRatioBuy);
-                                    trade.closeTime = tomorrow.DateTime.AddHours(9).AddMinutes(30);
+                                    if (tomorrow.Open>1.099*limitPrice)
+                                    {
+                                        trade.closePrice = tomorrow2.Open * (1 + feeRatioBuy);
+                                        trade.closeTime = tomorrow2.DateTime.AddHours(9).AddMinutes(30);
+                                    }
+                                    else
+                                    {
+                                        trade.closePrice = tomorrow.Open * (1 + feeRatioBuy);
+                                        trade.closeTime = tomorrow.DateTime.AddHours(9).AddMinutes(30);
+                                    }
+                                    
                                 }
                                 trade.maxCloseAmount = Math.Min(volume * price, 100000);
                                 trade.yield = -(trade.closePrice - trade.openPrice) / trade.openPrice;
@@ -193,8 +218,14 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
                                 double price = minuteToday[j].Close;
                                 if (volume > 0)
                                 {
-                                    //price= minuteToday[j].Amount / minuteToday[j].Volume;
-                                    price = minuteToday[j].Low * (1 + feeRatioBuy);
+                                    if (minuteToday[j].Amount > 0)
+                                    {
+                                        price = minuteToday[j].Amount / minuteToday[j].Volume * (1 + feeRatioBuy);
+                                    }
+                                    else
+                                    {
+                                        price = minuteToday[j].Open * (1 + feeRatioBuy);
+                                    }
                                 }
                                 trade.closePrice = price;
                                 trade.closeTime = minuteToday[j].DateTime;
