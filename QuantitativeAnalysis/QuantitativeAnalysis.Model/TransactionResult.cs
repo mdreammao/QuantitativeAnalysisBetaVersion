@@ -12,4 +12,11 @@ namespace QuantitativeAnalysis.Model
         public double TradedVolume { get; set; }
         public double TradedAmount { get; set; }
     }
+
+
+    public class tradeResultDaily
+    {
+        public DateTime date { get; set; }
+        public double netvalue { get; set; }
+    }
 }
