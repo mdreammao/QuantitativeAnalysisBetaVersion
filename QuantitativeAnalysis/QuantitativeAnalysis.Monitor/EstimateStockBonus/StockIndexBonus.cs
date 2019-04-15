@@ -81,7 +81,7 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
             string todayStr = date.Year.ToString();
             string filename = getFileName(index, date, "weightnextday", "xls");
             string original = "\\hs300\\" + filename;
-            string target = "E:\\result\\stockBonusEstimate\\" + indexStr[0] + "weightnextday" + todayStr + ".xls";
+            string target = "E:\\result\\stockBonusEstimate\\" + filename;
             ftp.Download(original, target);
             var set = DataTableExtension.getDataSetFromXLS(target);
             foreach (DataTable dt in set.Tables)
