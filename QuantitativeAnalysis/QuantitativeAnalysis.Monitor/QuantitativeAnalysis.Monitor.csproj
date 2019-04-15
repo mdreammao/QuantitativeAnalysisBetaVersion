@@ -112,6 +112,7 @@
     <Compile Include="IndexRelated\StockDataStore.cs" />
     <Compile Include="StockIntraday\DualTrust\DualTrust.cs" />
     <Compile Include="StockIntraday\DualTrust\DualTrust2.cs" />
+    <Compile Include="StockIntraday\ExtremeCase\priceUnusualMoving2.cs" />
     <Compile Include="StockIntraday\MovingAverage\MA1.cs" />
     <Compile Include="StockIntraday\Volatility\StockWithVolatility2.cs" />
     <Compile Include="StockIntraday\Volatility\StockWithVolatility1.cs" />

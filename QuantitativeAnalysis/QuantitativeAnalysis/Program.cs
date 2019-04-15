@@ -74,10 +74,10 @@ namespace QuantitativeAnalysis
             // moving.backtest("000693.SZ", "2010-01-01".ToDateTime(), "2019-03-09".ToDateTime());
             // moving.backtestAllStock("2010-01-01".ToDateTime(), "2019-03-08".ToDateTime());
             //var tmp=stockMinutelyRepo.GetStockTransactionFromLocalSqlByCodeWithRedis("000905.SH", "2018-10-18".ToDateTime(), "2018-10-18".ToDateTime());
-            priceUnusualMoving moving2 = new priceUnusualMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
-            moving2.backtestByIndexCode("000300.SH", "2010-01-01".ToDateTime(), "2019-03-28".ToDateTime());
-            //moving2.backtest("002250.SZ", "2015-04-20".ToDateTime(), "2015-04-24".ToDateTime());
-
+            //priceUnusualMoving moving = new priceUnusualMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
+            //moving.backtestByIndexCode("000016.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
+            priceUnusualMoving2 moving2 = new priceUnusualMoving2(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
+            moving2.backtestByIndexCode("000300.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
 
             //可转债回测
             #region
@@ -180,7 +180,7 @@ namespace QuantitativeAnalysis
             //twap = new STWAP(stockTickRepo, dateRepo, "300230.SZ");
             //twap.computeSTWAP("2015-01-01".ToDateTime(), "2018-06-06".ToDateTime());
 
-           logger.Info("main method end...");
+            logger.Info("main method end...");
         }
 
 
