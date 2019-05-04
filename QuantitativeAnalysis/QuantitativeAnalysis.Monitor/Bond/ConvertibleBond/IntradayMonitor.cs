@@ -96,9 +96,9 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                 //获取债券的信息
                 var bondInfo = getBondDailyInfo(item, endDate);
                 //获取股票的日线数据
-                var stockData=stockDailyRepo.GetStockTransaction(bondInfo.stockCode, startTime.AddDays(-30), endDate);
+                var stockData=stockDailyRepo.GetStockTransactionWithRedis(bondInfo.stockCode, startTime.AddDays(-30), endDate);
                 //获取债券的日线数据
-                var bondData= stockDailyRepo.GetStockTransaction(bondInfo.code, startTime, endDate);
+                var bondData= stockDailyRepo.GetStockTransactionWithRedis(bondInfo.code, startTime, endDate);
                 //找到股票第一个不涨停股票的数据
                 var nonCeilingStockData = getStartDate(stockData);
                 var lastStockData = stockData[stockData.Count() - 1];
@@ -841,7 +841,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                     }
                     if (dailyData.ContainsKey(underlyingCode) == false)
                     {
-                        var underlyingData = stockDailyRepo.GetStockTransaction(underlyingCode, startTime.AddDays(-10), endTime);
+                        var underlyingData = stockDailyRepo.GetStockTransactionWithRedis(underlyingCode, startTime.AddDays(-10), endTime);
                         dailyData.Add(underlyingCode, underlyingData);
                         endTime = DateTimeExtension.DateUtils.PreviousTradeDay(info.endDate, 7);
                         if (endTime > endDate.Date)
@@ -852,7 +852,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                         {
                             startDate = endTime;
                         }
-                        var bondData = stockDailyRepo.GetStockTransaction(info.code, info.startDate, endTime);
+                        var bondData = stockDailyRepo.GetStockTransactionWithRedis(info.code, info.startDate, endTime);
                         dailyData.Add(info.code, bondData);
                         var tempDataTable = windReader.GetDailyDataTable(info.code, "clause_conversion2_swapshareprice,underlyingcode,clause_conversion_2_swapsharestartdate,clause_conversion_2_swapshareenddate", info.startDate, endTime);
                         List<ConvertibleBondDailyInfo> bondDaily = new List<ConvertibleBondDailyInfo>();
@@ -908,8 +908,8 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                         if (data[i].High >= 0.99 * price && bondCode != "")
                         {
                             //获取分钟数据
-                            //var data1 = stockMinutelyRepo.GetStockTransaction(bondCode, day, day);
-                            //var data2 = stockMinutelyRepo.GetStockTransaction(code, day, day);
+                            //var data1 = stockMinutelyRepo.GetStockTransactionWithRedis(bondCode, day, day);
+                            //var data2 = stockMinutelyRepo.GetStockTransactionWithRedis(code, day, day);
                             //if (minuteData.ContainsKey(data[i].DateTime) == true)
                             //{
                             //    minuteData[data[i].DateTime].Add(bondCode, data1);

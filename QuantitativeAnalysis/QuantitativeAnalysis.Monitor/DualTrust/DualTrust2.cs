@@ -101,7 +101,7 @@ namespace QuantitativeAnalysis.Monitor.DualTrust
             this.indexCode = indexCode;
             this.underlyingCode = underlyingCode;
             //获取日线数据
-            var indexData = stockDailyRepo.GetStockTransaction(indexCode, startDate, endDate);
+            var indexData = stockDailyRepo.GetStockTransactionWithRedis(indexCode, startDate, endDate);
             for (int n = 1; n <=N; n++)
             {
                 Dictionary<DateTime, double> range = new Dictionary<DateTime, double>();
@@ -139,9 +139,9 @@ namespace QuantitativeAnalysis.Monitor.DualTrust
             //获取分钟线数据
             foreach (var date in tradedays)
             {
-                var minuteKLine = stockMinutelyRepo.GetStockTransaction(underlyingCode, date, date);
+                var minuteKLine = stockMinutelyRepo.GetStockTransactionWithRedis(underlyingCode, date, date);
                 underlyingKLine.Add(date, minuteKLine);
-                var minuteKLine2= stockMinutelyRepo.GetStockTransaction(indexCode, date, date);
+                var minuteKLine2= stockMinutelyRepo.GetStockTransactionWithRedis(indexCode, date, date);
                 indexKLine.Add(date, minuteKLine2);
             }
             

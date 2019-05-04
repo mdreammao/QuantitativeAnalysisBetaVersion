@@ -66,12 +66,12 @@ namespace QuantitativeAnalysis.Monitor
             {
                 //var list = getSpecialFutureList(date);
                 var list = getFutureList(date);
-                var index = stockMinutelyRepo.GetStockTransaction(indexCode, date, date);
+                var index = stockMinutelyRepo.GetStockTransactionWithRedis(indexCode, date, date);
                 var dataList = new Dictionary<string, List<StockTransaction>>();
                 var basisDataList = new List<specialBasis>();
                 foreach (var item in list)
                 {
-                    var data = stockMinutelyRepo.GetStockTransaction(item.Key, date, date);
+                    var data = stockMinutelyRepo.GetStockTransactionWithRedis(item.Key, date, date);
                     dataList.Add(item.Key, data);
                 }
                 for (int i = 5; i <= 235; i=i+5)

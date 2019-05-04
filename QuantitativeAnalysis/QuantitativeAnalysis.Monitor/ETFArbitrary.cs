@@ -104,7 +104,7 @@ namespace QuantitativeAnalysis.Monitor
                             }
                             else
                             {
-                                var stock = stockDailyRepo.GetStockTransaction(item.code, date, date);
+                                var stock = stockDailyRepo.GetStockTransactionWithRedis(item.code, date, date);
                                 for (int i = 0; i < 28802; i++)
                                 {
                                     if (isNan[i] == true)

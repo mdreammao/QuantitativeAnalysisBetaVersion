@@ -21,24 +21,53 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         private RedisReader redisReader;
         private SqlServerWriter sqlWriter;
         private SqlServerReader sqlReader;
-        private SqlServerReader sqlReader2;
+        private SqlServerReader sqlReader170;
         private RedisWriter redisWriter;
         private IDataSource dataSource;
         private Logger logger = NLog.LogManager.GetCurrentClassLogger();
-        public StockMinuteRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type,IDataSource ds)
+        private bool redis = false;
+        public StockMinuteRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type,IDataSource ds,bool redis=false)
         {
             dateTimeRepo = new TransactionDateTimeRepository(type);
             sqlWriter = new SqlServerWriter(type);
             sqlReader = new SqlServerReader(type);
-            sqlReader2 = new SqlServerReader(type);
-            redisReader = new RedisReader();
-            redisWriter = new RedisWriter();
+            sqlReader170 = new SqlServerReader(Infrastructure.ConnectionType.Server170);
             dataSource = ds;
+            this.redis = redis;
+            if (redis==true)
+            {
+                redisReader = new RedisReader();
+                redisWriter = new RedisWriter();
+            }
+            
+        }
+
+        public List<StockTransaction> GetStockTransactionFrom170SqlByCode(string code, DateTime start, DateTime end)
+        {
+            var stocks = new List<StockTransaction>();
+            DateTime startTime = start.Date;
+            DateTime endTime = end.Date.AddHours(15);
+            try
+            {
+                var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction].[dbo].[{0}_{1}] 
+where DateTime>='{2}' and DateTime<='{3}'",
+code.ToUpper().Split('.')[0], code.ToUpper().Split('.')[1], startTime, endTime);
+                var dt = sqlReader170.GetDataTable(sqlStr);
+                var list = datatableToList(dt);
+                stocks.AddRange(list);
+            }
+            catch (Exception e)
+            {
+               Console.WriteLine(e.Message);
+            }
+            return stocks;
         }
 
         public List<StockTransaction> GetStockTransactionFromLocalSqlByCodeWithRedis(string code, DateTime start, DateTime end)
         {
             var stocks = new List<StockTransaction>();
+            if (redis == false)
+                return stocks;
             DateTime startTime = start.Date;
             DateTime endTime = end.AddHours(15);
             code = code.ToUpper();
@@ -125,14 +154,13 @@ code.ToUpper().Split('.')[0], code.ToUpper().Split('.')[1], startTime, endTime);
         {
             var stocks = new List<StockTransaction>();
             DateTime startTime = start.Date;
-            DateTime endTime = end.AddHours(15);
+            DateTime endTime = end.Date.AddHours(15);
             try
             {
                 var sqlStr = string.Format(@"select  [Code],[DateTime] ,[open],[HIGH],[LOW],[CLOSE],[VOLUME],[Amount] from [StockMinuteTransaction].[dbo].[{0}_{1}] 
 where DateTime>='{2}' and DateTime<='{3}'",
 code.ToUpper().Split('.')[0], code.ToUpper().Split('.')[1], startTime, endTime);
                 var dt = sqlReader.GetDataTable(sqlStr);
-                //WriteToRedis(dt);
                 var list = datatableToList(dt);
                 stocks.AddRange(list);
             }
@@ -214,10 +242,12 @@ where Code='{2}' and DateTime>='{3}' and DateTime<='{4}'",
         }
 
 
-        public List<StockTransaction> GetStockTransaction(string code, DateTime start, DateTime end)
+        public List<StockTransaction> GetStockTransactionWithRedis(string code, DateTime start, DateTime end)
         {
             //logger.Info(string.Format("begin to fetch stock{0} minute data from {1} to {2}...", code, start, end));
             var stocks = new List<StockTransaction>();
+            if (redis == false)
+                return stocks;
             var tradingDates = dateTimeRepo.GetStockTransactionDate(start.Date, end.Date==DateTime.Now.Date?end.Date.AddDays(-1):end.Date);
             var timeInterval = new StockMinuteInterval(start, end, tradingDates);
             while (timeInterval.MoveNext())

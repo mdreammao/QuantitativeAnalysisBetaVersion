@@ -45,7 +45,7 @@ namespace QuantitativeAnalysis.Monitor
         public void compute(DateTime startDate, DateTime endDate,int steps=40)
         {
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
-            var etfall = stockMinutelyRepo.GetStockTransaction(code, tradedays.First(), tradedays.Last());
+            var etfall = stockMinutelyRepo.GetStockTransactionWithRedis(code, tradedays.First(), tradedays.Last());
             int duration = 5;
             int minutes = 240;
             //var distribution0 = getDistribution(etfall, 500, tradedays.Count()-1, 240);

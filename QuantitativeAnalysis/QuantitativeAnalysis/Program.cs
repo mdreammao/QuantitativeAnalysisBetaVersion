@@ -22,6 +22,7 @@ using QuantitativeAnalysis.Monitor.DualTrust;
 using QuantitativeAnalysis.Monitor.StockIntraday.Volatility;
 using QuantitativeAnalysis.Monitor.StockIntraday.MovingAverage;
 using QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase;
+using QuantitativeAnalysis.Monitor.StockIntraday.Reverse;
 using QuantitativeAnalysis.Monitor.DataRecord;
 
 namespace QuantitativeAnalysis
@@ -76,9 +77,11 @@ namespace QuantitativeAnalysis
             //var tmp=stockMinutelyRepo.GetStockTransactionFromLocalSqlByCodeWithRedis("000905.SH", "2018-10-18".ToDateTime(), "2018-10-18".ToDateTime());
             //priceUnusualMoving moving = new priceUnusualMoving(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
             //moving.backtestByIndexCode("000016.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
-            priceUnusualMoving2 moving2 = new priceUnusualMoving2(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
-            moving2.backtestByIndexCode("000300.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
-
+            //priceUnusualMoving2 moving2 = new priceUnusualMoving2(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
+            //moving2.backtestByIndexCode("000905.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
+            reverse myReverse = new reverse(stockMinutelyRepo, stockDailyRepo, stockTickRepo, stockInfoRepo);
+            //myReverse.getStockInfoList("000905.SH", "2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
+            myReverse.allStockBackTest("2010-01-01".ToDateTime(), "2019-02-28".ToDateTime());
             //可转债回测
             #region
             //Monitor.Bond.ConvertibleBond.Intraday1 bond = new Monitor.Bond.ConvertibleBond.Intraday1(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
@@ -95,9 +98,9 @@ namespace QuantitativeAnalysis
 
             //该区域为跑参数或者数据
             #region
-            //MinuteDataRecord recordMinute = new MinuteDataRecord(stockMinutelyRepo, stockDailyRepo, dateRepo, stockInfoRepo,ConnectionType.Local2017);
+            //MinuteDataRecord recordMinute = new MinuteDataRecord(stockMinutelyRepo, stockDailyRepo, dateRepo, stockInfoRepo,ConnectionType.Server170);
+            //recordMinute.deleteOldDataAll("2007-01-01".ToDateTime(), "2019-03-27".ToDateTime());
             //recordMinute.getStockMinutelyData("2007-01-01".ToDateTime(), "2019-03-27".ToDateTime());
-            //recordMinute.deleteOldDataAll("2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
             //recordMinute. BulkLoadStockMinuteOrerByCode("399001.SZ", "2007-01-01".ToDateTime(), "2019-03-12".ToDateTime());
             //Monitor.Bond.ConvertibleBond.IntradayMonitor bond = new Monitor.Bond.ConvertibleBond.IntradayMonitor(stockMinutelyRepo, stockDailyRepo, stockTickRepo, dateRepo);
 
@@ -208,7 +211,7 @@ namespace QuantitativeAnalysis
             var source = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockDailyDataSource>());
             var repo = InstanceFactory.Get<StockDailyRepository>(conn_type,source);
 
-            var res = repo.GetStockTransaction("000001.SZ", "2017-01-01".ToDateTime(), "2017-08-01".ToDateTime());
+            var res = repo.GetStockTransactionWithRedis("000001.SZ", "2017-01-01".ToDateTime(), "2017-08-01".ToDateTime());
         }
 
         static void StockMinuteDemo()
@@ -216,7 +219,7 @@ namespace QuantitativeAnalysis
             var source = new TypedParameter(typeof(IDataSource), InstanceFactory.Get<DefaultStockDailyDataSource>());
             var repo = InstanceFactory.Get<StockMinuteRepository>(conn_type,source);
 
-            var res = repo.GetStockTransaction("000001.SZ", "2017-01-01 13:00:00".ToDateTime(), "2017-08-01 15:00:00".ToDateTime());
+            var res = repo.GetStockTransactionWithRedis("000001.SZ", "2017-01-01 13:00:00".ToDateTime(), "2017-08-01 15:00:00".ToDateTime());
         }
 
         static void StockTickDemo()

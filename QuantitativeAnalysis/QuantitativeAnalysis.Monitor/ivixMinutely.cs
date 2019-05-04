@@ -63,7 +63,7 @@ namespace QuantitativeAnalysis.Monitor
 
             foreach (var date in tradedays)
             {
-                var etf = stockRepo.GetStockTransaction(underlying, date, date);
+                var etf = stockRepo.GetStockTransactionWithRedis(underlying, date, date);
             }
                
         }

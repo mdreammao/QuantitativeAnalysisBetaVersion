@@ -21,7 +21,7 @@ namespace QuantitativeAnalysis.Transaction
         public TransactionResult Trade(Signal s)
         {
             var result = new TransactionResult() { Signal = s };
-            var history_transaction = repo.GetStockTransaction(s.Code, s.StartTradingTime, s.StartTradingTime);
+            var history_transaction = repo.GetStockTransactionWithRedis(s.Code, s.StartTradingTime, s.StartTradingTime);
             double total_amount = 0;
             double total_volume = 0;
             foreach(var tr in history_transaction)

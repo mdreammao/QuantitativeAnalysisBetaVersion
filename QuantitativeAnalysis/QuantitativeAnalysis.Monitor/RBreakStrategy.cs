@@ -49,11 +49,11 @@ namespace QuantitativeAnalysis.Monitor
         {
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
             //获取日线数据
-            var underlyingDaily = stockDailyRepo.GetStockTransaction(code, tradedays.First(), tradedays.Last());
+            var underlyingDaily = stockDailyRepo.GetStockTransactionWithRedis(code, tradedays.First(), tradedays.Last());
             //获取分钟线数据
             foreach (var date in tradedays)
             {
-                var underlyingToday = stockMinutelyRepo.GetStockTransaction(code, date, date);
+                var underlyingToday = stockMinutelyRepo.GetStockTransactionWithRedis(code, date, date);
                 underlying.Add(date, underlyingToday);
                 minutes = underlyingToday.Count();
                 underlyingAll.AddRange(underlyingToday);

@@ -49,8 +49,8 @@ namespace QuantitativeAnalysis.Monitor
         {
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
             //获取日线数据
-            var underlyingDaily1 = stockDailyRepo.GetStockTransaction(code1, tradedays.First(), tradedays.Last());
-            var underlyingDaily2 = stockDailyRepo.GetStockTransaction(code2, tradedays.First(), tradedays.Last());
+            var underlyingDaily1 = stockDailyRepo.GetStockTransactionWithRedis(code1, tradedays.First(), tradedays.Last());
+            var underlyingDaily2 = stockDailyRepo.GetStockTransactionWithRedis(code2, tradedays.First(), tradedays.Last());
             int duration=15;
             double lambda1=2.4;
             double trailingParameter=0.025;

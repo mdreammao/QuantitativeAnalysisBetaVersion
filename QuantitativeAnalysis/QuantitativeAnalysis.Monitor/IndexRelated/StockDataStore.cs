@@ -63,7 +63,7 @@ namespace QuantitativeAnalysis.Monitor.IndexRelated
                 {
                     endDate = stock.Value.DelistDate;
                 }
-                var data = stockMinutelyRepo.GetStockTransaction(stock.Key, startDate, endDate);
+                var data = stockMinutelyRepo.GetStockTransactionWithRedis(stock.Key, startDate, endDate);
                 Console.WriteLine("code:{0} complete!", stock.Key);
             }
         }

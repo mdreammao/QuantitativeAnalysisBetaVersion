@@ -86,11 +86,11 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.MovingAverage
             //获取基本信息
             this.code = code;
             //获取日线数据
-            var dailyData = stockDailyRepo.GetStockTransaction(code, startDate, endDate);
+            var dailyData = stockDailyRepo.GetStockTransactionWithRedis(code, startDate, endDate);
             //获取分钟线数据
             foreach (var date in tradedays)
             {
-                var minuteKLine = stockMinutelyRepo.GetStockTransaction(code, date, date);
+                var minuteKLine = stockMinutelyRepo.GetStockTransactionWithRedis(code, date, date);
                 underlyingKLine.Add(date, minuteKLine);
             }
             foreach (var item in dailyData)

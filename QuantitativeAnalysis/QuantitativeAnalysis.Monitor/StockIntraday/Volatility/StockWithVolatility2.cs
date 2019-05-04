@@ -112,7 +112,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.Volatility
             //获取基本信息
             this.underlyingCode = underlyingCode;
             //获取日线数据
-            var underlyingData = stockDailyRepo.GetStockTransaction(underlyingCode, startDate, endDate);
+            var underlyingData = stockDailyRepo.GetStockTransactionWithRedis(underlyingCode, startDate, endDate);
             for (int n = 1; n <= N; n++)
             {
                 Dictionary<DateTime, double> vol = new Dictionary<DateTime, double>();
@@ -141,7 +141,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.Volatility
             //获取分钟线数据
             foreach (var date in tradedays)
             {
-                var minuteKLine = stockMinutelyRepo.GetStockTransaction(underlyingCode, date, date);
+                var minuteKLine = stockMinutelyRepo.GetStockTransactionWithRedis(underlyingCode, date, date);
                 underlyingKLine.Add(date, minuteKLine);
             }
         }

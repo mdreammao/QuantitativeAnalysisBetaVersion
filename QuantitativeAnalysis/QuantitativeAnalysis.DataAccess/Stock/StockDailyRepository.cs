@@ -27,19 +27,67 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         private TransactionDateTimeRepository dateRepo;
         private IDataSource dataSource;
         private Logger logger = NLog.LogManager.GetCurrentClassLogger();
-        public StockDailyRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type,IDataSource dataSource)
+        private bool redis = false;
+        public StockDailyRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type,IDataSource dataSource,bool redis=false)
         {
             sqlReader = new SqlServerReader(type);
             sqlWriter = new SqlServerWriter(type);
             dateRepo = new TransactionDateTimeRepository(type);
             sqlReader170 = new SqlServerReader(Infrastructure.ConnectionType.Server170);
             this.dataSource = dataSource;
+            this.redis = redis;
+            if (redis==true)
+            {
+                RedisReader redisReader = new RedisReader();
+                RedisWriter redisWriter = new RedisWriter();
+            }
         }
 
-        public List<StockTransaction> GetStockTransaction(string code, DateTime begin,DateTime end)
+        public List<StockTransaction> GetStockTransaction(string code, DateTime begin, DateTime end)
+        {
+            //logger.Info(string.Format("begin to fetch stock{0} daily data from {1} to {2}...", code, begin, end));
+            var stocks = new List<StockTransaction>();
+            var tradingDates = dateRepo.GetStockTransactionDate(begin, end);
+            if (tradingDates != null && tradingDates.Count > 0)
+            {
+                LoadStockTransactionToSqlFromSource(code, tradingDates);
+                var dt=GetStockDailyTransactionFromSqlServer(code, begin, end);
+                stocks = datatableToList(dt);
+            }
+            //logger.Info(string.Format("completed fetching stock{0} daily data from {1} to {2}...", code, begin, end));
+            return stocks;
+        }
+
+        private List<StockTransaction> datatableToList(DataTable dt)
+        {
+            List<StockTransaction> data = new List<StockTransaction>();
+            foreach (DataRow dr in dt.Rows)
+            {
+                StockTransaction stock = new StockTransaction();
+                stock.Code = Convert.ToString(dr["Code"]);
+                stock.DateTime = Convert.ToDateTime(dr["DateTime"]);
+                stock.Open = Convert.ToDouble(dr["open"]);
+                stock.High = Convert.ToDouble(dr["high"]);
+                stock.Low = Convert.ToDouble(dr["low"]);
+                stock.Close = Convert.ToDouble(dr["close"]);
+                stock.Amount = Convert.ToDouble(dr["amount"]);
+                stock.Volume = Convert.ToDouble(dr["volume"]);
+                stock.AdjFactor = Convert.ToDouble(dr["adjfactor"]);
+                stock.TradeStatus = Convert.ToString(dr["trade_status"]);
+                stock.Level = StockTransactionLevel.Daily;
+                data.Add(stock);
+            }
+            return data;
+        }
+
+        public List<StockTransaction> GetStockTransactionWithRedis(string code, DateTime begin,DateTime end)
         {
             logger.Info(string.Format("begin to fetch stock{0} daily data from {1} to {2}...",code,begin,end));
             var stocks = new List<StockTransaction>();
+            if (redis==false)
+            {
+                return stocks;
+            }
             var tradingDates = dateRepo.GetStockTransactionDate(begin, end);
             if (tradingDates != null && tradingDates.Count > 0)
             {
@@ -129,14 +177,14 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             var nonExistedDateIntervalInSql = Computor.GetNoExistedInterval<DateTime>(tradingDates, existedDateInSql);
             foreach (var item in nonExistedDateIntervalInSql)
             {
-                if (item.Value<=new DateTime(2019,3,28))
-                {
+                //if (item.Value<=new DateTime(2019,3,28))
+                //{
                     //var dt = GetStockDailyTransactionFromSqlServer170(code, item.Key, item.Value);
                     //sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
                     //var dt = dataSource.Get(code, item.Key, item.Value);
                     //sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
-                }
-                else
+                //}
+                //else
                 {
                     var dt = dataSource.Get(code, item.Key, item.Value);
                     sqlWriter.InsertBulk(dt, "[DailyTransaction].[dbo].[Stock]");
@@ -168,7 +216,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             return sqlReader.GetDataTable(sqlStr).ToList<DateTime>();
         }
 
-        private void GetStockDailyTransactionFromSqlServer(string code,DateTime begin,DateTime end)
+        private DataTable GetStockDailyTransactionFromSqlServer(string code,DateTime begin,DateTime end)
         {
             var sqlString = "select * from [DailyTransaction].[dbo].[Stock] where code='@code' and DateTime>=@begin and DateTime<=@end";
             var pars = new SqlParameter[]
@@ -178,7 +226,11 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                 new SqlParameter("@end",end.Date)
             };
             var res=sqlReader.GetDataTable(sqlString,pars);
+            return res;
         }
+
+
+
         #endregion
     }
 }

@@ -114,6 +114,7 @@
     <Compile Include="StockIntraday\DualTrust\DualTrust2.cs" />
     <Compile Include="StockIntraday\ExtremeCase\priceUnusualMoving2.cs" />
     <Compile Include="StockIntraday\MovingAverage\MA1.cs" />
+    <Compile Include="StockIntraday\Reverse\reverse.cs" />
     <Compile Include="StockIntraday\Volatility\StockWithVolatility2.cs" />
     <Compile Include="StockIntraday\Volatility\StockWithVolatility1.cs" />
     <Compile Include="StockOptionFramework\OptionMonitor50ETF2019.cs" />
@@ -162,6 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="AlphaFramework\" />
+    <Folder Include="StockIntraday\Momentum\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -23,7 +23,7 @@ namespace QuantitativeAnalysis.Transaction
         public TransactionResult TradeByAverage(Signal s)
         {
             var result = new TransactionResult() { Signal = s };
-            var daily_trans = daily_repo.GetStockTransaction(s.Code, s.StartTradingTime.Date, s.StartTradingTime.Date);
+            var daily_trans = daily_repo.GetStockTransactionWithRedis(s.Code, s.StartTradingTime.Date, s.StartTradingTime.Date);
             if (daily_trans != null && daily_trans.Count > 0)
             {
                 var daily_item = daily_trans.First();

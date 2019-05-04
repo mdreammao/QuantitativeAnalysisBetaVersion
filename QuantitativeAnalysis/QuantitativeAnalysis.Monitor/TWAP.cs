@@ -176,7 +176,7 @@ namespace QuantitativeAnalysis.Monitor
             var tradedays = dateRepo.GetStockTransactionDate(start, end);
             foreach (var date in tradedays)
             {
-                var data = stockMinuteRepo.GetStockTransaction(code, date,date);
+                var data = stockMinuteRepo.GetStockTransactionWithRedis(code, date,date);
                 if (data.Count==0)
                 {
                     continue;

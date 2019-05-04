@@ -88,7 +88,7 @@ namespace QuantitativeAnalysis.Monitor
                 Dictionary<DateTime, List<StockTransaction>> thisStock = new Dictionary<DateTime, List<StockTransaction>>();
                 foreach (var date in tradedays)
                 {
-                    var stockMinuteData0 = stockMinutelyRepo.GetStockTransaction(code, date, date);
+                    var stockMinuteData0 = stockMinutelyRepo.GetStockTransactionWithRedis(code, date, date);
                     thisStock.Add(date, stockMinuteData0);
                 }
                 allStocks.Add(code, thisStock);

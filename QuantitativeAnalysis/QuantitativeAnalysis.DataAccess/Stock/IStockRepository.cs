@@ -8,6 +8,6 @@ namespace QuantitativeAnalysis.DataAccess.Stock
 {
     public interface IStockRepository
     {
-        List<StockTransaction> GetStockTransaction(string code, DateTime start,DateTime end);
+        List<StockTransaction> GetStockTransactionWithRedis(string code, DateTime start,DateTime end);
     }
 }

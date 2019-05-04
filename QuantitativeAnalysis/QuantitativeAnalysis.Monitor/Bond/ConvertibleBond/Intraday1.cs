@@ -696,7 +696,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                     }
                     if (dailyData.ContainsKey(underlyingCode) == false)
                     {
-                        var underlyingData = stockDailyRepo.GetStockTransaction(underlyingCode, startTime.AddDays(-10), endTime);
+                        var underlyingData = stockDailyRepo.GetStockTransactionWithRedis(underlyingCode, startTime.AddDays(-10), endTime);
                         dailyData.Add(underlyingCode, underlyingData);
                         endTime = DateTimeExtension.DateUtils.PreviousTradeDay(info.endDate, 7);
                         if (endTime>endDate.Date)
@@ -707,7 +707,7 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                         {
                             startDate = endTime;
                         }
-                        var bondData = stockDailyRepo.GetStockTransaction(info.code, info.startDate,endTime);
+                        var bondData = stockDailyRepo.GetStockTransactionWithRedis(info.code, info.startDate,endTime);
                         dailyData.Add(info.code, bondData);
                         if (info.startDate>endTime)
                         {
@@ -767,8 +767,8 @@ namespace QuantitativeAnalysis.Monitor.Bond.ConvertibleBond
                         if (data[i].High >= 0.99*price && bondCode != "")
                         {
                             //获取分钟数据
-                            //var data1 = stockMinutelyRepo.GetStockTransaction(bondCode, day, day);
-                            //var data2 = stockMinutelyRepo.GetStockTransaction(code, day, day);
+                            //var data1 = stockMinutelyRepo.GetStockTransactionWithRedis(bondCode, day, day);
+                            //var data2 = stockMinutelyRepo.GetStockTransactionWithRedis(code, day, day);
                             //if (minuteData.ContainsKey(data[i].DateTime) == true)
                             //{
                             //    minuteData[data[i].DateTime].Add(bondCode, data1);

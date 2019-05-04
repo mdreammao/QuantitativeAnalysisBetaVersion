@@ -59,7 +59,7 @@ namespace QuantitativeAnalysis.Monitor.DataRecord
                 {
                     endTime = item.DelistDate;
                 }
-                var data = stockDailyRepo.GetStockTransaction(item.code, startTime, endTime);
+                var data = stockDailyRepo.GetStockTransactionWithRedis(item.code, startTime, endTime);
                 Console.WriteLine("code:{0} dailyData form {1} to {2} complete!", item.code, startTime, endTime);
             }
         }
@@ -79,7 +79,7 @@ namespace QuantitativeAnalysis.Monitor.DataRecord
                     {
                         endDate = yesterday;
                     }
-                    var data = stockDailyRepo.GetStockTransaction(item.code, startDate, endDate);
+                    var data = stockDailyRepo.GetStockTransactionWithRedis(item.code, startDate, endDate);
                     Console.WriteLine("code:{0} dailyData form {1} to {2} complete!", item.code, startDate, endDate);
                 }
                 

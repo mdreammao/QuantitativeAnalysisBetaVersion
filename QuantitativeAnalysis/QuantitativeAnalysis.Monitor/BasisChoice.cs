@@ -63,7 +63,7 @@ namespace QuantitativeAnalysis.Monitor
             foreach (var date in tradedays)
             {
                 var list = getFutureList(date);
-                var index = stockMinutelyRepo.GetStockTransaction(indexCode, date, date);
+                var index = stockMinutelyRepo.GetStockTransactionWithRedis(indexCode, date, date);
                 var dataList = new Dictionary<string, List<StockTransaction>>();
                 var holdNow = new CFEFutures();
                 var choiceToday = new List<CFEFuturesChoice>();
@@ -74,7 +74,7 @@ namespace QuantitativeAnalysis.Monitor
                 }
                 foreach (var item in list)
                 {
-                    var data = stockMinutelyRepo.GetStockTransaction(item.Key, date, date);
+                    var data = stockMinutelyRepo.GetStockTransactionWithRedis(item.Key, date, date);
                     dataList.Add(item.Key, data);
                 }
                 for (int i = 5; i < 235; i++)

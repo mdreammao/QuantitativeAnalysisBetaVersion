@@ -149,7 +149,7 @@ namespace QuantitativeAnalysis.Monitor.EstimateStockBonus
             var epsDic=getStockEPSRatio(codeList, date);
             //获取当前日期
             var now = DateTime.Now.Date;
-            double indexClose = stockDailyRepo.GetStockTransaction(index, date, date)[0].Close;
+            double indexClose = stockDailyRepo.GetStockTransactionWithRedis(index, date, date)[0].Close;
             DateTime lastYearEnd = new DateTime(date.Year - 1, 12, 31);
             DateTime thisYearMid = new DateTime(date.Year, 6, 30);
             List<StockBonusEstimate> estimateList = new List<StockBonusEstimate>();

@@ -51,7 +51,7 @@ namespace QuantitativeAnalysis.Monitor
         public void compute(DateTime startDate, DateTime endDate,int delaynum=5,int startnum=3,int calculatornum=6)
         {
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
-            var etfall= stockMinutelyRepo.GetStockTransaction(code, tradedays.First(),tradedays.Last());
+            var etfall= stockMinutelyRepo.GetStockTransactionWithRedis(code, tradedays.First(),tradedays.Last());
             modifyData(ref etfall);
             var netvalue = new double[etfall.Count()];
             var signal = new double[etfall.Count()];

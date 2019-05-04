@@ -236,7 +236,7 @@ namespace QuantitativeAnalysis.Monitor
         private Dictionary<DateTime, StockTransaction> getUnderlyingDailyData(DateTime startDate,DateTime endDate)
         {
             Dictionary<DateTime, StockTransaction> underlyingDailyData = new Dictionary<DateTime, StockTransaction>();
-            var data= stockDailyRepo.GetStockTransaction(underlying, startDate, endDate);
+            var data= stockDailyRepo.GetStockTransactionWithRedis(underlying, startDate, endDate);
             foreach (var item in data)
             {
                 underlyingDailyData.Add(item.DateTime, item);

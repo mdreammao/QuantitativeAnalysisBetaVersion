@@ -86,11 +86,11 @@ namespace QuantitativeAnalysis.Monitor
             {
                 var dataDaily = new Dictionary<string, List<StockTransaction>>();
                 var list = getFutureList(date,4);
-                var indexData= stockMinutelyRepo.GetStockTransaction(indexCode, date, date);
+                var indexData= stockMinutelyRepo.GetStockTransactionWithRedis(indexCode, date, date);
                 dataDaily.Add(indexCode, indexData);
                 foreach (var item in list)
                 {
-                    var data = stockMinutelyRepo.GetStockTransaction(item.Key, date, date);
+                    var data = stockMinutelyRepo.GetStockTransactionWithRedis(item.Key, date, date);
                     data.RemoveAt(241);
                     data.RemoveAt(0);
                     dataDaily.Add(item.Key, data);

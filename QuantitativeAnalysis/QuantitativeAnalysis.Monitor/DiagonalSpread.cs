@@ -38,7 +38,7 @@ namespace QuantitativeAnalysis.Monitor
         private void DataPreparation(DateTime startDate, DateTime endDate)
         {
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
-            var etfDaily = stockDailyRepo.GetStockTransaction(code, startDate, endDate);
+            var etfDaily = stockDailyRepo.GetStockTransactionWithRedis(code, startDate, endDate);
         }
 
         

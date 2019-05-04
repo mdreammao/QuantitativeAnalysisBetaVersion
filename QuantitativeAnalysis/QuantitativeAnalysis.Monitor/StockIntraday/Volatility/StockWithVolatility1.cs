@@ -71,14 +71,14 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.Volatility
             this.indexCode = indexCode;
             this.underlyingCode = underlyingCode;
             //获取日线数据
-            var indexData = stockDailyRepo.GetStockTransaction(indexCode, startDate, endDate);
+            var indexData = stockDailyRepo.GetStockTransactionWithRedis(indexCode, startDate, endDate);
             volatilityDaily=getDailyVolatility(indexData);
             //获取分钟线数据
             foreach (var date in tradedays)
             {
-                var minuteKLine = stockMinutelyRepo.GetStockTransaction(underlyingCode, date, date);
+                var minuteKLine = stockMinutelyRepo.GetStockTransactionWithRedis(underlyingCode, date, date);
                 underlyingKLine.Add(date, minuteKLine);
-                var minuteKLine2 = stockMinutelyRepo.GetStockTransaction(indexCode, date, date);
+                var minuteKLine2 = stockMinutelyRepo.GetStockTransactionWithRedis(indexCode, date, date);
                 indexKLine.Add(date, minuteKLine2);
             }
             volatilityMinutely = getMinutelyVolatility(indexKLine,1);

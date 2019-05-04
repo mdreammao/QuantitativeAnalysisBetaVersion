@@ -44,7 +44,7 @@ namespace QuantitativeAnalysis.Monitor
         {
             var startday=DateTimeExtension.DateUtils.PreviousTradeDay(startDate, duration + 1);
             var endday= DateTimeExtension.DateUtils.PreviousTradeDay(endDate, duration + 1);
-            priceList = stockDailyRepo.GetStockTransaction(code, startday, endDate);
+            priceList = stockDailyRepo.GetStockTransactionWithRedis(code, startday, endDate);
             var tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
             if (priceDic==null || priceDic.Count()==0)
             {

@@ -403,7 +403,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             //获取交易日信息
             this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
             //获取日线数据
-            var dayNow = stockDailyRepo.GetStockTransaction(underlyingCode, startDate, endDate);
+            var dayNow = stockDailyRepo.GetStockTransactionWithRedis(underlyingCode, startDate, endDate);
             if (this.DailyKLine.ContainsKey(underlyingCode))
             {
                 var data = DailyKLine[underlyingCode];
@@ -430,7 +430,7 @@ namespace QuantitativeAnalysis.Monitor.StockIntraday.ExtremeCase
             //获取交易日信息
             this.tradedays = dateRepo.GetStockTransactionDate(startDate, endDate);
             //获取日线数据
-            var dayNow = stockDailyRepo.GetStockTransaction(underlyingCode, startDate.AddDays(-pushForwardDays), endDate);
+            var dayNow = stockDailyRepo.GetStockTransactionWithRedis(underlyingCode, startDate.AddDays(-pushForwardDays), endDate);
             if (this.DailyKLine.ContainsKey(underlyingCode))
             {
                 var data = DailyKLine[underlyingCode];

@@ -61,7 +61,7 @@ namespace QuantitativeAnalysis.Monitor
             double pnl = 0;
             double cash = 0;
             //按第一天的开盘价确定期初价格和行权价
-            var stock = stockDailyRepo.GetStockTransaction(indexCode, startDate, endDate);
+            var stock = stockDailyRepo.GetStockTransactionWithRedis(indexCode, startDate, endDate);
             double startPrice = stock[0].Open;
             double strike = startPrice;
             foreach (var date in tradedays)
@@ -69,7 +69,7 @@ namespace QuantitativeAnalysis.Monitor
                 //获取当日期货合约代码
                 var list = getSpecialFutureList(date);
                 //获取当日收盘前标的价格
-               // var index = stockMinutelyRepo.GetStockTransaction(indexCode, date, date);
+               // var index = stockMinutelyRepo.GetStockTransactionWithRedis(indexCode, date, date);
                 var index = allData[date][indexCode];
                 var indexPrice = index[deltaIndex].Close;
                 double duration = (DateUtils.GetSpanOfTradeDays(date,endDate)+1/12)/252.0;
@@ -119,7 +119,7 @@ namespace QuantitativeAnalysis.Monitor
             Dictionary<DateTime, double> vol = new Dictionary<DateTime, double>();
             var originalDate = DateUtils.PreviousTradeDay(startDate, 252);
             var tradedays = dateRepo.GetStockTransactionDate(originalDate, endDate);
-            var stock = stockDailyRepo.GetStockTransaction(indexCode, originalDate, endDate);
+            var stock = stockDailyRepo.GetStockTransactionWithRedis(indexCode, originalDate, endDate);
             for (int i = term; i < tradedays.Count(); i++)
             {
                 var data = new List<double>();
@@ -149,11 +149,11 @@ namespace QuantitativeAnalysis.Monitor
             {
                 var dataDaily = new Dictionary<string, List<StockTransaction>>();
                 var list = getFutureList(date, 4);
-                var indexData = stockMinutelyRepo.GetStockTransaction(indexCode, date, date);
+                var indexData = stockMinutelyRepo.GetStockTransactionWithRedis(indexCode, date, date);
                 dataDaily.Add(indexCode, indexData);
                 foreach (var item in list)
                 {
-                    var data = stockMinutelyRepo.GetStockTransaction(item.Key, date, date);
+                    var data = stockMinutelyRepo.GetStockTransactionWithRedis(item.Key, date, date);
                     data.RemoveAt(241);
                     data.RemoveAt(0);
                     dataDaily.Add(item.Key, data);

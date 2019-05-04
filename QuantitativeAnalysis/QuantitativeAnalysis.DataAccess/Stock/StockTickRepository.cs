@@ -23,15 +23,21 @@ namespace QuantitativeAnalysis.DataAccess.Stock
         private RedisWriter redisWriter;
         private RedisReader redisReader;
         private Logger logger = LogManager.GetCurrentClassLogger();
+        private bool redis = false;
 
-        public StockTickRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type,IDataSource ds)
+        public StockTickRepository(QuantitativeAnalysis.DataAccess.Infrastructure.ConnectionType type,IDataSource ds,bool redis=false)
         {
             transDateRepo = new TransactionDateTimeRepository(type);
             sqlReader = new SqlServerReader(type);
             sqlWriter = new SqlServerWriter(type);
             dataSource = ds;
-            redisWriter = new RedisWriter();
-            redisReader = new RedisReader();
+            this.redis = redis;
+            if (redis==true)
+            {
+                redisWriter = new RedisWriter();
+                redisReader = new RedisReader();
+            }
+            
         }
         public List<StockTickTransaction> GetStockTransaction(string code, DateTime start, DateTime end,bool record=true)
         {
@@ -47,7 +53,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
             foreach(var date in transDates)
             {
                 LoadDataToSqlServerFromSourceIfNecessary(code, date,record);
-                if (record==true)
+                if (redis==true)
                 {
                     LoadDataToRedisFromSqlServerIfNecessary(code, date);
                 }
@@ -59,7 +65,7 @@ namespace QuantitativeAnalysis.DataAccess.Stock
                
             }
             // logger.Info(string.Format("completed fetching stock{0} tick data from {1} to {2}...", code, start, end));
-            if (record==true)
+            if (redis==true)
             {
                 ticks = FetchDataFromRedis(code, transDates).Where(c => c.TransactionDateTime >= start && c.TransactionDateTime <= end).OrderBy(c => c.TransactionDateTime).ToList();
             }

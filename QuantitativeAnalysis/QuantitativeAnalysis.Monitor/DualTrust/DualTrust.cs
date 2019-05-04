@@ -61,9 +61,9 @@ namespace QuantitativeAnalysis.Monitor.DualTrust
             //获取分钟线数据
             foreach (var date in tradedays)
             {
-                var underlyingToday = stockMinutelyRepo.GetStockTransaction(underlyingCode, date, date);
+                var underlyingToday = stockMinutelyRepo.GetStockTransactionWithRedis(underlyingCode, date, date);
                 underlyingCodeDaily.AddRange(underlyingToday);
-                var codeToday = stockMinutelyRepo.GetStockTransaction(code, date, date);
+                var codeToday = stockMinutelyRepo.GetStockTransactionWithRedis(code, date, date);
                 codeDaily.AddRange(codeToday);
             }
             double k1 = 0, k2 = 0, trailParameter = 0;
